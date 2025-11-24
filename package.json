@@ -1,0 +1,14 @@
+{
+  "name": "countdown24",
+  "private": true,
+  "version": "0.1.0",
+  "description": "24-day countdown gifting experience with creator/receiver flows",
+  "scripts": {
+    "dev:client": "pnpm --filter countdown24-client dev",
+    "dev:server": "pnpm --filter countdown24-server dev",
+    "build": "pnpm --filter countdown24-client build && pnpm --filter countdown24-server build",
+    "start": "pnpm --filter countdown24-server start"
+  },
+  "author": "",
+  "license": "MIT"
+}

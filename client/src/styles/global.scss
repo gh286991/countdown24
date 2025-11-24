@@ -1,0 +1,69 @@
+:root {
+  --glass-color: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --gradient-start: #0f172a;
+  --gradient-end: #1e1b4b;
+}
+
+body {
+  min-height: 100vh;
+  background-image: radial-gradient(circle at top, rgba(34, 211, 238, 0.15), transparent 45%),
+    radial-gradient(circle at 30% 20%, rgba(244, 114, 182, 0.2), transparent 40%),
+    linear-gradient(180deg, var(--gradient-start), var(--gradient-end));
+}
+
+.glass-panel {
+  background: var(--glass-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(25px);
+  padding: 1.5rem;
+}
+
+.glow-icon {
+  position: relative;
+}
+
+.glow-icon::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  border-radius: 999px;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.45), transparent 70%);
+  opacity: 0.6;
+}
+
+.countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.story-card {
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.story-card__content {
+  padding: 1rem;
+}
+
+.timeline-track {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.timeline-track::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #22d3ee, #f472b6);
+  opacity: 0.5;
+}
