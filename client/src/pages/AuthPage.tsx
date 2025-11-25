@@ -2,6 +2,7 @@ import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { HiOutlineGift } from 'react-icons/hi2';
+import { useToast } from '../components/ToastProvider';
 import { loginAccount, registerAccount } from '../store/authSlice';
 import { acceptInvitation } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
@@ -51,10 +52,10 @@ function AuthPage() {
         if (inviteToken) {
           try {
             await dispatch(acceptInvitation(inviteToken)).unwrap();
-            alert('註冊成功並已加入倒數專案！');
+            showToast('註冊成功並已加入倒數專案！', 'success');
             navigate('/receiver');
           } catch (inviteError: any) {
-            alert(inviteError || '接受邀請失敗，但帳號已註冊成功');
+            showToast(inviteError || '接受邀請失敗，但帳號已註冊成功', 'warning');
             navigate('/receiver');
           }
         } else {
@@ -67,10 +68,10 @@ function AuthPage() {
         if (inviteToken) {
           try {
             await dispatch(acceptInvitation(inviteToken)).unwrap();
-            alert('登入成功並已加入倒數專案！');
+            showToast('登入成功並已加入倒數專案！', 'success');
             navigate('/receiver');
           } catch (inviteError: any) {
-            alert(inviteError || '接受邀請失敗');
+            showToast(inviteError || '接受邀請失敗', 'warning');
             navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
           }
         } else {

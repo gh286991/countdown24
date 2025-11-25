@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
 import { Assignments, Countdowns, Users } from '../db/connection';
 import * as countdownService from '../services/countdownService';
+import { verifyDayQrToken } from '../utils/helpers';
 
 export async function getInbox(req: AuthenticatedRequest, res: Response) {
   if (!req.user || !Assignments || !Countdowns || !Users) {
@@ -65,7 +66,10 @@ export async function getReceiverCountdown(req: AuthenticatedRequest, res: Respo
 
   const countdownWithCards = await countdownService.attachDayCards(countdown);
   return res.json({ 
-    assignment, 
+    assignment: {
+      ...assignment,
+      unlockedDays: assignment.unlockedDays || [],
+    }, 
     countdown: countdownService.withAvailableContent(countdownWithCards),
     creator: creatorInfo,
   });
@@ -103,9 +107,10 @@ export async function getReceiverDayContent(req: AuthenticatedRequest, res: Resp
     return res.status(404).json({ message: 'Content not found for this day' });
   }
 
-  const availableDay = countdownService.computeAvailableDay(countdownWithCards);
-  if (requestedDay > availableDay) {
-    return res.status(403).json({ message: 'Day not unlocked yet' });
+  // 檢查是否已通過 QR code 解鎖
+  const unlockedDays = assignment.unlockedDays || [];
+  if (!unlockedDays.includes(requestedDay)) {
+    return res.status(403).json({ message: 'Day not unlocked yet. Please scan the QR code.' });
   }
 
   return res.json({
@@ -118,6 +123,68 @@ export async function getReceiverDayContent(req: AuthenticatedRequest, res: Resp
     coverImage: dayCard.coverImage,
     cgScript: dayCard.type === 'story' ? dayCard.cgScript : null,
     qrReward: dayCard.type === 'qr' ? dayCard.qrReward : null,
+  });
+}
+
+export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Assignments || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { assignmentId, qrToken } = req.body;
+  if (!assignmentId || !qrToken) {
+    return res.status(400).json({ message: 'Missing assignmentId or qrToken' });
+  }
+
+  const assignment = await Assignments.findOne({ id: assignmentId, receiverId: req.user.id });
+  if (!assignment) {
+    return res.status(404).json({ message: 'Assignment not found' });
+  }
+
+  const countdown = await Countdowns.findOne({ id: assignment.countdownId });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 解析 token 中的 day 數字
+  const dayMatch = qrToken.match(/^day(\d+)-/);
+  if (!dayMatch) {
+    return res.status(400).json({ message: 'Invalid QR token format' });
+  }
+
+  const day = Number(dayMatch[1]);
+  if (!Number.isFinite(day) || day < 1) {
+    return res.status(400).json({ message: 'Invalid day in token' });
+  }
+
+  // 驗證 token
+  if (!verifyDayQrToken(qrToken, countdown.id, day)) {
+    return res.status(403).json({ message: 'Invalid QR token' });
+  }
+
+  // 檢查該天是否已解鎖
+  const countdownWithCards = await countdownService.attachDayCards(countdown);
+  const unlockedDays = assignment.unlockedDays || [];
+  
+  if (unlockedDays.includes(day)) {
+    return res.json({ 
+      success: true, 
+      message: 'Day already unlocked',
+      unlockedDays: unlockedDays,
+    });
+  }
+
+  // 解鎖該天
+  const newUnlockedDays = [...unlockedDays, day].sort((a, b) => a - b);
+  await Assignments.updateOne(
+    { id: assignmentId },
+    { $set: { unlockedDays: newUnlockedDays } }
+  );
+
+  return res.json({ 
+    success: true, 
+    message: 'Day unlocked successfully',
+    unlockedDays: newUnlockedDays,
   });
 }
 

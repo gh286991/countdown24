@@ -6,6 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { HiOutlineXMark } from 'react-icons/hi2';
 import CountdownCard from '../components/CountdownCard';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useToast } from '../components/ToastProvider';
 import { createCountdown, deleteCountdown, fetchCreatorCountdowns } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -14,6 +16,7 @@ function CreatorDashboard() {
   const navigate = useNavigate();
   const { items, status } = useSelector((state: RootState) => state.countdowns);
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [recipientEmails, setRecipientEmails] = useState('');
@@ -21,6 +24,10 @@ function CreatorDashboard() {
   const [totalDays, setTotalDays] = useState(24);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; countdown: any | null }>({
+    isOpen: false,
+    countdown: null,
+  });
 
   useEffect(() => {
     // 只在尚未載入且用戶是創作者時才發起請求
@@ -32,11 +39,11 @@ function CreatorDashboard() {
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!title.trim()) {
-      alert('請輸入倒數標題');
+      showToast('請輸入倒數標題', 'warning');
       return;
     }
     if (!startDate) {
-      alert('請選擇開始日期');
+      showToast('請選擇開始日期', 'warning');
       return;
     }
 
@@ -70,13 +77,19 @@ function CreatorDashboard() {
     }
   };
 
-  const handleDeleteCountdown = async (countdown: any) => {
-    if (!window.confirm(`確定要刪除「${countdown.title}」嗎？`)) return;
+  const handleDeleteCountdown = (countdown: any) => {
+    setDeleteConfirm({ isOpen: true, countdown });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.countdown) return;
     try {
-      await dispatch(deleteCountdown(countdown.id)).unwrap();
+      await dispatch(deleteCountdown(deleteConfirm.countdown.id)).unwrap();
+      showToast('刪除成功', 'success');
+      setDeleteConfirm({ isOpen: false, countdown: null });
     } catch (error: any) {
       console.error(error);
-      alert(error?.message || '刪除失敗，請稍後再試。');
+      showToast(error?.message || '刪除失敗，請稍後再試。', 'error');
     }
   };
 
@@ -197,6 +210,16 @@ function CreatorDashboard() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="確認刪除"
+        message={`確定要刪除「${deleteConfirm.countdown?.title}」嗎？此操作無法復原。`}
+        confirmText="刪除"
+        cancelText="取消"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, countdown: null })}
+      />
     </section>
   );
 }

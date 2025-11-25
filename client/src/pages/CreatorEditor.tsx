@@ -6,6 +6,7 @@ import DayListSidebar from '../components/DayListSidebar';
 import DayCardEditor from '../components/DayCardEditor';
 import DayCardPreviewPanel from '../components/DayCardPreviewPanel';
 import ReceiversModal from '../components/ReceiversModal';
+import { useToast } from '../components/ToastProvider';
 import sampleCgScript from '../data/sampleCgScript';
 import { assignReceivers, createInvitation, fetchCountdownDetail, updateCountdown } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
@@ -24,6 +25,7 @@ function CreatorEditor() {
   const [dayCardDraft, setDayCardDraft] = useState({ ...emptyCard, day: Number(searchParams.get('day')) || 1 });
   const [showReceiversModal, setShowReceiversModal] = useState(false);
   const dayFromUrl = Number(searchParams.get('day')) || 1;
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -98,13 +100,13 @@ function CreatorEditor() {
     let parsedScript = null;
     if (dayCardDraft.type === 'story') {
       if (!cgScriptDraft.trim()) {
-        alert('請輸入 CG JSON');
+        showToast('請輸入 CG JSON', 'warning');
         return;
       }
       try {
         parsedScript = JSON.parse(cgScriptDraft);
       } catch (error) {
-        alert('CG JSON 格式錯誤，請檢查括號或逗號。');
+        showToast('CG JSON 格式錯誤，請檢查括號或逗號。', 'error');
         return;
       }
     }
@@ -190,6 +192,7 @@ function CreatorEditor() {
             startDate={selected.startDate}
             dayCardDraft={dayCardDraft}
             cgScriptDraft={cgScriptDraft}
+            countdownId={id || ''}
             onTypeChange={handleTypeChange}
             onFieldChange={handleFieldChange}
             onCgScriptChange={setCgScriptDraft}

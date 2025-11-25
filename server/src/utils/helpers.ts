@@ -43,3 +43,22 @@ export function sanitizeUser(user: any): any {
   return rest;
 }
 
+/**
+ * 生成每天唯一的 QR code token
+ * 使用 countdownId + day + secret 生成，確保每天都有唯一且不可預測的 token
+ */
+export function generateDayQrToken(countdownId: string, day: number, secret: string = 'countdown24-secret'): string {
+  const input = `${countdownId}-${day}-${secret}`;
+  const hash = crypto.createHash('sha256').update(input).digest('hex');
+  // 取前 16 個字符作為 token，加上 day 前綴以便識別
+  return `day${day}-${hash.substring(0, 16)}`;
+}
+
+/**
+ * 驗證 QR code token 是否有效
+ */
+export function verifyDayQrToken(token: string, countdownId: string, day: number, secret: string = 'countdown24-secret'): boolean {
+  const expected = generateDayQrToken(countdownId, day, secret);
+  return token === expected;
+}
+

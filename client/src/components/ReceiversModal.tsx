@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { HiOutlineXMark } from 'react-icons/hi2';
+import ConfirmDialog from './ConfirmDialog';
 import { fetchReceivers, removeReceiver } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -13,6 +14,10 @@ interface ReceiversModalProps {
 function ReceiversModal({ countdownId, isOpen, onClose }: ReceiversModalProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { receivers, receiversStatus } = useSelector((state: RootState) => state.countdowns);
+  const [removeConfirm, setRemoveConfirm] = useState<{ isOpen: boolean; receiverId: string | null }>({
+    isOpen: false,
+    receiverId: null,
+  });
 
   useEffect(() => {
     if (isOpen && countdownId) {
@@ -20,9 +25,14 @@ function ReceiversModal({ countdownId, isOpen, onClose }: ReceiversModalProps) {
     }
   }, [isOpen, countdownId, dispatch]);
 
-  const handleRemove = async (receiverId: string) => {
-    if (!window.confirm('確定要移除此接收者嗎？')) return;
-    await dispatch(removeReceiver({ id: countdownId, receiverId }));
+  const handleRemove = (receiverId: string) => {
+    setRemoveConfirm({ isOpen: true, receiverId });
+  };
+
+  const confirmRemove = async () => {
+    if (!removeConfirm.receiverId) return;
+    await dispatch(removeReceiver({ id: countdownId, receiverId: removeConfirm.receiverId }));
+    setRemoveConfirm({ isOpen: false, receiverId: null });
   };
 
   if (!isOpen) return null;
@@ -121,6 +131,16 @@ function ReceiversModal({ countdownId, isOpen, onClose }: ReceiversModalProps) {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={removeConfirm.isOpen}
+        title="確認移除"
+        message="確定要移除此接收者嗎？"
+        confirmText="移除"
+        cancelText="取消"
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveConfirm({ isOpen: false, receiverId: null })}
+      />
     </div>
   );
 }

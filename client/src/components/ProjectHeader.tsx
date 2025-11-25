@@ -11,6 +11,7 @@ import {
   HiOutlineCheck,
   HiOutlineXCircle
 } from 'react-icons/hi2';
+import { useToast } from './ToastProvider';
 
 interface ProjectHeaderProps {
   title: string;
@@ -48,6 +49,7 @@ function ProjectHeader({
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteData, setInviteData] = useState<{ token: string; inviteUrl: string } | null>(null);
   const [generating, setGenerating] = useState(false);
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [editDescription, setEditDescription] = useState(description || '');
@@ -64,7 +66,7 @@ function ProjectHeader({
       setShowInviteModal(true);
     } catch (error) {
       console.error('Failed to generate invite:', error);
-      alert('生成邀請連結失敗');
+      showToast('生成邀請連結失敗', 'error');
     } finally {
       setGenerating(false);
     }
@@ -75,7 +77,7 @@ function ProjectHeader({
   const handleCopyLink = () => {
     if (fullInviteUrl) {
       navigator.clipboard.writeText(fullInviteUrl);
-      alert('連結已複製！');
+      showToast('連結已複製！', 'success');
     }
   };
 
@@ -111,7 +113,7 @@ function ProjectHeader({
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update project:', error);
-      alert('更新失敗，請稍後再試');
+      showToast('更新失敗，請稍後再試', 'error');
     } finally {
       setSaving(false);
     }

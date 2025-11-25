@@ -11,6 +11,7 @@ import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import ReceiverExperience from './pages/ReceiverExperience';
 import ReceiverInbox from './pages/ReceiverInbox';
+import ScanPage from './pages/ScanPage';
 import { bootstrapSession, logout } from './store/authSlice';
 import type { RootState } from './store';
 
@@ -112,6 +113,14 @@ function App() {
           element={
             <ProtectedRoute allow={['creator', 'receiver']}>
               <ReceiverExperience />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scan/:token"
+          element={
+            <ProtectedRoute allow={['creator', 'receiver']}>
+              <ScanPage />
             </ProtectedRoute>
           }
         />

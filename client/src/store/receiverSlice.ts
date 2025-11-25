@@ -48,6 +48,18 @@ export const fetchReceiverDayContent = createAsyncThunk(
   },
 );
 
+export const unlockDayWithQr = createAsyncThunk(
+  'receiver/unlockDayWithQr',
+  async ({ assignmentId, qrToken }: { assignmentId: string; qrToken: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post('/receiver/unlock-day', { assignmentId, qrToken });
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '解鎖失敗');
+    }
+  },
+);
+
 const initialState: ReceiverState = {
   inbox: [],
   selected: null,

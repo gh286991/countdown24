@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
 import { Countdowns, Assignments, CountdownDays, Users, Invitations } from '../db/connection';
 import * as countdownService from '../services/countdownService';
-import { normalizeDate, normalizeTotalDays, addDays, generateId } from '../utils/helpers';
+import { normalizeDate, normalizeTotalDays, addDays, generateId, generateDayQrToken } from '../utils/helpers';
 import crypto from 'crypto';
 
 export async function getCountdowns(req: AuthenticatedRequest, res: Response) {
@@ -440,6 +440,39 @@ export async function acceptInvitation(req: AuthenticatedRequest, res: Response)
   return res.json({ 
     message: 'Invitation accepted',
     assignment 
+  });
+}
+
+// 生成每天的 QR code token
+export async function generateDayQrCode(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params; // countdownId
+  const { day } = req.body;
+  
+  if (!day || !Number.isFinite(Number(day)) || Number(day) < 1) {
+    return res.status(400).json({ message: 'Invalid day parameter' });
+  }
+
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  const totalDays = countdown.totalDays || 24;
+  if (Number(day) > totalDays) {
+    return res.status(400).json({ message: 'Day exceeds total days' });
+  }
+
+  const qrToken = generateDayQrToken(countdown.id, Number(day));
+  const qrUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/scan/${qrToken}`;
+
+  return res.json({
+    day: Number(day),
+    qrToken,
+    qrUrl,
   });
 }
 

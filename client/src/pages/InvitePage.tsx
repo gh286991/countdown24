@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { HiOutlineGift } from 'react-icons/hi2';
+import { useToast } from '../components/ToastProvider';
 import { checkInvitation, acceptInvitation } from '../store/countdownSlice';
 import type { AppDispatch, RootState } from '../store';
 
@@ -13,6 +14,7 @@ function InvitePage() {
   const [inviteStatus, setInviteStatus] = useState<'checking' | 'valid' | 'invalid'>('checking');
   const [countdown, setCountdown] = useState<any>(null);
   const [accepting, setAccepting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!token) {
@@ -49,10 +51,10 @@ function InvitePage() {
     setAccepting(true);
     try {
       await dispatch(acceptInvitation(token)).unwrap();
-      alert('成功加入倒數專案！');
+        showToast('成功加入倒數專案！', 'success');
       navigate('/receiver');
     } catch (error: any) {
-      alert(error || '接受邀請失敗');
+        showToast(error || '接受邀請失敗', 'error');
     } finally {
       setAccepting(false);
     }

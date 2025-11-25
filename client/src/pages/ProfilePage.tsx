@@ -1,6 +1,7 @@
 import { useState, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { HiOutlineGift, HiOutlineSparkles, HiOutlineXMark } from 'react-icons/hi2';
+import { useToast } from '../components/ToastProvider';
 import { upgradeToCreator, updateProfile } from '../store/authSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -16,6 +17,7 @@ function ProfilePage() {
     bio: user?.bio || '',
   });
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   if (!user) {
     return null;
@@ -25,12 +27,12 @@ function ProfilePage() {
     setUpgrading(true);
     try {
       await dispatch(upgradeToCreator()).unwrap();
-      alert('成功開通編輯者權限！');
+      showToast('成功開通編輯者權限！', 'success');
       setShowUpgradeModal(false);
       // 重新載入頁面以更新導航
       window.location.href = '/creator';
     } catch (error: any) {
-      alert(error || '升級失敗');
+        showToast(error || '升級失敗', 'error');
     } finally {
       setUpgrading(false);
     }
@@ -40,10 +42,10 @@ function ProfilePage() {
     setSaving(true);
     try {
       await dispatch(updateProfile(editForm)).unwrap();
-      alert('個人資料已更新！');
+        showToast('個人資料已更新！', 'success');
       setIsEditing(false);
     } catch (error: any) {
-      alert(error || '更新失敗');
+        showToast(error || '更新失敗', 'error');
     } finally {
       setSaving(false);
     }

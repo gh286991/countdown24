@@ -19,6 +19,7 @@ router.get('/:id/receivers', requireAuth, requireRole('creator'), asyncHandler(c
 router.delete('/:id/receivers/:receiverId', requireAuth, requireRole('creator'), asyncHandler(countdownController.removeReceiver));
 router.post('/:id/invite', requireAuth, requireRole('creator'), asyncHandler(countdownController.createInvitation));
 router.post('/invite/accept/:token', requireAuth, asyncHandler(countdownController.acceptInvitation));
+router.post('/:id/generate-qr', requireAuth, requireRole('creator'), asyncHandler(countdownController.generateDayQrCode));
 
 export default router;
 
