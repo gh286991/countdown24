@@ -7,7 +7,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "NODE_ENV=development nodemon --exec ts-node --esm src/server.ts",
+    "dev": "NODE_ENV=development nodemon --exec tsx src/server.ts",
     "start": "NODE_ENV=production node dist/server.js",
     "build": "tsc"
   },
@@ -26,6 +26,7 @@
     "@types/node": "^24.10.1",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

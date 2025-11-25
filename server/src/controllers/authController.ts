@@ -1,0 +1,72 @@
+import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../types/index';
+import * as authService from '../services/authService';
+import { Countdowns, Assignments } from '../db/connection';
+import * as countdownService from '../services/countdownService';
+
+export async function register(req: Request, res: Response) {
+  const { name, email, password, role } = req.body || {};
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email, and password are required' });
+  }
+
+  try {
+    const result = await authService.registerUser({ name, email, password, role });
+    return res.status(201).json(result);
+  } catch (error: any) {
+    if (error.message === 'Email already registered') {
+      return res.status(409).json({ message: error.message });
+    }
+    throw error;
+  }
+}
+
+export async function login(req: Request, res: Response) {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
+  try {
+    const result = await authService.loginUser(email, password);
+    return res.json(result);
+  } catch (error: any) {
+    if (error.message === 'Invalid credentials') {
+      return res.status(401).json({ message: error.message });
+    }
+    throw error;
+  }
+}
+
+export async function getMe(req: AuthenticatedRequest, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  if (!Countdowns || !Assignments) {
+    return res.status(500).json({ message: 'Database not initialized' });
+  }
+
+  const response: any = { user: req.user };
+  
+  if (req.user.role === 'creator') {
+    const owned = await Countdowns.find({ ownerId: req.user.id }).toArray();
+    const hydrated = await countdownService.attachDayCardsToMany(owned);
+    response.countdowns = hydrated.map(countdownService.countdownSummary);
+  } else {
+    const assignments = await Assignments.find({ receiverId: req.user.id }).toArray();
+    const countdownIds = assignments.map((assignment) => assignment.countdownId);
+    const countdownDocs = await Countdowns.find({ id: { $in: countdownIds } }).toArray();
+    const hydrated = await countdownService.attachDayCardsToMany(countdownDocs);
+    const map = new Map(hydrated.map((doc) => [doc.id, doc]));
+    response.assignments = assignments.map((assignment) => ({
+      id: assignment.id,
+      status: assignment.status,
+      unlockedOn: assignment.unlockedOn,
+      countdown: map.has(assignment.countdownId) ? countdownService.countdownSummary(map.get(assignment.countdownId)) : null,
+    }));
+  }
+
+  return res.json(response);
+}
+
