@@ -28,10 +28,10 @@ function App() {
 
   return (
     <div className="min-h-screen relative">
-      {/* 額外的雪花層 - 多層不同速度 */}
-      <div className="snow-layer"></div>
+      {/* 下雪特效已暫時移除以測試閃動問題 */}
+      {/* <div className="snow-layer"></div>
       <div className="snow-layer snow-layer-fast"></div>
-      <div className="snow-layer" style={{ animation: 'snowfall4 22s linear infinite', animationDelay: '-8s', opacity: 0.35 }}></div>
+      <div className="snow-layer" style={{ animation: 'snowfall4 22s linear infinite', animationDelay: '-8s', opacity: 0.35 }}></div> */}
       
       <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 py-6 px-6 relative z-10">
         <Link to="/" className="text-2xl font-semibold tracking-[0.4em] uppercase text-white flex items-center gap-2">

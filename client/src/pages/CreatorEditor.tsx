@@ -5,6 +5,7 @@ import ProjectHeader from '../components/ProjectHeader';
 import DayListSidebar from '../components/DayListSidebar';
 import DayCardEditor from '../components/DayCardEditor';
 import DayCardPreviewPanel from '../components/DayCardPreviewPanel';
+import DayQrCodeGenerator from '../components/DayQrCodeGenerator';
 import ReceiversModal from '../components/ReceiversModal';
 import { useToast } from '../components/ToastProvider';
 import sampleCgScript from '../data/sampleCgScript';
@@ -144,7 +145,7 @@ function CreatorEditor() {
   };
 
   return (
-    <section className="max-w-[1800px] mx-auto py-6 px-6">
+    <section className="max-w-[1800px] mx-auto py-6 px-6 relative z-10">
       {/* 頂部：專案資訊 + 分享設定 */}
       <ProjectHeader
         title={selected.title}
@@ -176,17 +177,25 @@ function CreatorEditor() {
         />
       )}
 
-      <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6">
-        {/* 左側：Day 列表 */}
-        <DayListSidebar
-          totalDays={totalDays}
-          activeDay={activeDay}
-          dayCards={selected.dayCards || []}
-          onDaySelect={handleDaySelect}
-        />
+      <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
+        {/* 左側：Day 列表 + 封面圖 + QR Code */}
+        <div className="space-y-4">
+          <DayListSidebar
+            totalDays={totalDays}
+            activeDay={activeDay}
+            dayCards={selected.dayCards || []}
+            onDaySelect={handleDaySelect}
+          />
+          
+          {/* 每日解鎖 QR Code 生成區塊 - 移到左側 */}
+          <DayQrCodeGenerator
+            activeDay={activeDay}
+            countdownId={id || ''}
+          />
+        </div>
 
         {/* 中間：編輯區 */}
-        <div className="space-y-4">
+        <div className="space-y-4 relative z-10">
           <DayCardEditor
             activeDay={activeDay}
             startDate={selected.startDate}

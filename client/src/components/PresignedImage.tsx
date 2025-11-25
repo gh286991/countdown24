@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePresignedImage } from '../hooks/usePresignedImage';
 import { getPresignedUrl, isMinIOUrl } from '../utils/imageUtils';
 
@@ -12,30 +12,40 @@ interface PresignedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
  */
 export function PresignedImage({ src, onError, ...props }: PresignedImageProps) {
   const presignedUrl = usePresignedImage(src);
-  const [currentUrl, setCurrentUrl] = useState<string | undefined>(presignedUrl);
-  const [retryCount, setRetryCount] = useState(0);
+  const retryCountRef = useRef(0);
   const maxRetries = 2;
+  const srcRef = useRef(src);
+  const prevPresignedUrlRef = useRef<string | undefined>(presignedUrl);
 
-  // 當 presignedUrl 更新時，更新 currentUrl 並重置重試計數
+  // 當 src 改變時，重置重試計數
   useEffect(() => {
-    if (presignedUrl !== currentUrl) {
-      setCurrentUrl(presignedUrl);
-      setRetryCount(0);
+    if (srcRef.current !== src) {
+      srcRef.current = src;
+      retryCountRef.current = 0;
+      prevPresignedUrlRef.current = undefined; // 重置追蹤值
+    }
+  }, [src]);
+
+  // 追蹤 presignedUrl 的變化
+  useEffect(() => {
+    if (presignedUrl !== prevPresignedUrlRef.current) {
+      prevPresignedUrlRef.current = presignedUrl;
+      retryCountRef.current = 0;
     }
   }, [presignedUrl]);
 
   const handleError = useCallback(
     async (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
       const img = e.target as HTMLImageElement;
+      const currentSrc = srcRef.current;
       
       // 如果是 MinIO URL 且載入失敗，可能是預簽名 URL 過期，嘗試重新獲取
-      if (src && isMinIOUrl(src) && retryCount < maxRetries) {
+      if (currentSrc && isMinIOUrl(currentSrc) && retryCountRef.current < maxRetries) {
         try {
-          console.log(`Presigned URL may have expired (attempt ${retryCount + 1}/${maxRetries}), refreshing...`, src);
-          const newPresignedUrl = await getPresignedUrl(src);
-          setCurrentUrl(newPresignedUrl);
-          setRetryCount((prev) => prev + 1);
-          // 更新圖片 src 以觸發重新載入
+          console.log(`Presigned URL may have expired (attempt ${retryCountRef.current + 1}/${maxRetries}), refreshing...`, currentSrc);
+          const newPresignedUrl = await getPresignedUrl(currentSrc);
+          retryCountRef.current += 1;
+          // 直接更新圖片 src，觸發重新載入
           img.src = newPresignedUrl;
           return; // 不調用原始的 onError，讓圖片重新載入
         } catch (error) {
@@ -52,13 +62,13 @@ export function PresignedImage({ src, onError, ...props }: PresignedImageProps) 
         img.style.display = 'none';
       }
     },
-    [src, retryCount, onError],
+    [onError], // 移除 src 和 retryCount 依賴，使用 ref 代替
   );
 
-  if (!currentUrl) {
+  if (!presignedUrl) {
     return null;
   }
 
-  return <img src={currentUrl} onError={handleError} {...props} />;
+  return <img src={presignedUrl} onError={handleError} {...props} />;
 }
 
