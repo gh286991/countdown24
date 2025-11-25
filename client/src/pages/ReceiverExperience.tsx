@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import DayTimeline from '../components/DayTimeline';
 import CgPlayer from '../components/CgPlayer';
+import QrCardPreview from '../components/QrCardPreview';
 import { clearDayContent, fetchReceiverDayContent, fetchReceiverExperience } from '../store/receiverSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -113,36 +113,11 @@ function ReceiverExperience() {
             <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
             {modalLoading && <p className="text-gray-300">載入內容中...</p>}
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
-              <div className="space-y-3">
-                {currentDayContent.qrReward.imageUrl ? (
-                  <img
-                    src={currentDayContent.qrReward.imageUrl}
-                    alt={currentDayContent.qrReward.title}
-                    className="w-full h-64 object-cover rounded-2xl"
-                  />
-                ) : (
-                  <div className="w-full h-64 flex items-center justify-center bg-white/5 rounded-2xl text-xs text-gray-400">
-                    尚未設定圖片
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <h4 className="text-lg font-semibold">{currentDayContent.qrReward.title || '未命名禮物'}</h4>
-                  <p className="text-sm text-gray-300">{currentDayContent.qrReward.message || '尚未填寫訊息'}</p>
-                  <div className="text-xs text-gray-400">
-                    QR 內容：<span className="text-white">{currentDayContent.qrReward.qrCode || '尚未設定'}</span>
-                  </div>
-                  {currentDayContent.qrReward.qrCode && (
-                    <div className="mt-3 flex justify-center">
-                      <QRCodeSVG
-                        value={currentDayContent.qrReward.qrCode}
-                        size={192}
-                        bgColor="transparent"
-                        fgColor="#f8fafc"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+              <QrCardPreview
+                day={modalDay}
+                qrReward={currentDayContent.qrReward}
+                variant="modal"
+              />
             ) : null}
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
               <p className="text-sm text-gray-300">此日尚未設定 QR 禮物內容。</p>
