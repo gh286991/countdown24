@@ -4,13 +4,74 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-gray-100 font-body;
+    @apply text-gray-100 font-body antialiased;
+    background-color: #0f1419;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
   h1,
   h2,
   h3,
-  h4 {
+  h4,
+  h5,
+  h6 {
     @apply font-display text-white;
+    font-feature-settings: 'ss01', 'ss02';
+  }
+
+  h1 {
+    @apply text-5xl lg:text-6xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl font-bold tracking-tight;
+  }
+
+  h3 {
+    @apply text-2xl lg:text-3xl font-semibold;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+
+  button {
+    @apply transition-all duration-300 ease-out;
+  }
+}
+
+@layer components {
+  .text-gradient {
+    background: linear-gradient(to right, #c85a5a, #6b9b7a, #d4a574);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .text-gradient-aurora {
+    background: linear-gradient(to right, #c85a5a, #d67a7a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .border-gradient {
+    border-image: linear-gradient(135deg, #c85a5a, #6b9b7a, #d4a574) 1;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
   }
 }

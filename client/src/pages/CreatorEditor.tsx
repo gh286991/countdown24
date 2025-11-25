@@ -146,6 +146,8 @@ function CreatorEditor() {
       {/* 頂部：專案資訊 + 分享設定 */}
       <ProjectHeader
         title={selected.title}
+        description={selected.description}
+        coverImage={selected.coverImage}
         totalDays={selected.totalDays || 24}
         availableDay={selected.availableDay || 0}
         startDate={selected.startDate}
@@ -155,6 +157,11 @@ function CreatorEditor() {
         onAssign={handleAssign}
         onViewReceivers={() => setShowReceiversModal(true)}
         onGenerateInvite={handleGenerateInvite}
+        onUpdateProject={(data) => {
+          if (id) {
+            dispatch(updateCountdown({ id, data }));
+          }
+        }}
         countdownId={id || ''}
       />
 

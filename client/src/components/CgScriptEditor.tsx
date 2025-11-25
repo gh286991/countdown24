@@ -1,4 +1,5 @@
 import { useState, ChangeEvent } from 'react';
+import { HiOutlineFilm, HiOutlineXMark } from 'react-icons/hi2';
 
 interface CgDialogue {
   speaker?: string;
@@ -147,7 +148,10 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
             }`}
           >
-            🎬 場景編輯
+            <span className="flex items-center gap-2">
+              <HiOutlineFilm className="w-4 h-4" />
+              場景編輯
+            </span>
           </button>
           <button
             type="button"
@@ -189,7 +193,7 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
           {/* 封面卡片 */}
           <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-4 border border-blue-500/20">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">🎬</span>
+              <HiOutlineFilm className="w-5 h-5" />
               <h4 className="text-sm font-bold text-blue-300">開場封面</h4>
             </div>
             <div className="space-y-2">
@@ -293,7 +297,7 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
                           onClick={() => deleteDialogue(sceneIndex, dialogueIndex)}
                           className="text-red-400 hover:text-red-300 text-xs px-1"
                         >
-                          ✕
+                          <HiOutlineXMark className="w-5 h-5" />
                         </button>
                       </div>
                     ))}
@@ -333,7 +337,7 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
                           onClick={() => deleteChoice(sceneIndex, choiceIndex)}
                           className="text-red-400 hover:text-red-300 text-xs"
                         >
-                          ✕
+                          <HiOutlineXMark className="w-5 h-5" />
                         </button>
                       </div>
                     ))}

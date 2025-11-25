@@ -1,4 +1,5 @@
 import { ChangeEvent } from 'react';
+import { HiOutlineBookOpen, HiOutlineGift } from 'react-icons/hi2';
 import CgScriptEditor from './CgScriptEditor';
 
 interface QrReward {
@@ -61,7 +62,17 @@ function DayCardEditor({
                 : 'border-white/20 text-gray-300 hover:border-white/40'
             }`}
           >
-            {mode === 'story' ? '📖 CG 對話劇情' : '🎁 QR 禮物卡片'}
+            {mode === 'story' ? (
+              <span className="flex items-center gap-2">
+                <HiOutlineBookOpen className="w-4 h-4" />
+                CG 對話劇情
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <HiOutlineGift className="w-4 h-4" />
+                QR 禮物卡片
+              </span>
+            )}
           </button>
         ))}
       </div>

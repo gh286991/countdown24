@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Route, Routes } from 'react-router-dom';
+import { HiOutlineGift } from 'react-icons/hi2';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthPage from './pages/AuthPage';
 import CreatorDashboard from './pages/CreatorDashboard';
@@ -15,17 +16,26 @@ import type { RootState } from './store';
 
 function App() {
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, status } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    dispatch(bootstrapSession());
-  }, [dispatch]);
+    // 只在尚未載入且沒有用戶資料時才發起請求
+    if (status === 'idle' && !user) {
+      dispatch(bootstrapSession());
+    }
+  }, [dispatch, status, user]);
 
   return (
-    <div className="min-h-screen">
-      <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 py-6 px-6">
-        <Link to="/" className="text-2xl font-semibold tracking-[0.4em] uppercase">
-          24·Token
+    <div className="min-h-screen relative">
+      {/* 額外的雪花層 - 多層不同速度 */}
+      <div className="snow-layer"></div>
+      <div className="snow-layer snow-layer-fast"></div>
+      <div className="snow-layer" style={{ animation: 'snowfall4 22s linear infinite', animationDelay: '-8s', opacity: 0.35 }}></div>
+      
+      <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 py-6 px-6 relative z-10">
+        <Link to="/" className="text-2xl font-semibold tracking-[0.4em] uppercase text-white flex items-center gap-2">
+          <HiOutlineGift className="w-6 h-6" />
+          倒數禮物盒
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           {user?.role === 'creator' && (
@@ -34,23 +44,25 @@ function App() {
             </Link>
           )}
           {user && (
-            <Link to="/receiver" className="text-gray-300 hover:text-white">
-              🎁 我的禮物盒
+            <Link to="/receiver" className="text-gray-300 hover:text-white flex items-center gap-2">
+              <HiOutlineGift className="w-4 h-4" />
+              我的禮物盒
             </Link>
           )}
           {!user ? (
-            <Link to="/auth" className="px-4 py-2 rounded-full bg-white/10">
+            <Link to="/auth" className="px-4 py-2 rounded-full bg-gradient-to-r from-christmas-red/80 to-christmas-red-dark/80 hover:from-christmas-red hover:to-christmas-red-dark text-white font-semibold transition-all duration-300 flex items-center gap-2">
+              <HiOutlineGift className="w-4 h-4" />
               登入 / 註冊
             </Link>
           ) : (
             <>
-              <Link to="/profile" className="text-gray-300 hover:text-white">
+              <Link to="/profile" className="text-gray-300 hover:text-christmas-red transition-colors">
                 個人資料
               </Link>
               <button
                 type="button"
                 onClick={() => dispatch(logout())}
-                className="px-4 py-2 rounded-full bg-white/10"
+                className="px-4 py-2 rounded-full bg-white/10 hover:bg-christmas-red/20 transition-colors"
               >
                 登出 {user.name}
               </button>

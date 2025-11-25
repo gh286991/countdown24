@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
+import { HiOutlineXMark } from 'react-icons/hi2';
 import DayTimeline from '../components/DayTimeline';
 import CgPlayer from '../components/CgPlayer';
 import QrCardPreview from '../components/QrCardPreview';
@@ -124,7 +125,7 @@ function ReceiverExperience() {
                 dispatch(clearDayContent());
               }}
             >
-              ✕
+              <HiOutlineXMark className="w-5 h-5" />
             </button>
             <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
             {modalLoading && <p className="text-gray-300">載入內容中...</p>}

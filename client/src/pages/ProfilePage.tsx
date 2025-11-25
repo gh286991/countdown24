@@ -1,5 +1,6 @@
 import { useState, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { HiOutlineGift, HiOutlineSparkles, HiOutlineXMark } from 'react-icons/hi2';
 import { upgradeToCreator, updateProfile } from '../store/authSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -163,7 +164,10 @@ function ProfilePage() {
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
-                  🎁 禮物接收者
+                  <span className="flex items-center gap-1">
+                    <HiOutlineGift className="w-4 h-4" />
+                    禮物接收者
+                  </span>
                 </span>
               )}
             </p>
@@ -182,7 +186,10 @@ function ProfilePage() {
               onClick={() => setShowUpgradeModal(true)}
               className="px-6 py-3 bg-gradient-to-r from-aurora to-blush rounded-xl text-slate-900 font-semibold hover:scale-105 transition-transform"
             >
-              ✨ 開通編輯者
+              <span className="flex items-center gap-2">
+                <HiOutlineSparkles className="w-4 h-4" />
+                開通編輯者
+              </span>
             </button>
           </div>
         )}
@@ -197,7 +204,7 @@ function ProfilePage() {
               className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white"
               onClick={() => setShowUpgradeModal(false)}
             >
-              ✕
+              <HiOutlineXMark className="w-5 h-5" />
             </button>
             
             <h3 className="text-2xl font-semibold mb-4">開通編輯者</h3>

@@ -4,6 +4,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { HiOutlineXMark } from 'react-icons/hi2';
 import CountdownCard from '../components/CountdownCard';
 import { createCountdown, deleteCountdown, fetchCreatorCountdowns } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
@@ -22,10 +23,11 @@ function CreatorDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user?.role === 'creator') {
+    // 只在尚未載入且用戶是創作者時才發起請求
+    if (user?.role === 'creator' && status !== 'loading' && items.length === 0) {
       dispatch(fetchCreatorCountdowns());
     }
-  }, [dispatch, user]);
+  }, [dispatch, user, status, items.length]);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -127,7 +129,7 @@ function CreatorDashboard() {
                 className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white"
                 onClick={() => setIsModalOpen(false)}
               >
-                ✕
+                <HiOutlineXMark className="w-5 h-5" />
               </button>
               <h3 className="text-xl font-semibold mb-4">建立新倒數專案</h3>
               <form className="space-y-4" onSubmit={handleCreate}>

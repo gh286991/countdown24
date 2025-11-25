@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { HiOutlineGift } from 'react-icons/hi2';
 import ReceiverCard from '../components/ReceiverCard';
 import { fetchReceiverInbox } from '../store/receiverSlice';
 import type { RootState, AppDispatch } from '../store';
@@ -18,7 +19,10 @@ function ReceiverInbox() {
     <section className="max-w-4xl mx-auto py-12 px-6 space-y-4">
       <div>
         <p className="text-xs text-gray-400 uppercase tracking-[0.4em]">Gift Box</p>
-        <h2 className="text-3xl font-semibold">🎁 我的禮物盒</h2>
+        <h2 className="text-3xl font-semibold flex items-center gap-2">
+          <HiOutlineGift className="w-8 h-8" />
+          我的禮物盒
+        </h2>
         <p className="text-sm text-gray-400 mt-2">這裡是別人分享給你的倒數專案</p>
       </div>
       

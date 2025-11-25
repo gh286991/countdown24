@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { HiOutlineGift } from 'react-icons/hi2';
 import { checkInvitation, acceptInvitation } from '../store/countdownSlice';
 import type { AppDispatch, RootState } from '../store';
 
@@ -91,7 +92,7 @@ function InvitePage() {
     <section className="max-w-2xl mx-auto px-6 py-16">
       <div className="glass-panel p-8 space-y-6">
         <div className="text-center">
-          <div className="text-6xl mb-4">🎁</div>
+          <HiOutlineGift className="w-16 h-16 mx-auto mb-4 text-white" />
           <h2 className="text-3xl font-bold mb-2">你收到一個倒數專案邀請</h2>
           {countdown && (
             <div className="mt-6 p-4 bg-white/5 rounded-2xl">

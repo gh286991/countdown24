@@ -1,55 +1,199 @@
 :root {
-  --glass-color: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --gradient-start: #0f172a;
-  --gradient-end: #1e1b4b;
+  --glass-color: rgba(21, 27, 46, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(255, 255, 255, 0.15);
+  /* 下雪夜晚背景色調 */
+  --gradient-start: #0f1419;
+  --gradient-mid: #1a2332;
+  --gradient-end: #0f1419;
+  /* 柔和的聖誕節顏色 */
+  --christmas-red: #c85a5a;
+  --christmas-red-light: #d67a7a;
+  --christmas-green: #6b9b7a;
+  --christmas-green-light: #7fb896;
+  --christmas-gold: #d4a574;
+  --christmas-gold-light: #e5b888;
 }
 
 body {
   min-height: 100vh;
-  background-image: radial-gradient(circle at top, rgba(34, 211, 238, 0.15), transparent 45%),
-    radial-gradient(circle at 30% 20%, rgba(244, 114, 182, 0.2), transparent 40%),
-    linear-gradient(180deg, var(--gradient-start), var(--gradient-end));
+  background-image: 
+    /* 柔和的聖誕節色調光暈 */
+    radial-gradient(circle at 10% 20%, rgba(200, 90, 90, 0.06), transparent 60%),
+    radial-gradient(circle at 90% 80%, rgba(107, 155, 122, 0.06), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(212, 165, 116, 0.04), transparent 70%),
+    /* 夜晚雪景背景 */
+    linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+  background-size: 
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  background-attachment: fixed;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 下雪動畫容器 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* 創建多層雪花效果 */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image: 
+    /* 大雪花 - 隨機位置 */
+    radial-gradient(circle at 7% 3%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 23% 12%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 31% 6%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    radial-gradient(circle at 44% 18%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 52% 4%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 67% 15%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    radial-gradient(circle at 73% 2%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 86% 11%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 94% 8%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    /* 中雪花 - 隨機位置 */
+    radial-gradient(circle at 13% 27%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 27% 33%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 38% 19%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 49% 31%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 56% 23%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 64% 35%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 79% 21%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 88% 29%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 96% 26%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    /* 小雪花 - 隨機位置 */
+    radial-gradient(circle at 4% 37%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 11% 43%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 19% 35%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 26% 41%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 34% 38%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 41% 45%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 47% 36%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 53% 42%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 61% 39%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 68% 44%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 74% 37%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 81% 43%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 89% 40%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 93% 46%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 97% 38%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px);
+  background-size: 
+    /* 大雪花 - 隨機大小 */
+    200px 200px, 185px 185px, 215px 215px, 195px 195px, 205px 205px,
+    198px 198px, 182px 182px, 218px 218px, 192px 192px,
+    /* 中雪花 - 隨機大小 */
+    152px 152px, 158px 158px, 142px 142px, 168px 168px, 153px 153px,
+    147px 147px, 163px 163px, 151px 151px, 157px 157px,
+    /* 小雪花 - 隨機大小 */
+    102px 102px, 108px 108px, 97px 97px, 103px 103px, 99px 99px,
+    111px 111px, 96px 96px, 104px 104px, 101px 101px, 109px 109px,
+    98px 98px, 106px 106px, 100px 100px, 112px 112px, 95px 95px,
+    107px 107px, 99px 99px, 110px 110px, 97px 97px, 105px 105px;
+  animation: snowfall 15s linear infinite;
+  animation-delay: 0s;
+  opacity: 0.6;
 }
 
 .glass-panel {
-  background: var(--glass-color);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
   border: 1px solid var(--glass-border);
-  border-radius: 1.25rem;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(25px);
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.glass-panel:hover {
+  border-color: var(--glass-border-light);
+  box-shadow: 
+    0 12px 48px rgba(200, 90, 90, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 0 0 1px rgba(107, 155, 122, 0.08);
 }
 
 .glow-icon {
   position: relative;
+  animation: float 6s ease-in-out infinite;
 }
 
 .glow-icon::after {
   content: '';
   position: absolute;
-  inset: -30%;
+  inset: -40%;
   border-radius: 999px;
   z-index: -1;
-  background: radial-gradient(circle, rgba(244, 114, 182, 0.45), transparent 70%);
+  background: radial-gradient(circle, rgba(200, 90, 90, 0.25), rgba(107, 155, 122, 0.2), rgba(212, 165, 116, 0.15), transparent 70%);
   opacity: 0.6;
+  filter: blur(25px);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
 }
 
 .countdown-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
 }
 
 .story-card {
-  border-radius: 1rem;
+  border-radius: 1.5rem;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.story-card:hover {
+  border-color: rgba(200, 90, 90, 0.3);
+  box-shadow: 0 12px 48px rgba(200, 90, 90, 0.15);
+  transform: translateY(-4px);
 }
 
 .story-card__content {
-  padding: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
 }
 
 .timeline-track {
@@ -64,12 +208,66 @@ body {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(180deg, #22d3ee, #f472b6);
+  background: linear-gradient(180deg, #c85a5a, #6b9b7a, #d4a574);
   opacity: 0.5;
 }
 
+/* 按鈕樣式增強 - 柔和的聖誕節風格 */
+.btn-primary {
+  background: linear-gradient(135deg, #c85a5a 0%, #b84a4a 100%);
+  box-shadow: 
+    0 4px 12px rgba(200, 90, 90, 0.25),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #d67a7a 0%, #c85a5a 100%);
+  box-shadow: 
+    0 6px 20px rgba(200, 90, 90, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #6b9b7a 0%, #5a8a6a 100%);
+  box-shadow: 
+    0 4px 12px rgba(107, 155, 122, 0.25),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #7fb896 0%, #6b9b7a 100%);
+  box-shadow: 
+    0 6px 20px rgba(107, 155, 122, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 輸入框樣式 */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+textarea,
+select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(200, 90, 90, 0.5);
+  box-shadow: 0 0 0 3px rgba(200, 90, 90, 0.1);
+  outline: none;
+}
+
+/* 日曆樣式 */
 .rdp {
-  --rdp-cell-size: 40px;
+  --rdp-cell-size: 44px;
   --rdp-accent-color: #22d3ee;
   --rdp-background-color: transparent;
   color: #e2e8f0;
@@ -78,10 +276,155 @@ body {
 .rdp-day_selected,
 .rdp-day_selected:focus-visible,
 .rdp-day_selected:hover {
-  background-color: #22d3ee;
-  color: #0f172a;
+  background: linear-gradient(135deg, #c85a5a 0%, #b84a4a 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(200, 90, 90, 0.25);
 }
 
 .rdp-day:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(200, 90, 90, 0.15);
+  border-radius: 0.5rem;
+}
+
+/* 滾動條樣式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #c85a5a 0%, #6b9b7a 100%);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #d67a7a 0%, #7fb896 100%);
+}
+
+/* 雪花飄落動畫 - 只往下飄，不旋轉 */
+@keyframes snowfall {
+  0% {
+    transform: translateY(-100vh) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(30px);
+    opacity: 0;
+  }
+}
+
+@keyframes snowfall2 {
+  0% {
+    transform: translateY(-100vh) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) translateX(-25px);
+    opacity: 0;
+  }
+}
+
+@keyframes snowfall3 {
+  0% {
+    transform: translateY(-100vh) translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(100vh) translateX(45px);
+    opacity: 0;
+  }
+}
+
+@keyframes snowfall4 {
+  0% {
+    transform: translateY(-100vh) translateX(0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.7;
+  }
+  95% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(100vh) translateX(-40px);
+    opacity: 0;
+  }
+}
+
+/* 額外的雪花層 - 不同速度和動畫 */
+.snow-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image: 
+    radial-gradient(circle at 5% 9%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 16% 4%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 24% 13%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 33% 7%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 41% 11%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 54% 5%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 62% 14%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 71% 8%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 83% 12%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 92% 6%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 99% 10%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px);
+  background-size: 
+    120px 120px, 130px 130px, 115px 115px, 125px 125px, 120px 120px,
+    130px 130px, 115px 115px, 125px 125px, 120px 120px, 130px 130px,
+    115px 115px, 125px 125px, 118px 118px, 128px 128px;
+  animation: snowfall2 18s linear infinite;
+  animation-delay: -2s;
+  opacity: 0.5;
+}
+
+.snow-layer-fast {
+  background-image: 
+    radial-gradient(circle at 2% 3%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 9% 1%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 17% 6%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 29% 2%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 37% 7%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 46% 4%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 58% 1%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 65% 8%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 76% 3%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 84% 9%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 93% 5%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 98% 2%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px);
+  background-size: 
+    90px 90px, 100px 100px, 85px 85px, 95px 95px, 88px 88px,
+    102px 102px, 87px 87px, 98px 98px, 92px 92px, 96px 96px,
+    89px 89px, 101px 101px, 93px 93px;
+  animation: snowfall3 12s linear infinite;
+  animation-delay: -5s;
+  opacity: 0.4;
 }

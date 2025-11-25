@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { HiOutlineXMark } from 'react-icons/hi2';
 import { fetchReceivers, removeReceiver } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -34,7 +35,7 @@ function ReceiversModal({ countdownId, isOpen, onClose }: ReceiversModalProps) {
           className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
           onClick={onClose}
         >
-          ✕
+          <HiOutlineXMark className="w-6 h-6" />
         </button>
 
         <h3 className="text-2xl font-semibold mb-4">接收者管理</h3>

@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { HiOutlineGift } from 'react-icons/hi2';
 import { loginAccount, registerAccount } from '../store/authSlice';
 import { acceptInvitation } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
@@ -82,12 +83,13 @@ function AuthPage() {
   };
 
   return (
-    <section className="max-w-3xl mx-auto pt-16 px-6">
+    <section className="max-w-3xl mx-auto pt-16 px-6 relative z-10">
       <div className="glass-panel">
         {inviteToken && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl border border-purple-500/30">
-            <p className="text-sm text-center">
-              🎁 你正在接受倒數專案邀請
+          <div className="mb-6 p-4 bg-gradient-to-r from-christmas-red/20 to-christmas-green/20 rounded-2xl border border-christmas-red/30">
+            <p className="text-sm text-center flex items-center justify-center gap-2">
+              <HiOutlineGift className="w-4 h-4" />
+              你正在接受倒數專案邀請
               <br />
               <span className="text-xs text-gray-400">
                 {mode === 'register' ? '註冊後將自動加入專案（你將收到禮物）' : '登入後將自動加入專案'}
@@ -100,14 +102,14 @@ function AuthPage() {
           <button
             type="button"
             onClick={() => setMode('login')}
-            className={`flex-1 py-3 rounded-full ${mode === 'login' ? 'bg-aurora/80 text-slate-900 font-semibold' : 'bg-white/5'}`}
+            className={`flex-1 py-3 rounded-full ${mode === 'login' ? 'bg-christmas-red/80 text-white font-semibold' : 'bg-white/5'}`}
           >
             登入
           </button>
           <button
             type="button"
             onClick={() => setMode('register')}
-            className={`flex-1 py-3 rounded-full ${mode === 'register' ? 'bg-aurora/80 text-slate-900 font-semibold' : 'bg-white/5'}`}
+            className={`flex-1 py-3 rounded-full ${mode === 'register' ? 'bg-christmas-red/80 text-white font-semibold' : 'bg-white/5'}`}
           >
             建立帳號
           </button>
@@ -121,7 +123,7 @@ function AuthPage() {
                 type="text"
                 value={form.name}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: event.target.value })}
-                className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-aurora"
+                className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-christmas-red"
                 placeholder="像是 Aurora"
                 required
               />
@@ -156,7 +158,7 @@ function AuthPage() {
             <div>
               <label className="text-sm text-gray-400">角色</label>
               <div className="flex gap-4 mt-1">
-                <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer ${form.role === 'creator' ? 'border-aurora text-aurora' : 'border-white/10'}`}>
+                <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer ${form.role === 'creator' ? 'border-christmas-red text-christmas-red' : 'border-white/10'}`}>
                   <input
                     type="radio"
                     name="role"
@@ -167,7 +169,7 @@ function AuthPage() {
                   />
                   我是編輯者
                 </label>
-                <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer ${form.role === 'receiver' ? 'border-aurora text-aurora' : 'border-white/10'}`}>
+                <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer ${form.role === 'receiver' ? 'border-christmas-green text-christmas-green' : 'border-white/10'}`}>
                   <input
                     type="radio"
                     name="role"
@@ -185,9 +187,14 @@ function AuthPage() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full py-3 rounded-full bg-gradient-to-r from-aurora to-blush text-slate-900 font-semibold disabled:opacity-70"
+            className="w-full py-3 rounded-full bg-gradient-to-r from-christmas-red to-christmas-green text-white font-semibold disabled:opacity-70 hover:from-christmas-red-light hover:to-christmas-green-light transition-all duration-300"
           >
-            {status === 'loading' ? '處理中...' : mode === 'login' ? '登入' : '立即建立'}
+            {status === 'loading' ? '處理中...' : (
+              <span className="flex items-center gap-2">
+                <HiOutlineGift className="w-4 h-4" />
+                {mode === 'login' ? '登入' : '立即建立'}
+              </span>
+            )}
           </button>
 
           {error && <p className="text-sm text-rose-400 text-center">{error}</p>}
