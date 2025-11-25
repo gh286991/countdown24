@@ -7,7 +7,7 @@ import DayCardEditor from '../components/DayCardEditor';
 import DayCardPreviewPanel from '../components/DayCardPreviewPanel';
 import ReceiversModal from '../components/ReceiversModal';
 import sampleCgScript from '../data/sampleCgScript';
-import { assignReceivers, fetchCountdownDetail, updateCountdown } from '../store/countdownSlice';
+import { assignReceivers, createInvitation, fetchCountdownDetail, updateCountdown } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
 const defaultQrReward = { title: '', message: '', imageUrl: '', qrCode: '' };
@@ -44,6 +44,12 @@ function CreatorEditor() {
     if (!receiverList.length) return;
     dispatch(assignReceivers({ id, receiverEmails: receiverList }));
     setReceiverEmails('');
+  };
+
+  const handleGenerateInvite = async () => {
+    if (!id) throw new Error('No countdown ID');
+    const result = await dispatch(createInvitation(id)).unwrap();
+    return result;
   };
 
   const totalDays = selected ? selected.totalDays || 24 : 24;
@@ -148,6 +154,8 @@ function CreatorEditor() {
         onReceiverEmailsChange={setReceiverEmails}
         onAssign={handleAssign}
         onViewReceivers={() => setShowReceiversModal(true)}
+        onGenerateInvite={handleGenerateInvite}
+        countdownId={id || ''}
       />
 
       {/* 接收者管理 Modal */}

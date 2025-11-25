@@ -130,6 +130,42 @@ export const deleteCountdown = createAsyncThunk(
   },
 );
 
+export const createInvitation = createAsyncThunk(
+  'countdowns/createInvitation',
+  async (countdownId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(`/countdowns/${countdownId}/invite`);
+      return data.invitation;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '生成邀請連結失敗');
+    }
+  },
+);
+
+export const checkInvitation = createAsyncThunk(
+  'countdowns/checkInvitation',
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/invite/check/${token}`);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '檢查邀請失敗');
+    }
+  },
+);
+
+export const acceptInvitation = createAsyncThunk(
+  'countdowns/acceptInvitation',
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(`/countdowns/invite/accept/${token}`);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '接受邀請失敗');
+    }
+  },
+);
+
 const initialState: CountdownState = {
   items: [],
   selected: null,

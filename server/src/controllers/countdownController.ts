@@ -1,8 +1,9 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
-import { Countdowns, Assignments, CountdownDays, Users } from '../db/connection';
+import { Countdowns, Assignments, CountdownDays, Users, Invitations } from '../db/connection';
 import * as countdownService from '../services/countdownService';
 import { normalizeDate, normalizeTotalDays, addDays, generateId } from '../utils/helpers';
+import crypto from 'crypto';
 
 export async function getCountdowns(req: AuthenticatedRequest, res: Response) {
   if (!req.user || !Countdowns || !Assignments) {
@@ -297,5 +298,148 @@ export async function removeReceiver(req: AuthenticatedRequest, res: Response) {
   await Assignments.deleteOne({ countdownId: id, receiverId });
 
   return res.json({ message: 'Receiver removed successfully' });
+}
+
+// 生成邀請連結
+export async function createInvitation(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns || !Invitations) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params; // countdownId
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 生成隨機 token
+  const token = crypto.randomBytes(32).toString('hex');
+  const invitation = {
+    id: generateId('inv'),
+    token,
+    countdownId: id,
+    createdBy: req.user.id,
+    createdAt: new Date().toISOString(),
+    status: 'active', // active, used, expired
+    usedBy: null,
+    usedAt: null,
+  };
+
+  await Invitations.insertOne(invitation);
+
+  return res.json({ 
+    invitation: {
+      id: invitation.id,
+      token: invitation.token,
+      inviteUrl: `/invite/${invitation.token}`,
+    }
+  });
+}
+
+// 檢查邀請有效性（公開 API，不需要登入）
+export async function checkInvitation(req: Request, res: Response) {
+  if (!Invitations || !Countdowns) {
+    return res.status(500).json({ message: 'Database not initialized' });
+  }
+
+  const { token } = req.params;
+  const invitation = await Invitations.findOne({ token });
+  
+  if (!invitation) {
+    return res.status(404).json({ message: 'Invitation not found', valid: false });
+  }
+
+  if (invitation.status !== 'active') {
+    return res.json({ 
+      message: 'Invitation already used or expired', 
+      valid: false,
+      status: invitation.status 
+    });
+  }
+
+  // 獲取倒數專案資訊
+  const countdown = await Countdowns.findOne({ id: invitation.countdownId });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found', valid: false });
+  }
+
+  return res.json({ 
+    valid: true,
+    countdown: {
+      id: countdown.id,
+      title: countdown.title,
+      coverImage: countdown.coverImage,
+    }
+  });
+}
+
+// 接受邀請（綁定到倒數專案）
+export async function acceptInvitation(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Invitations || !Countdowns || !Assignments) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { token } = req.params;
+  const invitation = await Invitations.findOne({ token, status: 'active' });
+  
+  if (!invitation) {
+    return res.status(404).json({ message: 'Invitation not found or already used' });
+  }
+
+  // 檢查倒數專案是否存在
+  const countdown = await Countdowns.findOne({ id: invitation.countdownId });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 檢查是否已經綁定
+  const existingAssignment = await Assignments.findOne({ 
+    countdownId: invitation.countdownId, 
+    receiverId: req.user.id 
+  });
+
+  if (existingAssignment) {
+    // 已經綁定，更新邀請狀態
+    await Invitations.updateOne(
+      { token },
+      { $set: { status: 'used', usedBy: req.user.id, usedAt: new Date().toISOString() } }
+    );
+    return res.json({ 
+      message: 'Already assigned',
+      assignment: existingAssignment 
+    });
+  }
+
+  // 建立新的 assignment
+  const assignment = {
+    id: generateId('asgn'),
+    countdownId: invitation.countdownId,
+    receiverId: req.user.id,
+    status: 'active',
+    unlockedOn: new Date().toISOString(),
+  };
+
+  await Assignments.insertOne(assignment);
+
+  // 更新倒數專案的 recipientIds
+  const recipientIds = countdown.recipientIds || [];
+  if (!recipientIds.includes(req.user.id)) {
+    recipientIds.push(req.user.id);
+    await Countdowns.updateOne(
+      { id: invitation.countdownId },
+      { $set: { recipientIds } }
+    );
+  }
+
+  // 更新邀請狀態
+  await Invitations.updateOne(
+    { token },
+    { $set: { status: 'used', usedBy: req.user.id, usedAt: new Date().toISOString() } }
+  );
+
+  return res.json({ 
+    message: 'Invitation accepted',
+    assignment 
+  });
 }
 

@@ -79,6 +79,30 @@ export const bootstrapSession = createAsyncThunk(
   },
 );
 
+export const upgradeToCreator = createAsyncThunk(
+  'auth/upgradeToCreator',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post('/auth/upgrade-to-creator');
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '升級失敗');
+    }
+  },
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (profile: { name: string; avatar?: string; bio?: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.put('/auth/profile', profile);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '更新失敗');
+    }
+  },
+);
+
 const initialState: AuthState = {
   token: getToken(),
   user: null,
@@ -150,6 +174,16 @@ const authSlice = createSlice({
       .addCase(bootstrapSession.rejected, (state, action) => {
         state.status = 'failed';
         state.error = (action.payload as string) || '初始化失敗';
+      })
+      .addCase(upgradeToCreator.fulfilled, (state, action) => {
+        if (action.payload?.user) {
+          state.user = action.payload.user;
+        }
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        if (action.payload?.user) {
+          state.user = action.payload.user;
+        }
       });
   },
 });

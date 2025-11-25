@@ -21,11 +21,12 @@ function ReceiverExperience() {
 
   // 所有 Hooks 必須在條件返回之前調用
   const countdown = selected?.countdown || null;
+  const creator = selected?.creator || null;
   
   const cards = useMemo(
     () => {
       if (!countdown) return [];
-      return (countdown.dayCards || []).map((card) => ({
+      return (countdown.dayCards || []).map((card: any) => ({
         ...card,
         locked: card.day > (countdown.availableDay || 0),
       }));
@@ -33,8 +34,7 @@ function ReceiverExperience() {
     [countdown],
   );
   
-  const firstUnlockedDay = useMemo(() => cards.find((card) => !card.locked)?.day || null, [cards]);
-  const effectiveActiveDay = activeDay ?? firstUnlockedDay;
+  const firstUnlockedDay = useMemo(() => cards.find((card: any) => !card.locked)?.day || null, [cards]);
   const [modalDay, setModalDay] = useState<number | null>(null);
 
   useEffect(() => {
@@ -61,11 +61,27 @@ function ReceiverExperience() {
         <p className="text-xs uppercase tracking-[0.4em] text-gray-400">你收到的倒數</p>
         <h2 className="text-4xl font-semibold">{countdown.title}</h2>
         <p className="text-gray-300">{countdown.description}</p>
+        
+        {/* 創建者資訊 */}
+        {creator && (
+          <div className="flex items-center justify-center gap-2 pt-2">
+            {creator.avatar ? (
+              <img src={creator.avatar} alt={creator.name} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-aurora/20 flex items-center justify-center text-sm text-aurora font-semibold">
+                {creator.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="text-sm text-gray-400">
+              來自 <span className="text-aurora font-semibold">{creator.name}</span> 的禮物
+            </span>
+          </div>
+        )}
       </div>
       <img src={countdown.coverImage} alt={countdown.title} className="w-full h-80 object-cover rounded-3xl" />
       <DayTimeline total={countdown.totalDays} current={countdown.availableDay} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((card) => (
+        {cards.map((card: any) => (
           <button
             key={`receiver-card-${card.day}`}
             type="button"

@@ -1,10 +1,10 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
-import { Assignments, Countdowns } from '../db/connection';
+import { Assignments, Countdowns, Users } from '../db/connection';
 import * as countdownService from '../services/countdownService';
 
 export async function getInbox(req: AuthenticatedRequest, res: Response) {
-  if (!req.user || !Assignments || !Countdowns) {
+  if (!req.user || !Assignments || !Countdowns || !Users) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
@@ -12,19 +12,34 @@ export async function getInbox(req: AuthenticatedRequest, res: Response) {
   const countdownIds = assignments.map((assignment) => assignment.countdownId);
   const countdownDocs = await Countdowns.find({ id: { $in: countdownIds } }).toArray();
   const hydrated = await countdownService.attachDayCardsToMany(countdownDocs);
+  
+  // 獲取所有創建者資訊
+  const ownerIds = [...new Set(countdownDocs.map((doc) => doc.ownerId))];
+  const owners = await Users.find({ id: { $in: ownerIds } }).toArray();
+  const ownerMap = new Map(owners.map((owner) => [owner.id, {
+    id: owner.id,
+    name: owner.name,
+    email: owner.email,
+    avatar: owner.avatar,
+  }]));
+  
   const map = new Map(hydrated.map((doc) => [doc.id, doc]));
-  const items = assignments.map((assignment) => ({
-    id: assignment.id,
-    status: assignment.status,
-    unlockedOn: assignment.unlockedOn,
-    countdown: map.has(assignment.countdownId) ? countdownService.countdownSummary(map.get(assignment.countdownId)) : null,
-  }));
+  const items = assignments.map((assignment) => {
+    const countdown = map.get(assignment.countdownId);
+    return {
+      id: assignment.id,
+      status: assignment.status,
+      unlockedOn: assignment.unlockedOn,
+      countdown: countdown ? countdownService.countdownSummary(countdown) : null,
+      creator: countdown ? ownerMap.get(countdown.ownerId) || null : null,
+    };
+  });
 
   return res.json({ items });
 }
 
 export async function getReceiverCountdown(req: AuthenticatedRequest, res: Response) {
-  if (!req.user || !Assignments || !Countdowns) {
+  if (!req.user || !Assignments || !Countdowns || !Users) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
@@ -39,8 +54,21 @@ export async function getReceiverCountdown(req: AuthenticatedRequest, res: Respo
     return res.status(404).json({ message: 'Countdown not found' });
   }
 
+  // 獲取創建者資訊
+  const creator = await Users.findOne({ id: countdown.ownerId });
+  const creatorInfo = creator ? {
+    id: creator.id,
+    name: creator.name,
+    email: creator.email,
+    avatar: creator.avatar,
+  } : null;
+
   const countdownWithCards = await countdownService.attachDayCards(countdown);
-  return res.json({ assignment, countdown: countdownService.withAvailableContent(countdownWithCards) });
+  return res.json({ 
+    assignment, 
+    countdown: countdownService.withAvailableContent(countdownWithCards),
+    creator: creatorInfo,
+  });
 }
 
 export async function getReceiverDayContent(req: AuthenticatedRequest, res: Response) {

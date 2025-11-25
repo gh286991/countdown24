@@ -1,7 +1,8 @@
 import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginAccount, registerAccount } from '../store/authSlice';
+import { acceptInvitation } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
 interface FormData {
@@ -19,27 +20,61 @@ const initialForm: FormData = {
 };
 
 function AuthPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState<FormData>(initialForm);
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  const urlMode = searchParams.get('mode') as 'login' | 'register' | null;
+  
+  const [mode, setMode] = useState<'login' | 'register'>(urlMode || 'login');
+  const [form, setForm] = useState<FormData>({
+    ...initialForm,
+    // 如果有邀請 token，預設角色為 receiver
+    role: inviteToken ? 'receiver' : 'creator',
+  });
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { status, user, error } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (user) {
+    if (user && !inviteToken) {
       navigate(user.role === 'creator' ? '/creator' : '/receiver');
     }
-  }, [user, navigate]);
+  }, [user, navigate, inviteToken]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       if (mode === 'register') {
         const result = await dispatch(registerAccount(form)).unwrap();
-        navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+        
+        // 如果有邀請 token，註冊後自動接受邀請
+        if (inviteToken) {
+          try {
+            await dispatch(acceptInvitation(inviteToken)).unwrap();
+            alert('註冊成功並已加入倒數專案！');
+            navigate('/receiver');
+          } catch (inviteError: any) {
+            alert(inviteError || '接受邀請失敗，但帳號已註冊成功');
+            navigate('/receiver');
+          }
+        } else {
+          navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+        }
       } else {
         const result = await dispatch(loginAccount({ email: form.email, password: form.password })).unwrap();
-        navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+        
+        // 如果有邀請 token，登入後自動接受邀請
+        if (inviteToken) {
+          try {
+            await dispatch(acceptInvitation(inviteToken)).unwrap();
+            alert('登入成功並已加入倒數專案！');
+            navigate('/receiver');
+          } catch (inviteError: any) {
+            alert(inviteError || '接受邀請失敗');
+            navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+          }
+        } else {
+          navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+        }
       }
     } catch (submitError) {
       console.error('Auth error', submitError);
@@ -49,6 +84,18 @@ function AuthPage() {
   return (
     <section className="max-w-3xl mx-auto pt-16 px-6">
       <div className="glass-panel">
+        {inviteToken && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl border border-purple-500/30">
+            <p className="text-sm text-center">
+              🎁 你正在接受倒數專案邀請
+              <br />
+              <span className="text-xs text-gray-400">
+                {mode === 'register' ? '註冊後將自動加入專案（你將收到禮物）' : '登入後將自動加入專案'}
+              </span>
+            </p>
+          </div>
+        )}
+        
         <div className="flex gap-6">
           <button
             type="button"
@@ -105,7 +152,7 @@ function AuthPage() {
             />
           </div>
 
-          {mode === 'register' && (
+          {mode === 'register' && !inviteToken && (
             <div>
               <label className="text-sm text-gray-400">角色</label>
               <div className="flex gap-4 mt-1">
