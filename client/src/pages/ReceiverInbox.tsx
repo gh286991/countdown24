@@ -3,11 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import ReceiverCard from '../components/ReceiverCard';
 import { fetchReceiverInbox } from '../store/receiverSlice';
+import type { RootState, AppDispatch } from '../store';
 
 function ReceiverInbox() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { inbox, status } = useSelector((state) => state.receiver);
+  const { inbox, status } = useSelector((state: RootState) => state.receiver);
 
   useEffect(() => {
     dispatch(fetchReceiverInbox());
@@ -21,11 +22,11 @@ function ReceiverInbox() {
       </div>
       {status === 'loading' && <p className="text-gray-400">載入中...</p>}
       <div className="space-y-4">
-        {inbox.map((assignment) => (
+        {inbox.map((assignment: any) => (
           <ReceiverCard
             key={assignment.id}
             assignment={assignment}
-            onOpen={(item) => navigate(`/receiver/experience/${item.id}`)}
+            onOpen={(item: any) => navigate(`/receiver/experience/${item.id}`)}
           />
         ))}
       </div>
@@ -34,3 +35,4 @@ function ReceiverInbox() {
 }
 
 export default ReceiverInbox;
+

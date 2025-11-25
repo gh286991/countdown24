@@ -1,4 +1,9 @@
-function ReceiverCard({ assignment, onOpen }) {
+interface ReceiverCardProps {
+  assignment: any;
+  onOpen?: (assignment: any) => void;
+}
+
+function ReceiverCard({ assignment, onOpen }: ReceiverCardProps) {
   const { countdown } = assignment;
   if (!countdown) return null;
   return (
@@ -20,3 +25,4 @@ function ReceiverCard({ assignment, onOpen }) {
 }
 
 export default ReceiverCard;
+

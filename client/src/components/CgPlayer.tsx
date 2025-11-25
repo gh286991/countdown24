@@ -8,7 +8,40 @@ const COVER_LABEL = 'cover';
 const ENDING_LABEL = 'ending';
 const INITIAL_BRANCH_ID = 'Story';
 
-function CgPlayer({ script }) {
+interface CgScene {
+  id: string;
+  label?: string;
+  background?: string;
+  dialogue?: Array<{ speaker?: string; text: string }>;
+  choices?: Array<{ label: string; next: string }>;
+  next?: string;
+  accent?: string;
+}
+
+interface CgScript {
+  cover?: {
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    image?: string;
+    background?: string;
+    cta?: string;
+  };
+  startScene?: string;
+  scenes?: Array<CgScene>;
+  ending?: {
+    title?: string;
+    message?: string;
+    image?: string;
+    cta?: string;
+  };
+}
+
+interface CgPlayerProps {
+  script: CgScript | null;
+}
+
+function CgPlayer({ script }: CgPlayerProps) {
   const config = useMemo(() => buildGameConfig(script), [script]);
 
   if (!config) {
@@ -45,7 +78,7 @@ function CgPlayer({ script }) {
   );
 }
 
-function buildGameConfig(script) {
+function buildGameConfig(script: CgScript | null) {
   if (!script) return null;
   const scenes = Array.isArray(script.scenes) ? script.scenes.filter((scene) => scene?.id) : [];
   const sceneMap = new Map(scenes.map((scene) => [scene.id, scene]));
@@ -65,7 +98,7 @@ function buildGameConfig(script) {
   return { branches };
 }
 
-function renderCover(cover, startLabel, hasEnding) {
+function renderCover(cover: CgScript['cover'], startLabel: string | null, hasEnding: boolean) {
   if (!cover && !startLabel) return null;
   const subtitle = cover?.subtitle || '24-DAY COUNTDOWN';
   const title = cover?.title || 'CG PLAYBACK';
@@ -75,7 +108,7 @@ function renderCover(cover, startLabel, hasEnding) {
 
   return (
     <Label label={COVER_LABEL} key={COVER_LABEL}>
-      {(cover?.image || cover?.background) && <Scene src={cover.image || cover.background} durationMs={800} />}
+      {(cover?.image || cover?.background) && <Scene src={cover.image || cover.background || ''} durationMs={800} />}
       <Say
         placement="middle"
         scheme="dark"
@@ -97,7 +130,7 @@ function renderCover(cover, startLabel, hasEnding) {
           choices={[
             {
               label: cta,
-              onClick: (ctx) => ctx.goToStatement(targetLabel),
+              onClick: (ctx: any) => ctx.goToStatement(targetLabel),
             },
           ]}
         />
@@ -106,7 +139,12 @@ function renderCover(cover, startLabel, hasEnding) {
   );
 }
 
-function renderScene(scene, sceneMap, fallbackNextId, hasEnding) {
+function renderScene(
+  scene: CgScene,
+  sceneMap: Map<string, CgScene>,
+  fallbackNextId: string | undefined,
+  hasEnding: boolean,
+) {
   const nextLabel = resolveNextLabel(scene, sceneMap, fallbackNextId, hasEnding);
   const lines = Array.isArray(scene.dialogue) ? scene.dialogue : [];
   const choices = Array.isArray(scene.choices) ? scene.choices : [];
@@ -134,7 +172,7 @@ function renderScene(scene, sceneMap, fallbackNextId, hasEnding) {
           scheme="dark"
           choices={choices.map((choice, idx) => ({
             label: choice.label || `選項 ${idx + 1}`,
-            onClick: (ctx) => {
+            onClick: (ctx: any) => {
               const target = resolveChoiceTarget(choice.next, sceneMap, nextLabel, hasEnding);
               if (target) {
                 ctx.goToStatement(target);
@@ -151,7 +189,7 @@ function renderScene(scene, sceneMap, fallbackNextId, hasEnding) {
           choices={[
             {
               label: '繼續',
-              onClick: (ctx) => ctx.goToStatement(nextLabel),
+              onClick: (ctx: any) => ctx.goToStatement(nextLabel),
             },
           ]}
         />
@@ -160,7 +198,7 @@ function renderScene(scene, sceneMap, fallbackNextId, hasEnding) {
   );
 }
 
-function renderEnding(ending) {
+function renderEnding(ending: CgScript['ending']) {
   if (!ending) return null;
   return (
     <Label label={ENDING_LABEL} key={ENDING_LABEL}>
@@ -180,7 +218,7 @@ function renderEnding(ending) {
         choices={[
           {
             label: ending.cta || '回到封面',
-            onClick: (ctx) => ctx.goToStatement(COVER_LABEL),
+            onClick: (ctx: any) => ctx.goToStatement(COVER_LABEL),
           },
         ]}
       />
@@ -188,7 +226,12 @@ function renderEnding(ending) {
   );
 }
 
-function resolveNextLabel(scene, sceneMap, fallbackNextId, hasEnding) {
+function resolveNextLabel(
+  scene: CgScene,
+  sceneMap: Map<string, CgScene>,
+  fallbackNextId: string | undefined,
+  hasEnding: boolean,
+): string {
   if (scene?.next && (sceneMap.has(scene.next) || scene.next === COVER_LABEL || scene.next === ENDING_LABEL)) {
     return scene.next;
   }
@@ -199,7 +242,12 @@ function resolveNextLabel(scene, sceneMap, fallbackNextId, hasEnding) {
   return COVER_LABEL;
 }
 
-function resolveChoiceTarget(next, sceneMap, defaultLabel, hasEnding) {
+function resolveChoiceTarget(
+  next: string | undefined,
+  sceneMap: Map<string, CgScene>,
+  defaultLabel: string | undefined,
+  hasEnding: boolean,
+): string | undefined {
   if (next && (sceneMap.has(next) || next === COVER_LABEL || next === ENDING_LABEL)) {
     return next;
   }
@@ -210,3 +258,4 @@ function resolveChoiceTarget(next, sceneMap, defaultLabel, hasEnding) {
 }
 
 export default CgPlayer;
+

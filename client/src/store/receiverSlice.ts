@@ -1,5 +1,16 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import api from '../api/client';
+
+interface ReceiverState {
+  inbox: any[];
+  selected: any | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  experienceStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  dayStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  dayContent: any | null;
+  error: string | null;
+  dayError: string | null;
+}
 
 export const fetchReceiverInbox = createAsyncThunk(
   'receiver/fetchInbox',
@@ -7,7 +18,7 @@ export const fetchReceiverInbox = createAsyncThunk(
     try {
       const { data } = await api.get('/receiver/inbox');
       return data.items || [];
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '無法取得收禮清單');
     }
   },
@@ -15,11 +26,11 @@ export const fetchReceiverInbox = createAsyncThunk(
 
 export const fetchReceiverExperience = createAsyncThunk(
   'receiver/fetchExperience',
-  async (assignmentId, { rejectWithValue }) => {
+  async (assignmentId: string, { rejectWithValue }) => {
     try {
       const { data } = await api.get(`/receiver/countdowns/${assignmentId}`);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '查不到指定的禮物');
     }
   },
@@ -27,17 +38,17 @@ export const fetchReceiverExperience = createAsyncThunk(
 
 export const fetchReceiverDayContent = createAsyncThunk(
   'receiver/fetchDayContent',
-  async ({ assignmentId, day }, { rejectWithValue }) => {
+  async ({ assignmentId, day }: { assignmentId: string; day: number }, { rejectWithValue }) => {
     try {
       const { data } = await api.get(`/receiver/countdowns/${assignmentId}/days/${day}`);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '無法取得此日內容');
     }
   },
 );
 
-const initialState = {
+const initialState: ReceiverState = {
   inbox: [],
   selected: null,
   status: 'idle',
@@ -69,13 +80,13 @@ const receiverSlice = createSlice({
       .addCase(fetchReceiverInbox.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(fetchReceiverInbox.fulfilled, (state, action) => {
+      .addCase(fetchReceiverInbox.fulfilled, (state, action: PayloadAction<any[]>) => {
         state.status = 'succeeded';
         state.inbox = action.payload;
       })
       .addCase(fetchReceiverInbox.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = (action.payload as string) || null;
       })
       .addCase(fetchReceiverExperience.pending, (state) => {
         state.experienceStatus = 'loading';
@@ -89,7 +100,7 @@ const receiverSlice = createSlice({
       })
       .addCase(fetchReceiverExperience.rejected, (state, action) => {
         state.experienceStatus = 'failed';
-        state.error = action.payload;
+        state.error = (action.payload as string) || null;
       })
       .addCase(fetchReceiverDayContent.pending, (state) => {
         state.dayStatus = 'loading';
@@ -101,10 +112,11 @@ const receiverSlice = createSlice({
       })
       .addCase(fetchReceiverDayContent.rejected, (state, action) => {
         state.dayStatus = 'failed';
-        state.dayError = action.payload;
+        state.dayError = (action.payload as string) || null;
       });
   },
 });
 
 export const { clearExperience, clearDayContent } = receiverSlice.actions;
 export default receiverSlice.reducer;
+

@@ -1,9 +1,13 @@
 import compression from 'compression';
 import cors from 'cors';
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import morgan from 'morgan';
 import crypto from 'crypto';
 import { MongoClient, Db, Collection } from 'mongodb';
+
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 
 const app = express();
 const PORT: number = Number(process.env.PORT) || 4000;

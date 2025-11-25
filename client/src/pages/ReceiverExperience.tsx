@@ -5,12 +5,13 @@ import { QRCodeSVG } from 'qrcode.react';
 import DayTimeline from '../components/DayTimeline';
 import CgPlayer from '../components/CgPlayer';
 import { clearDayContent, fetchReceiverDayContent, fetchReceiverExperience } from '../store/receiverSlice';
+import type { RootState, AppDispatch } from '../store';
 
 function ReceiverExperience() {
   const { assignmentId } = useParams();
-  const dispatch = useDispatch();
-  const { selected, experienceStatus, dayStatus, dayContent } = useSelector((state) => state.receiver);
-  const [activeDay, setActiveDay] = useState(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { selected, experienceStatus, dayStatus, dayContent } = useSelector((state: RootState) => state.receiver);
+  const [activeDay, setActiveDay] = useState<number | null>(null);
 
   useEffect(() => {
     if (assignmentId) {
@@ -34,7 +35,7 @@ function ReceiverExperience() {
   
   const firstUnlockedDay = useMemo(() => cards.find((card) => !card.locked)?.day || null, [cards]);
   const effectiveActiveDay = activeDay ?? firstUnlockedDay;
-  const [modalDay, setModalDay] = useState(null);
+  const [modalDay, setModalDay] = useState<number | null>(null);
 
   useEffect(() => {
     if (!modalDay) {

@@ -1,17 +1,46 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import api from '../api/client';
 
 const TOKEN_KEY = 'countdown24::token';
 
-const getToken = () => window.localStorage.getItem(TOKEN_KEY);
+const getToken = (): string | null => window.localStorage.getItem(TOKEN_KEY);
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'creator' | 'receiver';
+  avatar?: string;
+  bio?: string;
+}
+
+interface AuthState {
+  token: string | null;
+  user: User | null;
+  overview: any | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
+}
+
+interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  role?: 'creator' | 'receiver';
+}
+
+interface LoginPayload {
+  email: string;
+  password: string;
+}
 
 export const registerAccount = createAsyncThunk(
   'auth/register',
-  async (payload, { rejectWithValue }) => {
+  async (payload: RegisterPayload, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/auth/register', payload);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '無法建立帳戶');
     }
   },
@@ -19,11 +48,11 @@ export const registerAccount = createAsyncThunk(
 
 export const loginAccount = createAsyncThunk(
   'auth/login',
-  async (payload, { rejectWithValue }) => {
+  async (payload: LoginPayload, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/auth/login', payload);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '登入失敗');
     }
   },
@@ -40,7 +69,7 @@ export const bootstrapSession = createAsyncThunk(
     try {
       const { data } = await api.get('/me');
       return data;
-    } catch (error) {
+    } catch (error: any) {
       if (error?.response?.status === 401) {
         window.localStorage.removeItem(TOKEN_KEY);
         return { user: null };
@@ -50,7 +79,7 @@ export const bootstrapSession = createAsyncThunk(
   },
 );
 
-const initialState = {
+const initialState: AuthState = {
   token: getToken(),
   user: null,
   overview: null,
@@ -68,7 +97,7 @@ const authSlice = createSlice({
       state.overview = null;
       window.localStorage.removeItem(TOKEN_KEY);
     },
-    setUserOverview(state, action) {
+    setUserOverview(state, action: PayloadAction<any>) {
       state.overview = action.payload;
     },
   },
@@ -87,7 +116,7 @@ const authSlice = createSlice({
       })
       .addCase(registerAccount.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload || '註冊失敗';
+        state.error = (action.payload as string) || '註冊失敗';
       })
       .addCase(loginAccount.pending, (state) => {
         state.status = 'loading';
@@ -101,7 +130,7 @@ const authSlice = createSlice({
       })
       .addCase(loginAccount.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload || '登入失敗';
+        state.error = (action.payload as string) || '登入失敗';
       })
       .addCase(bootstrapSession.pending, (state) => {
         state.status = 'loading';
@@ -120,10 +149,11 @@ const authSlice = createSlice({
       })
       .addCase(bootstrapSession.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload || '初始化失敗';
+        state.error = (action.payload as string) || '初始化失敗';
       });
   },
 });
 
 export const { logout, setUserOverview } = authSlice.actions;
 export default authSlice.reducer;
+

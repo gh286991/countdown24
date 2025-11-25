@@ -1,8 +1,15 @@
+import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import type { RootState } from '../store';
 
-const ProtectedRoute = ({ children, allow }) => {
-  const { user, status } = useSelector((state) => state.auth);
+interface ProtectedRouteProps {
+  children: ReactNode;
+  allow?: ('creator' | 'receiver')[];
+}
+
+const ProtectedRoute = ({ children, allow }: ProtectedRouteProps) => {
+  const { user, status } = useSelector((state: RootState) => state.auth);
 
   if (status === 'loading') {
     return (
@@ -21,7 +28,8 @@ const ProtectedRoute = ({ children, allow }) => {
     return <Navigate to={fallback} replace />;
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
+

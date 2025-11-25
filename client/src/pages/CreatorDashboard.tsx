@@ -1,21 +1,22 @@
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import CountdownCard from '../components/CountdownCard';
 import { createCountdown, deleteCountdown, fetchCreatorCountdowns } from '../store/countdownSlice';
+import type { RootState, AppDispatch } from '../store';
 
 function CreatorDashboard() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { items, status } = useSelector((state) => state.countdowns);
-  const { user } = useSelector((state) => state.auth);
+  const { items, status } = useSelector((state: RootState) => state.countdowns);
+  const { user } = useSelector((state: RootState) => state.auth);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [recipientEmails, setRecipientEmails] = useState('');
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState<Date>(new Date());
   const [totalDays, setTotalDays] = useState(24);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +27,7 @@ function CreatorDashboard() {
     }
   }, [dispatch, user]);
 
-  const handleCreate = async (event) => {
+  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!title.trim()) {
       alert('請輸入倒數標題');
@@ -67,11 +68,11 @@ function CreatorDashboard() {
     }
   };
 
-  const handleDeleteCountdown = async (countdown) => {
+  const handleDeleteCountdown = async (countdown: any) => {
     if (!window.confirm(`確定要刪除「${countdown.title}」嗎？`)) return;
     try {
       await dispatch(deleteCountdown(countdown.id)).unwrap();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       alert(error?.message || '刪除失敗，請稍後再試。');
     }
@@ -110,9 +111,9 @@ function CreatorDashboard() {
               <CountdownCard
                 key={item.id}
                 item={item}
-                onSelect={(selected) => navigate(`/creator/countdowns/${selected.id}`)}
+                onSelect={(selected: any) => navigate(`/creator/countdowns/${selected.id}`)}
                 onDelete={handleDeleteCountdown}
-                onDaySelect={(selectedCountdown, day) => navigate(`/creator/countdowns/${selectedCountdown.id}?day=${day}`)}
+                onDaySelect={(selectedCountdown: any, day: number) => navigate(`/creator/countdowns/${selectedCountdown.id}?day=${day}`)}
               />
             ))}
           </div>
@@ -135,19 +136,19 @@ function CreatorDashboard() {
                   placeholder="倒數標題"
                   className="w-full bg-white/5 rounded-xl px-3 py-2"
                   value={title}
-                  onChange={(event) => setTitle(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setTitle(event.target.value)}
                   required
                 />
                 <textarea
                   placeholder="描述"
                   className="w-full bg-white/5 rounded-xl px-3 py-2 h-24"
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value)}
                 />
                 <div className="space-y-2">
                   <p className="text-sm text-gray-400">選擇開始日期</p>
                   <div className="rounded-2xl bg-white/5 p-3">
-                    <DayPicker mode="single" selected={startDate} onSelect={setStartDate} styles={{ caption: { color: 'white' } }} />
+                    <DayPicker mode="single" selected={startDate} onSelect={(date) => setStartDate(date || new Date())} styles={{ caption: { color: 'white' } }} />
                   </div>
                   {startDate && (
                     <p className="text-xs text-gray-400">
@@ -163,7 +164,7 @@ function CreatorDashboard() {
                     min={1}
                     max={90}
                     value={totalDays}
-                    onChange={(event) => setTotalDays(Number(event.target.value) || 1)}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setTotalDays(Number(event.target.value) || 1)}
                     className="mt-1 w-full bg-white/5 rounded-xl px-3 py-2"
                   />
                 </div>
@@ -171,7 +172,7 @@ function CreatorDashboard() {
                   placeholder="接收者 Email（以逗號分隔）"
                   className="w-full bg-white/5 rounded-xl px-3 py-2"
                   value={recipientEmails}
-                  onChange={(event) => setRecipientEmails(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setRecipientEmails(event.target.value)}
                 />
                 <div className="flex justify-end gap-3 pt-2">
                   <button
@@ -199,3 +200,4 @@ function CreatorDashboard() {
 }
 
 export default CreatorDashboard;
+

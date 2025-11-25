@@ -1,14 +1,23 @@
-const typeBadge = {
+import { KeyboardEvent } from 'react';
+
+const typeBadge: Record<string, string> = {
   story: '混合專案',
   qr: 'QR 禮物庫',
 };
 
-function CountdownCard({ item, onSelect, onDelete, onDaySelect }) {
+interface CountdownCardProps {
+  item: any;
+  onSelect?: (item: any) => void;
+  onDelete?: (item: any) => void;
+  onDaySelect?: (item: any, day: number) => void;
+}
+
+function CountdownCard({ item, onSelect, onDelete, onDaySelect }: CountdownCardProps) {
   const handleSelect = () => {
     onSelect?.(item);
   };
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handleSelect();
@@ -59,7 +68,7 @@ function CountdownCard({ item, onSelect, onDelete, onDaySelect }) {
                   description: '',
                   coverImage: '',
                 }))
-            ).map((card) => (
+            ).map((card: any) => (
               <button
                 key={`${item.id}-day-${card.day}`}
                 type="button"
@@ -93,3 +102,4 @@ function CountdownCard({ item, onSelect, onDelete, onDaySelect }) {
 }
 
 export default CountdownCard;
+

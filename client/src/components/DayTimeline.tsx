@@ -1,4 +1,9 @@
-function DayTimeline({ total = 24, current = 0 }) {
+interface DayTimelineProps {
+  total?: number;
+  current?: number;
+}
+
+function DayTimeline({ total = 24, current = 0 }: DayTimelineProps) {
   const percentage = Math.round((current / total) * 100);
   return (
     <div className="glass-panel">
@@ -20,3 +25,4 @@ function DayTimeline({ total = 24, current = 0 }) {
 }
 
 export default DayTimeline;
+

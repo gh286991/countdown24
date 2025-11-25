@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginAccount, registerAccount } from '../store/authSlice';
+import type { RootState, AppDispatch } from '../store';
 
-const initialForm = {
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+  role: 'creator' | 'receiver';
+}
+
+const initialForm: FormData = {
   name: '',
   email: '',
   password: '',
@@ -11,11 +19,11 @@ const initialForm = {
 };
 
 function AuthPage() {
-  const [mode, setMode] = useState('login');
-  const [form, setForm] = useState(initialForm);
-  const dispatch = useDispatch();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [form, setForm] = useState<FormData>(initialForm);
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { status, user, error } = useSelector((state) => state.auth);
+  const { status, user, error } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     if (user) {
@@ -23,7 +31,7 @@ function AuthPage() {
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       if (mode === 'register') {
@@ -65,7 +73,7 @@ function AuthPage() {
               <input
                 type="text"
                 value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: event.target.value })}
                 className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-aurora"
                 placeholder="像是 Aurora"
                 required
@@ -78,7 +86,7 @@ function AuthPage() {
             <input
               type="email"
               value={form.email}
-              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, email: event.target.value })}
               className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-aurora"
               placeholder="you@example.com"
               required
@@ -90,7 +98,7 @@ function AuthPage() {
             <input
               type="password"
               value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
               className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-aurora"
               placeholder="至少 8 碼"
               required
@@ -143,3 +151,4 @@ function AuthPage() {
 }
 
 export default AuthPage;
+

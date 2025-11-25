@@ -1,4 +1,16 @@
-function RewardGrid({ rewards = [] }) {
+interface Reward {
+  day: number;
+  title: string;
+  message: string;
+  imageUrl: string;
+  qrCode: string;
+}
+
+interface RewardGridProps {
+  rewards?: Reward[];
+}
+
+function RewardGrid({ rewards = [] }: RewardGridProps) {
   if (!rewards.length) {
     return <p className="text-gray-400">尚未新增 QR 禮物。</p>;
   }
@@ -33,3 +45,4 @@ function RewardGrid({ rewards = [] }) {
 }
 
 export default RewardGrid;
+

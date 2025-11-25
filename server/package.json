@@ -7,9 +7,9 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "NODE_ENV=development nodemon src/server.js",
-    "start": "NODE_ENV=production node src/server.js",
-    "build": "echo 'Server build step not required'"
+    "dev": "NODE_ENV=development nodemon --exec ts-node --esm src/server.ts",
+    "start": "NODE_ENV=production node dist/server.js",
+    "build": "tsc"
   },
   "dependencies": {
     "compression": "^1.7.4",
@@ -19,6 +19,13 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.10.1",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

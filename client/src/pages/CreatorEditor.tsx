@@ -1,11 +1,12 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useSearchParams } from 'react-router-dom';
 import CgPlayer from '../components/CgPlayer';
 import DayTimeline from '../components/DayTimeline';
 import sampleCgScript from '../data/sampleCgScript';
 import { assignReceivers, fetchCountdownDetail, updateCountdown } from '../store/countdownSlice';
+import type { RootState, AppDispatch } from '../store';
 
 const defaultQrReward = { title: '', message: '', imageUrl: '', qrCode: '' };
 const emptyCard = { day: 1, title: '', description: '', coverImage: '', type: 'story', qrReward: { ...defaultQrReward } };
@@ -14,8 +15,8 @@ const emptyReward = { day: 1, availableOn: '', title: '', message: '', imageUrl:
 function CreatorEditor() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const dispatch = useDispatch();
-  const { selected, detailStatus, assignments } = useSelector((state) => state.countdowns);
+  const dispatch = useDispatch<AppDispatch>();
+  const { selected, detailStatus, assignments } = useSelector((state: RootState) => state.countdowns);
   const [receiverEmails, setReceiverEmails] = useState('');
   const [cgScriptDraft, setCgScriptDraft] = useState(JSON.stringify(sampleCgScript, null, 2));
   const [activeDay, setActiveDay] = useState(Number(searchParams.get('day')) || 1);
@@ -84,7 +85,7 @@ useEffect(() => {
     return <p className="text-center text-gray-400 py-10">載入倒數內容...</p>;
   }
 
-  const handleDaySelect = (value) => {
+  const handleDaySelect = (value: number) => {
     setActiveDay(value);
     setSearchParams({ day: String(value) });
   };
@@ -128,7 +129,7 @@ useEffect(() => {
     }
   };
 
-  const handleTypeChange = (mode) => {
+  const handleTypeChange = (mode: 'story' | 'qr') => {
     setDayCardDraft((prev) => ({ ...prev, type: mode }));
   };
 
@@ -241,20 +242,20 @@ useEffect(() => {
               type="text"
               placeholder="小卡標題"
               value={dayCardDraft.title}
-              onChange={(event) => setDayCardDraft({ ...dayCardDraft, title: event.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setDayCardDraft({ ...dayCardDraft, title: event.target.value })}
               className="w-full bg-white/5 rounded-xl px-3 py-2"
             />
             <textarea
               placeholder="說明"
               value={dayCardDraft.description}
-              onChange={(event) => setDayCardDraft({ ...dayCardDraft, description: event.target.value })}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDayCardDraft({ ...dayCardDraft, description: event.target.value })}
               className="w-full bg-white/5 rounded-xl px-3 py-2 min-h-[80px]"
             />
             <input
               type="url"
               placeholder="封面圖片 URL"
               value={dayCardDraft.coverImage}
-              onChange={(event) => setDayCardDraft({ ...dayCardDraft, coverImage: event.target.value })}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setDayCardDraft({ ...dayCardDraft, coverImage: event.target.value })}
               className="w-full bg-white/5 rounded-xl px-3 py-2"
             />
             <button
@@ -271,7 +272,7 @@ useEffect(() => {
               <h3 className="text-lg font-semibold">CG JSON 劇本</h3>
               <textarea
                 value={cgScriptDraft}
-                onChange={(event) => setCgScriptDraft(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setCgScriptDraft(event.target.value)}
                 className="w-full bg-black/40 font-mono text-sm rounded-xl px-3 py-3 min-h-[260px] border border-white/10"
               />
               <p className="text-xs text-gray-400">
@@ -286,42 +287,42 @@ useEffect(() => {
                 min={1}
                 max={selected.totalDays || 60}
                 value={rewardDraft.day}
-                onChange={(event) => setRewardDraft({ ...rewardDraft, day: Number(event.target.value) })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setRewardDraft({ ...rewardDraft, day: Number(event.target.value) })}
                 className="w-full bg-white/5 rounded-xl px-3 py-2"
                 placeholder="第幾天"
               />
               <input
                 type="date"
                 value={rewardDraft.availableOn}
-                onChange={(event) => setRewardDraft({ ...rewardDraft, availableOn: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setRewardDraft({ ...rewardDraft, availableOn: event.target.value })}
                 className="w-full bg-white/5 rounded-xl px-3 py-2"
               />
               <input
                 type="text"
                 placeholder="禮物名稱"
                 value={rewardDraft.title}
-                onChange={(event) => setRewardDraft({ ...rewardDraft, title: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setRewardDraft({ ...rewardDraft, title: event.target.value })}
                 className="w-full bg-white/5 rounded-xl px-3 py-2"
               />
               <input
                 type="text"
                 placeholder="訊息"
                 value={rewardDraft.message}
-                onChange={(event) => setRewardDraft({ ...rewardDraft, message: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setRewardDraft({ ...rewardDraft, message: event.target.value })}
                 className="w-full bg-white/5 rounded-xl px-3 py-2"
               />
               <input
                 type="url"
                 placeholder="圖片 URL"
                 value={rewardDraft.imageUrl}
-                onChange={(event) => setRewardDraft({ ...rewardDraft, imageUrl: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setRewardDraft({ ...rewardDraft, imageUrl: event.target.value })}
                 className="w-full bg-white/5 rounded-xl px-3 py-2"
               />
               <input
                 type="text"
                 placeholder="QR 內容 / 序號"
                 value={rewardDraft.qrCode}
-                onChange={(event) => setRewardDraft({ ...rewardDraft, qrCode: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setRewardDraft({ ...rewardDraft, qrCode: event.target.value })}
                 className="w-full bg-white/5 rounded-xl px-3 py-2"
               />
               <button type="button" onClick={handleAddReward} className="w-full py-2 bg-white/10 rounded-xl">
@@ -336,7 +337,7 @@ useEffect(() => {
             <textarea
               placeholder="輸入接收者 Email，逗號分隔"
               value={receiverEmails}
-              onChange={(event) => setReceiverEmails(event.target.value)}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setReceiverEmails(event.target.value)}
               className="w-full bg-white/5 rounded-xl px-3 py-2"
             />
             <button type="button" onClick={handleAssign} className="w-full py-2 bg-aurora/80 rounded-xl text-slate-900 font-semibold">

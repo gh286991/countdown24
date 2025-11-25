@@ -9,10 +9,11 @@ import LandingPage from './pages/LandingPage';
 import ReceiverExperience from './pages/ReceiverExperience';
 import ReceiverInbox from './pages/ReceiverInbox';
 import { bootstrapSession, logout } from './store/authSlice';
+import type { RootState } from './store';
 
 function App() {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     dispatch(bootstrapSession());
@@ -89,3 +90,4 @@ function App() {
 }
 
 export default App;
+

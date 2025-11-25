@@ -1,4 +1,16 @@
-function StoryMoments({ moments = [] }) {
+interface Moment {
+  day: number;
+  imageUrl: string;
+  speaker?: string;
+  lineOne: string;
+  lineTwo: string;
+}
+
+interface StoryMomentsProps {
+  moments?: Moment[];
+}
+
+function StoryMoments({ moments = [] }: StoryMomentsProps) {
   if (!moments.length) {
     return <p className="text-gray-400">尚未設定劇情片段。</p>;
   }
@@ -25,3 +37,4 @@ function StoryMoments({ moments = [] }) {
 }
 
 export default StoryMoments;
+
