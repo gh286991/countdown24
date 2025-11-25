@@ -27,6 +27,8 @@ interface CountdownState {
   error: string | null;
   detailError: string | null;
   assignments: any[];
+  receivers: any[];
+  receiversStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
 export const fetchCreatorCountdowns = createAsyncThunk(
@@ -92,6 +94,30 @@ export const assignReceivers = createAsyncThunk(
   },
 );
 
+export const fetchReceivers = createAsyncThunk(
+  'countdowns/fetchReceivers',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${id}/receivers`);
+      return data.receivers || [];
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得接收者列表');
+    }
+  },
+);
+
+export const removeReceiver = createAsyncThunk(
+  'countdowns/removeReceiver',
+  async ({ id, receiverId }: { id: string; receiverId: string }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/countdowns/${id}/receivers/${receiverId}`);
+      return { receiverId };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '刪除接收者失敗');
+    }
+  },
+);
+
 export const deleteCountdown = createAsyncThunk(
   'countdowns/delete',
   async (id: string, { rejectWithValue }) => {
@@ -112,6 +138,8 @@ const initialState: CountdownState = {
   error: null,
   detailError: null,
   assignments: [],
+  receivers: [],
+  receiversStatus: 'idle',
 };
 
 const countdownSlice = createSlice({
@@ -166,6 +194,19 @@ const countdownSlice = createSlice({
           state.selected = null;
           state.assignments = [];
         }
+      })
+      .addCase(fetchReceivers.pending, (state) => {
+        state.receiversStatus = 'loading';
+      })
+      .addCase(fetchReceivers.fulfilled, (state, action) => {
+        state.receiversStatus = 'succeeded';
+        state.receivers = action.payload;
+      })
+      .addCase(fetchReceivers.rejected, (state) => {
+        state.receiversStatus = 'failed';
+      })
+      .addCase(removeReceiver.fulfilled, (state, action: PayloadAction<{ receiverId: string }>) => {
+        state.receivers = state.receivers.filter((r) => r.receiverId !== action.payload.receiverId);
       });
   },
 });

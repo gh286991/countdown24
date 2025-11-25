@@ -11,6 +11,8 @@ router.post('/', requireAuth, requireRole('creator'), asyncHandler(countdownCont
 router.put('/:id', requireAuth, requireRole('creator'), asyncHandler(countdownController.updateCountdown));
 router.delete('/:id', requireAuth, requireRole('creator'), asyncHandler(countdownController.deleteCountdown));
 router.post('/:id/assign', requireAuth, requireRole('creator'), asyncHandler(countdownController.assignReceivers));
+router.get('/:id/receivers', requireAuth, requireRole('creator'), asyncHandler(countdownController.getReceivers));
+router.delete('/:id/receivers/:receiverId', requireAuth, requireRole('creator'), asyncHandler(countdownController.removeReceiver));
 
 export default router;
 

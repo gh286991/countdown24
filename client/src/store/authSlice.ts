@@ -67,7 +67,7 @@ export const bootstrapSession = createAsyncThunk(
     }
 
     try {
-      const { data } = await api.get('/me');
+      const { data } = await api.get('/auth/me');
       return data;
     } catch (error: any) {
       if (error?.response?.status === 401) {

@@ -11,6 +11,16 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    // SPA fallback - 所有路由都返回 index.html
+    historyApiFallback: true,
+  },
+  // 確保生產環境打包後也能正確處理路由
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
 });
 

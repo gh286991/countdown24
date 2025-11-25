@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
-import { Countdowns, Assignments, CountdownDays } from '../db/connection';
+import { Countdowns, Assignments, CountdownDays, Users } from '../db/connection';
 import * as countdownService from '../services/countdownService';
 import { normalizeDate, normalizeTotalDays, addDays, generateId } from '../utils/helpers';
 
@@ -239,5 +239,63 @@ export async function assignReceivers(req: AuthenticatedRequest, res: Response) 
     countdown: countdownService.countdownSummary({ ...countdownWithCards, recipientIds: mergedRecipients }),
     assignments: assigned,
   });
+}
+
+export async function getReceivers(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns || !Assignments || !Users) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params;
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  const assignments = await Assignments.find({ countdownId: countdown.id }).toArray();
+  
+  // 獲取接收者的完整用戶資訊
+  const receiverIds = assignments.map((assignment) => assignment.receiverId);
+  const users = await Users.find({ id: { $in: receiverIds } }).toArray();
+  const userMap = new Map(users.map((user) => [user.id, user]));
+
+  // 合併 assignment 和用戶資訊
+  const receiversWithInfo = assignments.map((assignment) => {
+    const user = userMap.get(assignment.receiverId);
+    return {
+      id: assignment.id,
+      receiverId: assignment.receiverId,
+      status: assignment.status,
+      unlockedOn: assignment.unlockedOn,
+      user: user ? {
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+      } : null,
+    };
+  });
+
+  return res.json({ receivers: receiversWithInfo });
+}
+
+export async function removeReceiver(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns || !Assignments) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, receiverId } = req.params;
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 從 recipientIds 中移除
+  const updatedRecipients = (countdown.recipientIds || []).filter((rid: string) => rid !== receiverId);
+  await Countdowns.updateOne({ id }, { $set: { recipientIds: updatedRecipients } });
+  
+  // 刪除對應的 assignment
+  await Assignments.deleteOne({ countdownId: id, receiverId });
+
+  return res.json({ message: 'Receiver removed successfully' });
 }
 
