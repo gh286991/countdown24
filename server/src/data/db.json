@@ -32,6 +32,7 @@
         "secondary": "#22d3ee"
       },
       "startDate": "2024-12-01T00:00:00.000Z",
+      "endDate": "2024-12-24T00:00:00.000Z",
       "totalDays": 24,
       "cgScript": {
         "cover": {
@@ -101,21 +102,24 @@
           "imageUrl": "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70",
           "speaker": "Aurora",
           "lineOne": "Day 1: The signal flickers on.",
-          "lineTwo": "You found the first shard."
+          "lineTwo": "You found the first shard.",
+          "availableOn": "2024-12-01T00:00:00.000Z"
         },
         {
           "day": 8,
           "imageUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
           "speaker": "Aurora",
           "lineOne": "Day 8: The neon garden blooms.",
-          "lineTwo": "Unfold the next line of poetry."
+          "lineTwo": "Unfold the next line of poetry.",
+          "availableOn": "2024-12-08T00:00:00.000Z"
         },
         {
           "day": 24,
           "imageUrl": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
           "speaker": "Aurora",
           "lineOne": "Finale: Doors open to the festival.",
-          "lineTwo": "Meet me where the aurora falls."
+          "lineTwo": "Meet me where the aurora falls.",
+          "availableOn": "2024-12-24T00:00:00.000Z"
         }
       ],
       "qrRewards": [],
@@ -133,6 +137,7 @@
         "secondary": "#fbbf24"
       },
       "startDate": "2024-12-10T00:00:00.000Z",
+      "endDate": "2025-01-02T00:00:00.000Z",
       "totalDays": 24,
       "storyMoments": [],
       "qrRewards": [
@@ -141,14 +146,16 @@
           "title": "Latte on me",
           "message": "Scan to redeem a cozy drink",
           "imageUrl": "https://images.unsplash.com/photo-1498804103079-a6351b050096",
-          "qrCode": "coffee-latte-2024"
+          "qrCode": "coffee-latte-2024",
+          "availableOn": "2024-12-14T00:00:00.000Z"
         },
         {
           "day": 14,
           "title": "Arcade night",
           "message": "Tokens hidden at the neon arcade",
           "imageUrl": "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
-          "qrCode": "arcade-pass-14"
+          "qrCode": "arcade-pass-14",
+          "availableOn": "2024-12-23T00:00:00.000Z"
         }
       ],
       "recipientIds": ["usr-receiver-demo"]

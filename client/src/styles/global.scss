@@ -67,3 +67,21 @@ body {
   background: linear-gradient(180deg, #22d3ee, #f472b6);
   opacity: 0.5;
 }
+
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #22d3ee;
+  --rdp-background-color: transparent;
+  color: #e2e8f0;
+}
+
+.rdp-day_selected,
+.rdp-day_selected:focus-visible,
+.rdp-day_selected:hover {
+  background-color: #22d3ee;
+  color: #0f172a;
+}
+
+.rdp-day:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}

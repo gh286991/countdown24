@@ -25,12 +25,27 @@ export const fetchReceiverExperience = createAsyncThunk(
   },
 );
 
+export const fetchReceiverDayContent = createAsyncThunk(
+  'receiver/fetchDayContent',
+  async ({ assignmentId, day }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/receiver/countdowns/${assignmentId}/days/${day}`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得此日內容');
+    }
+  },
+);
+
 const initialState = {
   inbox: [],
   selected: null,
   status: 'idle',
   experienceStatus: 'idle',
+  dayStatus: 'idle',
+  dayContent: null,
   error: null,
+  dayError: null,
 };
 
 const receiverSlice = createSlice({
@@ -39,6 +54,14 @@ const receiverSlice = createSlice({
   reducers: {
     clearExperience(state) {
       state.selected = null;
+      state.dayContent = null;
+      state.dayStatus = 'idle';
+      state.dayError = null;
+    },
+    clearDayContent(state) {
+      state.dayContent = null;
+      state.dayStatus = 'idle';
+      state.dayError = null;
     },
   },
   extraReducers: (builder) => {
@@ -60,13 +83,28 @@ const receiverSlice = createSlice({
       .addCase(fetchReceiverExperience.fulfilled, (state, action) => {
         state.experienceStatus = 'succeeded';
         state.selected = action.payload;
+        state.dayContent = null;
+        state.dayStatus = 'idle';
+        state.dayError = null;
       })
       .addCase(fetchReceiverExperience.rejected, (state, action) => {
         state.experienceStatus = 'failed';
         state.error = action.payload;
+      })
+      .addCase(fetchReceiverDayContent.pending, (state) => {
+        state.dayStatus = 'loading';
+        state.dayError = null;
+      })
+      .addCase(fetchReceiverDayContent.fulfilled, (state, action) => {
+        state.dayStatus = 'succeeded';
+        state.dayContent = action.payload;
+      })
+      .addCase(fetchReceiverDayContent.rejected, (state, action) => {
+        state.dayStatus = 'failed';
+        state.dayError = action.payload;
       });
   },
 });
 
-export const { clearExperience } = receiverSlice.actions;
+export const { clearExperience, clearDayContent } = receiverSlice.actions;
 export default receiverSlice.reducer;
