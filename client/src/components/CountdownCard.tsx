@@ -1,4 +1,5 @@
 import { KeyboardEvent } from 'react';
+import { PresignedImage } from './PresignedImage';
 
 const typeBadge: Record<string, string> = {
   story: '混合專案',
@@ -45,7 +46,7 @@ function CountdownCard({ item, onSelect, onDelete, onDaySelect }: CountdownCardP
         </button>
       )}
       <div className="h-48 overflow-hidden rounded-t-[1rem]">
-        <img src={item.coverImage} alt={item.title} className="object-cover w-full h-full" loading="lazy" />
+        <PresignedImage src={item.coverImage} alt={item.title} className="object-cover w-full h-full" loading="lazy" />
       </div>
       <div className="story-card__content space-y-2">
         <div className="text-xs uppercase tracking-[0.3em] text-aurora">
@@ -80,7 +81,7 @@ function CountdownCard({ item, onSelect, onDelete, onDaySelect }: CountdownCardP
               >
                 <div className="h-20 bg-white/5">
                   {card.coverImage ? (
-                    <img src={card.coverImage} alt={`Day ${card.day}`} className="h-full w-full object-cover" />
+                    <PresignedImage src={card.coverImage} alt={`Day ${card.day}`} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-xs text-gray-500">尚未設定</div>
                   )}

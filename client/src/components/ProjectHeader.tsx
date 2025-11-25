@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from 'react';
+import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   HiOutlineQrCode, 
@@ -12,6 +12,8 @@ import {
   HiOutlineXCircle
 } from 'react-icons/hi2';
 import { useToast } from './ToastProvider';
+import ImageUploadField from './ImageUploadField';
+import { PresignedImage } from './PresignedImage';
 
 interface ProjectHeaderProps {
   title: string;
@@ -129,26 +131,14 @@ function ProjectHeader({
               {isEditing ? (
                 <div className="space-y-3 mt-2">
                   {/* 封面圖片 */}
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">封面圖片 URL</label>
-                    <input
-                      type="url"
-                      value={editCoverImage}
-                      onChange={(e) => setEditCoverImage(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/10 focus:border-christmas-red focus:outline-none"
-                    />
-                    {editCoverImage && (
-                      <img 
-                        src={editCoverImage} 
-                        alt="封面預覽" 
-                        className="mt-2 w-full h-32 object-cover rounded-lg"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    )}
-                  </div>
+                  <ImageUploadField
+                    label="封面圖片"
+                    value={editCoverImage}
+                    onChange={setEditCoverImage}
+                    placeholder="https://example.com/image.jpg"
+                    folder={countdownId ? `countdowns/${countdownId}/cover` : undefined}
+                    helperText="可貼上網址或上傳圖片"
+                  />
                   {/* 專案名稱 */}
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">專案名稱</label>
@@ -223,7 +213,7 @@ function ProjectHeader({
                     <p className="text-sm text-gray-300 mt-2">{description}</p>
                   )}
                   {coverImage && (
-                    <img 
+                    <PresignedImage 
                       src={coverImage} 
                       alt={title} 
                       className="mt-3 w-full h-40 object-cover rounded-lg"
@@ -381,4 +371,3 @@ function ProjectHeader({
 }
 
 export default ProjectHeader;
-

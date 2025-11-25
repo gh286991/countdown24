@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import api from '../api/client';
 import { useToast } from './ToastProvider';
 import CgScriptEditor from './CgScriptEditor';
+import ImageUploadField from './ImageUploadField';
 
 interface QrReward {
   title?: string;
@@ -129,7 +130,11 @@ function DayCardEditor({
       {/* CG 劇本編輯 */}
       {dayCardDraft.type === 'story' && (
         <div className="pt-2 border-t border-white/10">
-          <CgScriptEditor value={cgScriptDraft} onChange={onCgScriptChange} />
+          <CgScriptEditor
+            value={cgScriptDraft}
+            onChange={onCgScriptChange}
+            countdownId={countdownId}
+          />
         </div>
       )}
 
@@ -160,18 +165,15 @@ function DayCardEditor({
               className="w-full bg-white/5 rounded-xl px-4 py-2.5 min-h-[80px] border border-white/10 focus:border-aurora focus:outline-none"
             />
           </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">禮物圖片 URL</label>
-            <input
-              type="url"
-              placeholder="https://example.com/gift.jpg"
-              value={dayCardDraft.qrReward?.imageUrl || ''}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                onFieldChange('qrReward', { ...dayCardDraft.qrReward, imageUrl: event.target.value })
-              }
-              className="w-full bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 focus:border-aurora focus:outline-none"
-            />
-          </div>
+          <ImageUploadField
+            label="禮物圖片"
+            value={dayCardDraft.qrReward?.imageUrl || ''}
+            onChange={(url) =>
+              onFieldChange('qrReward', { ...dayCardDraft.qrReward, imageUrl: url })
+            }
+            placeholder="https://example.com/gift.jpg"
+            folder={countdownId ? `countdowns/${countdownId}/days/${activeDay}/qr` : undefined}
+          />
           <div>
             <label className="text-xs text-gray-400 block mb-1">QR Code 內容（序號/連結）</label>
             <input
@@ -237,4 +239,3 @@ function DayCardEditor({
 }
 
 export default DayCardEditor;
-

@@ -1,5 +1,6 @@
 import { useState, ChangeEvent } from 'react';
 import { HiOutlineFilm, HiOutlineXMark } from 'react-icons/hi2';
+import ImageUploadField from './ImageUploadField';
 
 interface CgDialogue {
   speaker?: string;
@@ -43,9 +44,10 @@ interface CgScript {
 interface CgScriptEditorProps {
   value: string;
   onChange: (value: string) => void;
+  countdownId?: string;
 }
 
-function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
+function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
   const [mode, setMode] = useState<'visual' | 'json'>('visual');
   const [script, setScript] = useState<CgScript>(() => {
     try {
@@ -211,12 +213,11 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
                 onChange={(e) => updateScript({ ...script, cover: { ...script.cover, subtitle: e.target.value } })}
                 className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-500"
               />
-              <input
-                type="url"
+              <ImageUploadField
                 placeholder="🖼️ 封面圖片網址"
                 value={script.cover?.image || ''}
-                onChange={(e) => updateScript({ ...script, cover: { ...script.cover, image: e.target.value } })}
-                className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-500"
+                onChange={(url) => updateScript({ ...script, cover: { ...script.cover, image: url } })}
+                folder={countdownId ? `countdowns/${countdownId}/cg/cover` : undefined}
               />
             </div>
           </div>
@@ -253,14 +254,17 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
 
                 <div className="p-4 space-y-3">
                   {/* 背景圖 */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 w-16">🌄 背景</span>
-                    <input
-                      type="url"
-                      placeholder="背景圖片網址"
+                  <div className="space-y-1">
+                    <span className="text-xs text-gray-400">🌄 背景</span>
+                    <ImageUploadField
                       value={scene.background || ''}
-                      onChange={(e) => updateScene(sceneIndex, 'background', e.target.value)}
-                      className="flex-1 bg-white/5 rounded-lg px-3 py-1.5 text-sm"
+                      onChange={(url) => updateScene(sceneIndex, 'background', url)}
+                      placeholder="背景圖片網址"
+                      folder={
+                        countdownId ? `countdowns/${countdownId}/cg/scenes/${scene.id || `scene-${sceneIndex + 1}`}` : undefined
+                      }
+                      inputClassName="bg-white/5 rounded-lg px-3 py-1.5 text-sm"
+                      previewClassName="h-32 w-full mt-2 rounded-lg border border-white/10"
                     />
                   </div>
 
@@ -388,12 +392,11 @@ function CgScriptEditor({ value, onChange }: CgScriptEditorProps) {
                 onChange={(e) => updateScript({ ...script, ending: { ...script.ending, message: e.target.value } })}
                 className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-500 min-h-[60px]"
               />
-              <input
-                type="url"
+              <ImageUploadField
                 placeholder="🖼️ 結局圖片網址"
                 value={script.ending?.image || ''}
-                onChange={(e) => updateScript({ ...script, ending: { ...script.ending, image: e.target.value } })}
-                className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-500"
+                onChange={(url) => updateScript({ ...script, ending: { ...script.ending, image: url } })}
+                folder={countdownId ? `countdowns/${countdownId}/cg/ending` : undefined}
               />
             </div>
           </div>

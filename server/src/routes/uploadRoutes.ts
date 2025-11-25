@@ -1,0 +1,16 @@
+import { Router, type Router as ExpressRouter } from 'express';
+import multer from 'multer';
+import { requireAuth, requireRole } from '../middleware/auth';
+import { asyncHandler } from '../middleware/asyncHandler';
+import * as uploadController from '../controllers/uploadController';
+
+const router: ExpressRouter = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+router.post('/', requireAuth, requireRole('creator'), upload.single('file'), asyncHandler(uploadController.uploadAsset));
+router.post('/presigned', requireAuth, asyncHandler(uploadController.getPresignedUrlForAsset));
+
+export default router;

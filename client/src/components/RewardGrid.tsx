@@ -6,6 +6,8 @@ interface Reward {
   qrCode: string;
 }
 
+import { PresignedImage } from './PresignedImage';
+
 interface RewardGridProps {
   rewards?: Reward[];
 }
@@ -23,7 +25,7 @@ function RewardGrid({ rewards = [] }: RewardGridProps) {
             <span>Day {reward.day}</span>
             <span>QR 禮物</span>
           </div>
-          <img src={reward.imageUrl} alt={reward.title} className="h-40 w-full object-cover rounded-2xl my-4" loading="lazy" />
+          <PresignedImage src={reward.imageUrl} alt={reward.title} className="h-40 w-full object-cover rounded-2xl my-4" loading="lazy" />
           <h4 className="text-lg font-semibold">{reward.title}</h4>
           <p className="text-sm text-gray-300">{reward.message}</p>
           <div className="mt-4 p-4 rounded-2xl bg-black/30 text-center">

@@ -1,4 +1,5 @@
 import { QRCodeSVG } from 'qrcode.react';
+import { PresignedImage } from './PresignedImage';
 
 interface QrReward {
   title?: string;
@@ -25,7 +26,7 @@ function QrCardPreview({ day, title, description, qrReward, variant = 'card' }: 
     return (
       <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
         {qrReward?.imageUrl ? (
-          <img
+          <PresignedImage
             src={qrReward.imageUrl}
             alt={qrReward.title || title || `Day ${day}`}
             className="h-48 w-full object-cover"
@@ -52,7 +53,7 @@ function QrCardPreview({ day, title, description, qrReward, variant = 'card' }: 
   return (
     <div className="space-y-3">
       {qrReward?.imageUrl ? (
-        <img
+        <PresignedImage
           src={qrReward.imageUrl}
           alt={qrReward.title || title || `Day ${day}`}
           className="w-full h-64 object-cover rounded-2xl"

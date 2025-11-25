@@ -15,6 +15,18 @@
   --christmas-gold-light: #e5b888;
 }
 
+@property --snow-phase {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --snow-fall-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 body {
   min-height: 100vh;
   background-image: 
@@ -29,7 +41,7 @@ body {
     100% 100%,
     100% 100%,
     100% 100%;
-  background-attachment: fixed;
+  background-attachment: scroll;
   position: relative;
   overflow-x: hidden;
 }
@@ -59,42 +71,42 @@ body::after {
   pointer-events: none;
   z-index: 0;
   background-image: 
-    /* 大雪花 - 隨機位置 */
-    radial-gradient(circle at 7% 3%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
-    radial-gradient(circle at 23% 12%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
-    radial-gradient(circle at 31% 6%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
-    radial-gradient(circle at 44% 18%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
-    radial-gradient(circle at 52% 4%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
-    radial-gradient(circle at 67% 15%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
-    radial-gradient(circle at 73% 2%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
-    radial-gradient(circle at 86% 11%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
-    radial-gradient(circle at 94% 8%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
-    /* 中雪花 - 隨機位置 */
-    radial-gradient(circle at 13% 27%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 27% 33%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 38% 19%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 49% 31%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 56% 23%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 64% 35%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 79% 21%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 88% 29%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
-    radial-gradient(circle at 96% 26%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
-    /* 小雪花 - 隨機位置 */
-    radial-gradient(circle at 4% 37%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 11% 43%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 19% 35%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 26% 41%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 34% 38%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 41% 45%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 47% 36%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 53% 42%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 61% 39%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 68% 44%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 74% 37%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 81% 43%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 89% 40%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 93% 46%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 97% 38%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px);
+    /* 大雪花 - 更隨機的水平位置 */
+    radial-gradient(circle at 3.2% 3%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 18.7% 12%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 29.3% 6%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    radial-gradient(circle at 41.6% 18%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 55.4% 4%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 63.1% 15%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    radial-gradient(circle at 77.8% 2%, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 84.2% 11%, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 91.9% 8%, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    /* 中雪花 - 更隨機的水平位置 */
+    radial-gradient(circle at 7.3% 27%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 22.1% 33%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 35.7% 19%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 46.2% 31%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 58.9% 23%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 69.4% 35%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 76.3% 21%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 87.6% 29%, rgba(255, 255, 255, 0.6) 0.8px, transparent 0.8px),
+    radial-gradient(circle at 94.1% 26%, rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px),
+    /* 小雪花 - 更隨機的水平位置 */
+    radial-gradient(circle at 1.8% 37%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 9.4% 43%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 16.2% 35%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 24.7% 41%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 32.3% 38%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 39.6% 45%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 47.8% 36%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 54.1% 42%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 61.7% 39%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 68.9% 44%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 75.2% 37%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 82.6% 43%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 88.3% 40%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 95.7% 46%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 98.4% 38%, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px);
   background-size: 
     /* 大雪花 - 隨機大小 */
     200px 200px, 185px 185px, 215px 215px, 195px 195px, 205px 205px,
@@ -107,6 +119,15 @@ body::after {
     111px 111px, 96px 96px, 104px 104px, 101px 101px, 109px 109px,
     98px 98px, 106px 106px, 100px 100px, 112px 112px, 95px 95px,
     107px 107px, 99px 99px, 110px 110px, 97px 97px, 105px 105px;
+  background-position: 
+    /* 隨機的起始位置，打破水平規律 */
+    0% 0%, 12.3% 0%, 23.7% 0%, 35.1% 0%, 46.8% 0%,
+    58.2% 0%, 69.6% 0%, 81.4% 0%, 92.7% 0%,
+    5.4% 0%, 17.8% 0%, 28.3% 0%, 39.7% 0%, 51.2% 0%,
+    62.6% 0%, 74.1% 0%, 85.9% 0%, 96.3% 0%,
+    2.1% 0%, 11.5% 0%, 19.8% 0%, 27.4% 0%, 33.9% 0%,
+    42.6% 0%, 49.2% 0%, 56.7% 0%, 64.3% 0%, 71.8% 0%,
+    79.4% 0%, 86.9% 0%, 93.5% 0%, 97.8% 0%, 99.1% 0%;
   animation: snowfall 15s linear infinite;
   animation-delay: 0s;
   opacity: 0.6;
@@ -323,7 +344,7 @@ select:focus {
   background: linear-gradient(135deg, #d67a7a 0%, #7fb896 100%);
 }
 
-/* 雪花飄落動畫 - 只往下飄，不旋轉 */
+/* 雪花飄落動畫 - 均勻速度，平滑的水平移動 */
 @keyframes snowfall {
   0% {
     transform: translateY(-100vh) translateX(0);
@@ -332,11 +353,14 @@ select:focus {
   10% {
     opacity: 1;
   }
+  50% {
+    transform: translateY(0vh) translateX(8px);
+  }
   90% {
     opacity: 1;
   }
   100% {
-    transform: translateY(100vh) translateX(30px);
+    transform: translateY(100vh) translateX(-5px);
     opacity: 0;
   }
 }
@@ -349,11 +373,14 @@ select:focus {
   10% {
     opacity: 0.8;
   }
+  50% {
+    transform: translateY(0vh) translateX(-10px);
+  }
   90% {
     opacity: 0.8;
   }
   100% {
-    transform: translateY(100vh) translateX(-25px);
+    transform: translateY(100vh) translateX(6px);
     opacity: 0;
   }
 }
@@ -366,11 +393,14 @@ select:focus {
   15% {
     opacity: 0.9;
   }
+  50% {
+    transform: translateY(0vh) translateX(12px);
+  }
   85% {
     opacity: 0.9;
   }
   100% {
-    transform: translateY(100vh) translateX(45px);
+    transform: translateY(100vh) translateX(-8px);
     opacity: 0;
   }
 }
@@ -383,11 +413,14 @@ select:focus {
   5% {
     opacity: 0.7;
   }
+  50% {
+    transform: translateY(0vh) translateX(-15px);
+  }
   95% {
     opacity: 0.7;
   }
   100% {
-    transform: translateY(100vh) translateX(-40px);
+    transform: translateY(100vh) translateX(10px);
     opacity: 0;
   }
 }
@@ -402,21 +435,24 @@ select:focus {
   pointer-events: none;
   z-index: 0;
   background-image: 
-    radial-gradient(circle at 5% 9%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 16% 4%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 24% 13%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 33% 7%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 41% 11%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 54% 5%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 62% 14%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 71% 8%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 83% 12%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 92% 6%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
-    radial-gradient(circle at 99% 10%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px);
+    radial-gradient(circle at 4.2% 9%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 15.7% 4%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 23.4% 13%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 32.8% 7%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 41.3% 11%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 53.6% 5%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 61.9% 14%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 70.4% 8%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 82.7% 12%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 91.3% 6%, rgba(255, 255, 255, 0.7) 0.6px, transparent 0.6px),
+    radial-gradient(circle at 98.6% 10%, rgba(255, 255, 255, 0.6) 0.6px, transparent 0.6px);
   background-size: 
     120px 120px, 130px 130px, 115px 115px, 125px 125px, 120px 120px,
     130px 130px, 115px 115px, 125px 125px, 120px 120px, 130px 130px,
     115px 115px, 125px 125px, 118px 118px, 128px 128px;
+  background-position: 
+    3.1% 0%, 14.8% 0%, 22.3% 0%, 31.7% 0%, 40.2% 0%,
+    52.4% 0%, 60.8% 0%, 69.1% 0%, 81.5% 0%, 90.2% 0%, 97.3% 0%;
   animation: snowfall2 18s linear infinite;
   animation-delay: -2s;
   opacity: 0.5;
@@ -424,23 +460,80 @@ select:focus {
 
 .snow-layer-fast {
   background-image: 
-    radial-gradient(circle at 2% 3%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 9% 1%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 17% 6%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 29% 2%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 37% 7%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 46% 4%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 58% 1%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 65% 8%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 76% 3%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 84% 9%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 93% 5%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
-    radial-gradient(circle at 98% 2%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px);
+    radial-gradient(circle at 1.7% 3%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 8.4% 1%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 16.3% 6%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 28.6% 2%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 36.9% 7%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 45.2% 4%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 57.8% 1%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 64.7% 8%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 75.4% 3%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 83.9% 9%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 92.6% 5%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 97.3% 2%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px);
   background-size: 
     90px 90px, 100px 100px, 85px 85px, 95px 95px, 88px 88px,
     102px 102px, 87px 87px, 98px 98px, 92px 92px, 96px 96px,
     89px 89px, 101px 101px, 93px 93px;
+  background-position: 
+    1.2% 0%, 7.8% 0%, 15.1% 0%, 27.3% 0%, 35.6% 0%,
+    43.9% 0%, 56.4% 0%, 63.2% 0%, 74.1% 0%, 82.7% 0%,
+    91.3% 0%, 96.8% 0%;
   animation: snowfall3 12s linear infinite;
   animation-delay: -5s;
   opacity: 0.4;
+}
+
+@supports (transform: translateX(calc(sin(1deg) * 1px))) {
+  body::after,
+  .snow-layer,
+  .snow-layer-fast {
+    --snow-phase: 0deg;
+    --snow-fall-angle: 0deg;
+    --snow-sway: 18px;
+    --snow-duration: 18s;
+    --snow-opacity: 0.6;
+    animation: snowfall-physics var(--snow-duration) linear infinite;
+    transform: translate3d(
+      calc(sin(var(--snow-phase)) * var(--snow-sway)),
+      calc((1 - cos(var(--snow-fall-angle))) * 50vh),
+      0
+    );
+    will-change: transform;
+  }
+
+  body::after {
+    --snow-sway: 24px;
+    --snow-duration: 18s;
+    --snow-opacity: 0.6;
+  }
+
+  .snow-layer {
+    --snow-sway: 16px;
+    --snow-duration: 22s;
+    --snow-opacity: 0.45;
+  }
+
+  .snow-layer-fast {
+    --snow-sway: 30px;
+    --snow-duration: 14s;
+    --snow-opacity: 0.35;
+  }
+
+  @keyframes snowfall-physics {
+    0% {
+      --snow-phase: 0deg;
+      --snow-fall-angle: 0deg;
+      opacity: 0;
+    }
+    15% {
+      opacity: var(--snow-opacity);
+    }
+    100% {
+      --snow-phase: 1080deg;
+      --snow-fall-angle: 180deg;
+      opacity: 0;
+    }
+  }
 }

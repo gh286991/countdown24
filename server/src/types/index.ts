@@ -68,4 +68,3 @@ export interface Assignment {
   status: string;
   unlockedOn: string | null;
 }
-

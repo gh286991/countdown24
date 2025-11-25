@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CgPlayer from './CgPlayer';
 import QrCardPreview from './QrCardPreview';
+import { PresignedImage } from './PresignedImage';
 
 interface QrReward {
   title?: string;
@@ -52,7 +53,7 @@ function DayCardPreviewPanel({
           {type === 'story' ? (
             <>
               {cgPreview?.cover?.image || cgPreview?.scenes?.[0]?.background ? (
-                <img
+                <PresignedImage
                   src={cgPreview.cover?.image || cgPreview.scenes[0].background}
                   alt={`Day ${activeDay}`}
                   className="h-48 w-full object-cover"

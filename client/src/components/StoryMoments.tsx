@@ -6,6 +6,8 @@ interface Moment {
   lineTwo: string;
 }
 
+import { PresignedImage } from './PresignedImage';
+
 interface StoryMomentsProps {
   moments?: Moment[];
 }
@@ -20,7 +22,7 @@ function StoryMoments({ moments = [] }: StoryMomentsProps) {
       {moments.map((moment) => (
         <div key={`${moment.day}-${moment.lineOne}`} className="story-card flex flex-col md:flex-row">
           <div className="md:w-1/3 h-48">
-            <img src={moment.imageUrl} alt={`Day ${moment.day}`} className="object-cover w-full h-full" loading="lazy" />
+            <PresignedImage src={moment.imageUrl} alt={`Day ${moment.day}`} className="object-cover w-full h-full" loading="lazy" />
           </div>
           <div className="story-card__content flex-1">
             <p className="text-xs text-aurora uppercase tracking-[0.3em]">Day {moment.day}</p>
