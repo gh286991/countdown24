@@ -253,10 +253,10 @@ function CreatorEditor() {
           />
           
           {/* 每日解鎖 QR Code 生成區塊 */}
-          <DayQrCodeGenerator
-            activeDay={activeDay}
-            countdownId={id || ''}
-          />
+            <DayQrCodeGenerator
+              activeDay={activeDay}
+              countdownId={id || ''}
+            />
         </div>
 
         {/* 中間：編輯區 */}

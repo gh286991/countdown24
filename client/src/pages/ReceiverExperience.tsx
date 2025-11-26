@@ -414,21 +414,21 @@ function ReceiverExperience() {
             <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
             {modalLoading && <p className="text-gray-300">載入內容中...</p>}
             {!modalLoading && !currentDayContent && modalMeta?.locked && (
-              <div className="text-center py-8">
-                <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
+                <div className="text-center py-8">
+                  <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
                 <p className="text-sm text-gray-400 mb-4">請掃描對應的解鎖碼來解鎖此日內容</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalDay(null);
-                    setShowQrScanner(true);
-                  }}
-                  className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
-                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalDay(null);
+                      setShowQrScanner(true);
+                    }}
+                    className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
+                  >
                   掃描解鎖碼
-                </button>
-              </div>
+                  </button>
+                </div>
             )}
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
               <QrCardPreview
