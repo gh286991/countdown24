@@ -64,7 +64,7 @@ function DayListSidebar({ totalDays, activeDay, dayCards, onDaySelect }: DayList
                         : 'bg-gray-500/20 text-gray-400'
                     }`}
                   >
-                    {card?.type === 'story' ? 'CG' : card?.type === 'qr' ? 'QR' : '未設定'}
+                    {card?.type === 'story' ? 'CG' : card?.type === 'qr' ? '禮品' : '未設定'}
                   </span>
                 </div>
                 <h3 className="text-sm font-semibold truncate">
@@ -83,4 +83,3 @@ function DayListSidebar({ totalDays, activeDay, dayCards, onDaySelect }: DayList
 }
 
 export default DayListSidebar;
-

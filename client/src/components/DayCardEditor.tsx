@@ -73,7 +73,7 @@ function DayCardEditor({
             ) : (
               <span className="flex items-center gap-2">
                 <HiOutlineGift className="w-4 h-4" />
-                QR 禮物卡片
+                禮品卡片
               </span>
             )}
           </button>
@@ -118,10 +118,10 @@ function DayCardEditor({
         </div>
       )}
 
-      {/* QR 禮物編輯 */}
+      {/* 禮品卡編輯 */}
       {dayCardDraft.type === 'qr' && (
         <div className="space-y-3 pt-2 border-t border-white/10">
-          <h3 className="text-sm font-semibold text-gray-300">QR 禮物設定</h3>
+          <h3 className="text-sm font-semibold text-gray-300">禮品卡設定</h3>
           <div>
             <label className="text-xs text-gray-400 block mb-1">禮物名稱</label>
             <input
@@ -155,7 +155,7 @@ function DayCardEditor({
             folder={countdownId ? `countdowns/${countdownId}/days/${activeDay}/qr` : undefined}
           />
           <div>
-            <label className="text-xs text-gray-400 block mb-1">QR Code 內容（序號/連結）</label>
+            <label className="text-xs text-gray-400 block mb-1">禮品卡內容（序號/連結）</label>
             <input
               type="text"
               placeholder="例：https://gift.com/redeem/ABC123"

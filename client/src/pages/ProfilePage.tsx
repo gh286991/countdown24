@@ -221,11 +221,11 @@ function ProfilePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-aurora">✓</span>
-                  <span>編輯每日小卡內容（CG 故事或 QR 禮物）</span>
+                  <span>編輯每日小卡內容（CG 故事或禮品體驗）</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-aurora">✓</span>
-                  <span>生成邀請 QR Code 分享給他人</span>
+                  <span>生成邀請禮品卡分享給他人</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-aurora">✓</span>
@@ -262,4 +262,3 @@ function ProfilePage() {
 }
 
 export default ProfilePage;
-

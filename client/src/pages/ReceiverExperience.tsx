@@ -210,7 +210,7 @@ function ReceiverExperience() {
       <img src={countdown.coverImage} alt={countdown.title} className="w-full h-80 object-cover rounded-3xl" />
       <DayTimeline total={countdown.totalDays} current={countdown.availableDay} />
       
-      {/* QR Code 掃描按鈕 */}
+      {/* 禮品卡掃描按鈕 */}
       <div className="flex justify-center">
         <button
           type="button"
@@ -218,11 +218,11 @@ function ReceiverExperience() {
           className="flex items-center gap-2 px-6 py-3 bg-christmas-red/90 hover:bg-christmas-red rounded-xl text-white font-semibold transition-colors"
         >
           <HiOutlineQrCode className="w-5 h-5" />
-          掃描 QR Code 解鎖
+          掃描禮品卡解鎖
         </button>
       </div>
 
-      {/* QR Code 掃描模態視窗 */}
+      {/* 禮品卡掃描模態視窗 */}
       {showQrScanner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6">
           <div className="relative w-full max-w-md rounded-3xl bg-slate-900 p-6 shadow-2xl">
@@ -240,7 +240,7 @@ function ReceiverExperience() {
               <HiOutlineXMark className="w-5 h-5" />
             </button>
             
-            <h3 className="text-2xl font-semibold mb-4">掃描 QR Code</h3>
+            <h3 className="text-2xl font-semibold mb-4">掃描禮品卡</h3>
 
             {/* 模式切換 */}
             <div className="flex gap-2 mb-4">
@@ -302,7 +302,7 @@ function ReceiverExperience() {
                   ></div>
                 </div>
                 <p className="text-xs text-gray-400 text-center">
-                  將 QR Code 對準相機框內即可自動掃描
+                  將禮品卡對準相機框內即可自動掃描
                 </p>
               </div>
             )}
@@ -311,10 +311,10 @@ function ReceiverExperience() {
             {scanMode === 'manual' && (
               <div className="space-y-4">
                 <p className="text-sm text-gray-400">
-                  請輸入或貼上 QR Code 的內容來解鎖對應的日期
+                  請輸入或貼上禮品卡代碼來解鎖對應的日期
                 </p>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-2">QR Code Token</label>
+                  <label className="block text-xs text-gray-400 mb-2">禮品卡代碼</label>
                   <input
                     type="text"
                     value={qrInput}
@@ -370,7 +370,7 @@ function ReceiverExperience() {
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white">
                 <HiOutlineLockClosed className="w-12 h-12 mb-2 text-gray-400" />
                 <p className="text-sm font-semibold">尚未解鎖</p>
-                <p className="text-xs text-gray-400 mt-1">請掃描 QR Code 解鎖</p>
+                <p className="text-xs text-gray-400 mt-1">請掃描禮品卡解鎖</p>
               </div>
             )}
           </button>
@@ -395,7 +395,7 @@ function ReceiverExperience() {
               <div className="text-center py-8">
                 <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
-                <p className="text-sm text-gray-400 mb-4">請掃描對應的 QR Code 來解鎖此日內容</p>
+                <p className="text-sm text-gray-400 mb-4">請掃描對應的禮品卡來解鎖此日內容</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -404,7 +404,7 @@ function ReceiverExperience() {
                   }}
                   className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
                 >
-                  掃描 QR Code
+                  掃描禮品卡
                 </button>
               </div>
             )}
@@ -416,7 +416,7 @@ function ReceiverExperience() {
               />
             ) : null}
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
-              <p className="text-sm text-gray-300">此日尚未設定 QR 禮物內容。</p>
+              <p className="text-sm text-gray-300">此日尚未設定禮品內容。</p>
             )}
             {!modalLoading && currentDayContent && currentDayContent.type === 'story' ? (
               currentDayContent.cgScript ? (

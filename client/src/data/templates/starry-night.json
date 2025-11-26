@@ -2,7 +2,7 @@
   "id": "starry-night",
   "name": "星光閃耀",
   "description": "金色星星、深色背景、優雅風格",
-  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%231a1a2e' width='180' height='100'/%3E%3Crect x='10' y='10' width='80' height='55' rx='6' fill='%232d2d44'/%3E%3Crect x='100' y='10' width='35' height='35' rx='4' fill='%23ffd700'/%3E%3Ctext x='118' y='32' text-anchor='middle' fill='%231a1a2e' font-size='7'%3EQR%3C/text%3E%3Ctext x='118' y='60' fill='%23ffd700' font-size='10' font-weight='bold'%3EDay%3C/text%3E%3Cpolygon points='150,20 152,26 158,26 153,30 155,36 150,32 145,36 147,30 142,26 148,26' fill='%23ffd700'/%3E%3Cpolygon points='30,80 31,83 34,83 32,85 33,88 30,86 27,88 28,85 26,83 29,83' fill='%23ffd700' opacity='0.7'/%3E%3C/svg%3E",
+  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%231a1a2e' width='180' height='100'/%3E%3Crect x='10' y='10' width='80' height='55' rx='6' fill='%232d2d44'/%3E%3Crect x='100' y='10' width='35' height='35' rx='4' fill='%23ffd700'/%3E%3Ctext x='118' y='32' text-anchor='middle' fill='%231a1a2e' font-size='7'%3E%E7%A6%AE%E5%93%81%E5%8D%A1%3C/text%3E%3Ctext x='118' y='60' fill='%23ffd700' font-size='10' font-weight='bold'%3EDay%3C/text%3E%3Cpolygon points='150,20 152,26 158,26 153,30 155,36 150,32 145,36 147,30 142,26 148,26' fill='%23ffd700'/%3E%3Cpolygon points='30,80 31,83 34,83 32,85 33,88 30,86 27,88 28,85 26,83 29,83' fill='%23ffd700' opacity='0.7'/%3E%3C/svg%3E",
   "canvasJson": {
     "version": "6.0.0",
     "objects": [
@@ -47,7 +47,7 @@
         "left": 520,
         "top": 105,
         "width": 110,
-        "text": "QR Code",
+        "text": "禮品卡",
         "fontSize": 16,
         "fill": "#1a1a2e",
         "fontFamily": "sans-serif",

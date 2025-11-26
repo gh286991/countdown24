@@ -15,7 +15,7 @@ function ReceiverCard({ assignment, onOpen }: ReceiverCardProps) {
       <div className="flex items-start gap-4">
         <img src={countdown.coverImage} alt={countdown.title} className="w-20 h-20 rounded-2xl object-cover flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-400 uppercase tracking-[0.3em]">{countdown.type === 'qr' ? 'QR 禮物' : '劇情倒數'}</p>
+          <p className="text-xs text-gray-400 uppercase tracking-[0.3em]">{countdown.type === 'qr' ? '禮品體驗' : '劇情倒數'}</p>
           <h4 className="text-xl font-semibold truncate">{countdown.title}</h4>
           <p className="text-sm text-gray-400">Day {countdown.availableDay}</p>
           
@@ -41,4 +41,3 @@ function ReceiverCard({ assignment, onOpen }: ReceiverCardProps) {
 }
 
 export default ReceiverCard;
-

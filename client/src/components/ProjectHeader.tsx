@@ -251,7 +251,7 @@ function ProjectHeader({
             )}
           </p>
           <p className="text-xs text-gray-500">
-            在右側可快速分享給朋友或生成邀請 QR code，底下則可編輯每日小卡內容。
+            在右側可快速分享給朋友或生成邀請禮品卡，底下則可編輯每日小卡內容。
           </p>
         </div>
         
@@ -269,7 +269,7 @@ function ProjectHeader({
             {generating ? '生成中...' : (
               <span className="flex items-center justify-center gap-2">
                 <HiOutlineQrCode className="w-4 h-4" />
-                生成邀請 QR Code
+                生成邀請禮品卡
               </span>
             )}
           </button>
@@ -312,7 +312,7 @@ function ProjectHeader({
         </div>
       </div>
 
-      {/* 邀請 QR Code 模態視窗 */}
+      {/* 邀請禮品卡模態視窗 */}
       {showInviteModal && inviteData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6">
           <div className="relative w-full max-w-md rounded-3xl bg-slate-900 p-6 shadow-2xl">
@@ -324,12 +324,12 @@ function ProjectHeader({
               <HiOutlineXMark className="w-5 h-5" />
             </button>
             
-            <h3 className="text-2xl font-semibold mb-4">邀請 QR Code</h3>
+            <h3 className="text-2xl font-semibold mb-4">邀請禮品卡</h3>
             <p className="text-sm text-gray-400 mb-6">
-              朋友掃描此 QR Code 或點擊連結後，會自動註冊並加入到這個倒數專案。
+              朋友掃描此禮品卡或點擊連結後，會自動註冊並加入到這個倒數專案。
             </p>
 
-            {/* QR Code */}
+            {/* 禮品卡代碼 */}
             <div className="flex justify-center py-6 bg-white rounded-2xl mb-4">
               <QRCodeSVG value={fullInviteUrl} size={220} />
             </div>
@@ -359,7 +359,7 @@ function ProjectHeader({
               >
                 <span className="flex items-center justify-center gap-2">
                   <HiOutlinePrinter className="w-4 h-4" />
-                  列印 QR Code
+                  列印禮品卡
                 </span>
               </button>
             </div>

@@ -17,7 +17,7 @@ interface QrCardPreviewProps {
 }
 
 /**
- * QR 卡片預覽元件
+ * 禮品卡預覽元件
  * @param variant - 'card': 小卡樣式（用於列表）, 'modal': 完整模態樣式（用於詳細預覽）
  */
 function QrCardPreview({ day, title, description, qrReward, variant = 'card' }: QrCardPreviewProps) {
@@ -71,7 +71,7 @@ function QrCardPreview({ day, title, description, qrReward, variant = 'card' }: 
           {qrReward?.message || description || '尚未填寫訊息'}
         </p>
         <div className="text-xs text-gray-400">
-          QR 內容：<span className="text-white">{qrReward?.qrCode || '尚未設定'}</span>
+          禮品卡內容：<span className="text-white">{qrReward?.qrCode || '尚未設定'}</span>
         </div>
         {qrReward?.qrCode && (
           <div className="mt-3 flex justify-center">
@@ -89,4 +89,3 @@ function QrCardPreview({ day, title, description, qrReward, variant = 'card' }: 
 }
 
 export default QrCardPreview;
-

@@ -43,7 +43,7 @@ function DayCardPreviewPanel({
                   : 'bg-purple-500/20 text-purple-300'
               }`}
             >
-              {type === 'story' ? 'CG' : 'QR'}
+              {type === 'story' ? 'CG' : '禮品'}
             </span>
           </div>
         </div>
@@ -108,11 +108,11 @@ function DayCardPreviewPanel({
         </div>
       )}
 
-      {/* QR 模態預覽 - 接收者視角 */}
+      {/* 禮品卡模態預覽 - 接收者視角 */}
       {type === 'qr' && (
         <div className="glass-panel p-0 overflow-hidden">
           <div className="bg-white/5 px-5 py-4 border-b border-white/10 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-300">接收者視角 · QR 預覽</h3>
+            <h3 className="text-sm font-semibold text-gray-300">接收者視角 · 禮品預覽</h3>
             <span className="text-xs text-gray-400">Day {activeDay}</span>
           </div>
           <div className="p-5">
@@ -131,4 +131,3 @@ function DayCardPreviewPanel({
 }
 
 export default DayCardPreviewPanel;
-

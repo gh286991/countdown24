@@ -35,7 +35,7 @@ function ReceiverInbox() {
           <p className="text-gray-400">
             目前還沒有人分享倒數專案給你。
             <br />
-            等待朋友發送邀請連結或 QR Code 給你吧！
+            等待朋友發送邀請連結或禮品卡給你吧！
           </p>
         </div>
       )}
@@ -56,4 +56,3 @@ function ReceiverInbox() {
 }
 
 export default ReceiverInbox;
-

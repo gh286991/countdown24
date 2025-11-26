@@ -264,16 +264,16 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     
     setAddingQr(true);
     try {
-      // 呼叫 API 獲取當天的 QR URL
+      // 呼叫 API 獲取當天的禮品卡 URL
       const { data } = await api.post(`/countdowns/${countdownId}/generate-qr`, { day });
       const qrUrl = data.qrUrl;
       
-      // 尋找 QR 佔位區
+      // 尋找禮品卡佔位區
       const objects = canvas.getObjects();
       const placeholderBg = objects.find((obj: any) => obj.name === 'qr-placeholder-bg');
       const placeholderText = objects.find((obj: any) => obj.name === 'qr-placeholder-text');
       
-      // 決定 QR Code 的位置和大小
+      // 決定禮品卡代碼的位置和大小
       let qrLeft = 40;
       let qrTop = 40;
       let qrSize = 160; // 預設大小
@@ -291,10 +291,10 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         }
       }
       
-      // 生成 QR Code 圖片
+      // 生成禮品卡代碼圖片
       const dataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, scale: 8 });
       
-      // 加入 QR Code 到佔位區的位置
+      // 加入禮品卡代碼到佔位區的位置
       const img = await FabricImage.fromURL(dataUrl, { crossOrigin: 'anonymous' });
       const scale = qrSize / Math.max(img.width || 1, img.height || 1);
       img.set({
@@ -308,7 +308,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
       canvas.requestRenderAll();
       emitSnapshot();
     } catch (error) {
-      console.error('Failed to generate QR code:', error);
+      console.error('Failed to generate gift card code:', error);
     } finally {
       setAddingQr(false);
     }
@@ -373,7 +373,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
           disabled={addingQr || !countdownId}
           className="px-3 py-1.5 rounded-lg bg-aurora/30 hover:bg-aurora/40 disabled:opacity-50"
         >
-          {addingQr ? '加入中...' : '🔗 加入解鎖 QR'}
+          {addingQr ? '加入中...' : '🔗 加入禮品卡'}
         </button>
         <label className="flex items-center gap-2 text-xs text-gray-300">
           背景

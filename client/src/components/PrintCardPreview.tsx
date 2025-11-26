@@ -87,7 +87,7 @@ function PrintCardPreview({ card, variant = 'preview' }: PrintCardPreviewProps) 
       <QRCodeSVG value={card.qrCode} size={qrSize} />
     </div>
   ) : (
-    <div className={`${qrWrapperClass} ${qrPlaceholderClass}`}>QR</div>
+    <div className={`${qrWrapperClass} ${qrPlaceholderClass}`}>禮品卡</div>
   );
 
   const heading = (

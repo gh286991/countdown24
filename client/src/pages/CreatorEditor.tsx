@@ -206,7 +206,7 @@ function CreatorEditor() {
       )}
 
       <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
-        {/* 左側：Day 列表 + 封面圖 + QR Code */}
+        {/* 左側：Day 列表 + 封面圖 + 禮品卡 */}
         <div className="space-y-4">
           <DayListSidebar
             totalDays={totalDays}
@@ -215,7 +215,7 @@ function CreatorEditor() {
             onDaySelect={handleDaySelect}
           />
           
-          {/* 每日解鎖 QR Code 生成區塊 - 移到左側 */}
+          {/* 每日解鎖禮品卡生成區塊 - 移到左側 */}
           <DayQrCodeGenerator
             activeDay={activeDay}
             countdownId={id || ''}

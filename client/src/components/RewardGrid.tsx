@@ -14,7 +14,7 @@ interface RewardGridProps {
 
 function RewardGrid({ rewards = [] }: RewardGridProps) {
   if (!rewards.length) {
-    return <p className="text-gray-400">尚未新增 QR 禮物。</p>;
+    return <p className="text-gray-400">尚未新增禮品內容。</p>;
   }
 
   return (
@@ -23,7 +23,7 @@ function RewardGrid({ rewards = [] }: RewardGridProps) {
         <div key={`${reward.day}-${reward.title}`} className="glass-panel bg-white/5">
           <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-gray-400">
             <span>Day {reward.day}</span>
-            <span>QR 禮物</span>
+            <span>禮品驚喜</span>
           </div>
           <PresignedImage src={reward.imageUrl} alt={reward.title} className="h-40 w-full object-cover rounded-2xl my-4" loading="lazy" />
           <h4 className="text-lg font-semibold">{reward.title}</h4>
@@ -47,4 +47,3 @@ function RewardGrid({ rewards = [] }: RewardGridProps) {
 }
 
 export default RewardGrid;
-

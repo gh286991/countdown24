@@ -2,7 +2,7 @@
   "id": "christmas-classic",
   "name": "聖誕紅綠經典",
   "description": "紅綠配色、經典聖誕氛圍",
-  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%231a472a' width='180' height='100'/%3E%3Crect x='10' y='10' width='70' height='60' rx='8' fill='%23c41e3a'/%3E%3Crect x='90' y='15' width='40' height='40' rx='4' fill='white'/%3E%3Ctext x='110' y='40' text-anchor='middle' fill='%231a472a' font-size='8'%3EQR%3C/text%3E%3Ctext x='110' y='70' fill='white' font-size='10' font-weight='bold'%3EDay 1%3C/text%3E%3Ccircle cx='160' cy='20' r='6' fill='%23ffd700' opacity='0.8'/%3E%3Ccircle cx='20' cy='85' r='4' fill='%23ffd700' opacity='0.6'/%3E%3C/svg%3E",
+  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%231a472a' width='180' height='100'/%3E%3Crect x='10' y='10' width='70' height='60' rx='8' fill='%23c41e3a'/%3E%3Crect x='90' y='15' width='40' height='40' rx='4' fill='white'/%3E%3Ctext x='110' y='40' text-anchor='middle' fill='%231a472a' font-size='8'%3E%E7%A6%AE%E5%93%81%E5%8D%A1%3C/text%3E%3Ctext x='110' y='70' fill='white' font-size='10' font-weight='bold'%3EDay 1%3C/text%3E%3Ccircle cx='160' cy='20' r='6' fill='%23ffd700' opacity='0.8'/%3E%3Ccircle cx='20' cy='85' r='4' fill='%23ffd700' opacity='0.6'/%3E%3C/svg%3E",
   "canvasJson": {
     "version": "6.0.0",
     "objects": [
@@ -47,7 +47,7 @@
         "left": 510,
         "top": 110,
         "width": 120,
-        "text": "QR Code",
+        "text": "禮品卡",
         "fontSize": 18,
         "fill": "#1a472a",
         "fontFamily": "sans-serif",

@@ -16,7 +16,7 @@ function ScanPage() {
   useEffect(() => {
     if (!token) {
       setStatus('error');
-      setMessage('無效的 QR Code');
+      setMessage('無效的禮品卡');
       return;
     }
 
@@ -24,7 +24,7 @@ function ScanPage() {
     const dayMatch = token.match(/^day(\d+)-/);
     if (!dayMatch) {
       setStatus('error');
-      setMessage('QR Code 格式錯誤');
+      setMessage('禮品卡格式錯誤');
       return;
     }
 
@@ -55,7 +55,7 @@ function ScanPage() {
         }
       } catch (error: any) {
         setStatus('error');
-        setMessage(error?.message || '解鎖失敗，請確認 QR Code 是否正確');
+        setMessage(error?.message || '解鎖失敗，請確認禮品卡代碼是否正確');
       }
     };
 
@@ -99,4 +99,3 @@ function ScanPage() {
 }
 
 export default ScanPage;
-

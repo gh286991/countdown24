@@ -3,7 +3,7 @@ import { PresignedImage } from './PresignedImage';
 
 const typeBadge: Record<string, string> = {
   story: '混合專案',
-  qr: 'QR 禮物庫',
+  qr: '禮品驚喜庫',
 };
 
 interface CountdownCardProps {
@@ -103,4 +103,3 @@ function CountdownCard({ item, onSelect, onDelete, onDaySelect }: CountdownCardP
 }
 
 export default CountdownCard;
-

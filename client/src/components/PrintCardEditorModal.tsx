@@ -84,7 +84,7 @@ function PrintCardEditorModal({
         <div className="mb-6">
           <p className="text-xs text-gray-500 uppercase tracking-[0.3em]">Day {day}</p>
           <h2 className="text-2xl font-semibold">編輯列印小卡</h2>
-          <p className="text-sm text-gray-400 mt-1">選擇喜歡的版型，填入圖片、文字與 QR 內容</p>
+          <p className="text-sm text-gray-400 mt-1">選擇喜歡的版型，填入圖片、文字與禮品內容</p>
         </div>
 
         <div className="space-y-6">
@@ -141,7 +141,7 @@ function PrintCardEditorModal({
             onChange={(payload) => setCanvasState(payload)}
           />
           <div className="rounded-2xl border border-white/10 p-4 text-xs text-gray-400 space-y-1">
-            <p>．拖曳 Canvas 內的圖片、文字與 QR Code，自由排版。</p>
+            <p>．拖曳 Canvas 內的圖片、文字與禮品卡，自由排版。</p>
             <p>．儲存後會將畫布輸出為高解析 PNG，並用於列印與 PDF。</p>
           </div>
         </div>

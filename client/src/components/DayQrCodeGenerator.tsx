@@ -20,10 +20,10 @@ function DayQrCodeGenerator({ activeDay, countdownId }: DayQrCodeGeneratorProps)
     try {
       const { data } = await api.post(`/countdowns/${countdownId}/generate-qr`, { day: activeDay });
       setQrData({ qrToken: data.qrToken, qrUrl: data.qrUrl });
-      showToast('QR Code 生成成功', 'success');
+      showToast('禮品卡生成成功', 'success');
     } catch (error: any) {
-      console.error('Failed to generate QR:', error);
-      showToast('生成 QR Code 失敗：' + (error?.response?.data?.message || '未知錯誤'), 'error');
+      console.error('Failed to generate gift card code:', error);
+      showToast('生成禮品卡失敗：' + (error?.response?.data?.message || '未知錯誤'), 'error');
     } finally {
       setGeneratingQr(false);
     }
@@ -32,9 +32,9 @@ function DayQrCodeGenerator({ activeDay, countdownId }: DayQrCodeGeneratorProps)
   return (
     <div className="glass-panel p-6 space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-gray-300 mb-1">每日解鎖 QR Code</h3>
+        <h3 className="text-lg font-semibold text-gray-300 mb-1">每日禮品卡</h3>
         <p className="text-xs text-gray-400">
-          生成此日的 QR Code，接收者掃描後即可解鎖當天內容。每天都有唯一的編碼。
+          生成此日的禮品卡代碼，接收者掃描後即可解鎖當天內容。每天都有唯一的編碼。
         </p>
       </div>
       
@@ -46,12 +46,12 @@ function DayQrCodeGenerator({ activeDay, countdownId }: DayQrCodeGeneratorProps)
           className="w-full py-3 rounded-xl bg-christmas-red/90 hover:bg-christmas-red text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <HiOutlineQrCode className="w-5 h-5" />
-          {generatingQr ? '生成中...' : '生成 Day ' + activeDay + ' QR Code'}
+          {generatingQr ? '生成中...' : '生成 Day ' + activeDay + ' 禮品卡'}
         </button>
       ) : (
         <div className="space-y-3">
           <div className="bg-white/5 rounded-xl p-4 flex flex-col items-center">
-            <p className="text-xs text-gray-400 mb-2">掃描此 QR Code 解鎖 Day {activeDay}</p>
+            <p className="text-xs text-gray-400 mb-2">掃描此禮品卡解鎖 Day {activeDay}</p>
             <div className="bg-white p-3 rounded-lg">
               <QRCodeSVG value={qrData.qrUrl} size={200} />
             </div>
@@ -73,4 +73,3 @@ function DayQrCodeGenerator({ activeDay, countdownId }: DayQrCodeGeneratorProps)
 }
 
 export default DayQrCodeGenerator;
-
