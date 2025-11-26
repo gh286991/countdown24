@@ -2,7 +2,7 @@ import { useState, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { HiOutlineGift, HiOutlineSparkles, HiOutlineXMark } from 'react-icons/hi2';
 import { useToast } from '../components/ToastProvider';
-import { upgradeToCreator, updateProfile } from '../store/authSlice';
+import { upgradeToCreator, updateProfile, logout } from '../store/authSlice';
 import type { RootState, AppDispatch } from '../store';
 
 function ProfilePage() {
@@ -71,6 +71,13 @@ function ProfilePage() {
       <div className="glass-panel p-6 space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">基本資訊</h3>
+          <button
+            type="button"
+            onClick={() => dispatch(logout())}
+            className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300"
+          >
+            登出
+          </button>
           {!isEditing ? (
             <button
               type="button"

@@ -11,6 +11,7 @@ import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import ReceiverExperience from './pages/ReceiverExperience';
 import ReceiverInbox from './pages/ReceiverInbox';
+import ReceiverLibrary from './pages/ReceiverLibrary';
 import ScanPage from './pages/ScanPage';
 import PrintCardsPage from './pages/PrintCardsPage';
 import { bootstrapSession, logout } from './store/authSlice';
@@ -39,36 +40,40 @@ function App() {
           <HiOutlineGift className="w-6 h-6" />
           倒數禮物盒
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex flex-wrap items-center gap-4 text-sm">
           {user?.role === 'creator' && (
             <Link to="/creator" className="text-gray-300 hover:text-white">
               我的專案
             </Link>
           )}
           {user && (
-            <Link to="/receiver" className="text-gray-300 hover:text-white flex items-center gap-2">
-              <HiOutlineGift className="w-4 h-4" />
-              我的禮物盒
-            </Link>
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link to="/receiver" className="text-gray-300 hover:text-white flex items-center gap-2">
+                  <HiOutlineGift className="w-4 h-4" />
+                  我的禮物盒
+                </Link>
+                <Link
+                  to="/receiver/library"
+                  className="text-gray-300 hover:text-white px-3 py-1 rounded-full border border-white/20 hover:border-white/50 transition text-xs"
+                >
+                  禮品卡 / 兌換卷
+                </Link>
+              </div>
+            </>
           )}
           {!user ? (
-            <Link to="/auth" className="px-4 py-2 rounded-full bg-gradient-to-r from-christmas-red/80 to-christmas-red-dark/80 hover:from-christmas-red hover:to-christmas-red-dark text-white font-semibold transition-all duration-300 flex items-center gap-2">
+            <Link
+              to="/auth"
+              className="px-4 py-2 rounded-full bg-gradient-to-r from-christmas-red/80 to-christmas-red-dark/80 hover:from-christmas-red hover:to-christmas-red-dark text-white font-semibold transition-all duration-300 flex items-center gap-2"
+            >
               <HiOutlineGift className="w-4 h-4" />
               登入 / 註冊
             </Link>
           ) : (
-            <>
-              <Link to="/profile" className="text-gray-300 hover:text-christmas-red transition-colors">
-                個人資料
-              </Link>
-              <button
-                type="button"
-                onClick={() => dispatch(logout())}
-                className="px-4 py-2 rounded-full bg-white/10 hover:bg-christmas-red/20 transition-colors"
-              >
-                登出 {user.name}
-              </button>
-            </>
+            <Link to="/profile" className="text-gray-300 hover:text-christmas-red transition-colors">
+              個人資料
+            </Link>
           )}
         </nav>
       </header>
@@ -114,6 +119,14 @@ function App() {
           element={
             <ProtectedRoute allow={['creator', 'receiver']}>
               <ReceiverInbox />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/receiver/library"
+          element={
+            <ProtectedRoute allow={['creator', 'receiver']}>
+              <ReceiverLibrary />
             </ProtectedRoute>
           }
         />
