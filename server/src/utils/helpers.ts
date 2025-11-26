@@ -1,8 +1,9 @@
 import crypto from 'crypto';
-import { DEFAULT_TOTAL_DAYS } from '../config/index';
+import { DEFAULT_TOTAL_DAYS, PASSWORD_SECRET, QR_TOKEN_SECRET } from '../config/index';
 
 export function hashPassword(value: string): string {
-  return crypto.createHash('sha256').update(value).digest('hex');
+  // 使用 PASSWORD_SECRET 作為 salt 來加密密碼
+  return crypto.createHmac('sha256', PASSWORD_SECRET).update(value).digest('hex');
 }
 
 export function generateId(prefix: string): string {
@@ -50,11 +51,11 @@ export function sanitizeUser(user: any): any {
 
 /**
  * 生成每天唯一的 QR code token
- * 使用 countdownId + day + secret 生成，確保每天都有唯一且不可預測的 token
+ * 使用 countdownId + day + QR_TOKEN_SECRET 生成，確保每天都有唯一且不可預測的 token
  */
-export function generateDayQrToken(countdownId: string, day: number, secret: string = 'countdown24-secret'): string {
-  const input = `${countdownId}-${day}-${secret}`;
-  const hash = crypto.createHash('sha256').update(input).digest('hex');
+export function generateDayQrToken(countdownId: string, day: number): string {
+  const input = `${countdownId}-${day}-${QR_TOKEN_SECRET}`;
+  const hash = crypto.createHmac('sha256', QR_TOKEN_SECRET).update(input).digest('hex');
   // 取前 16 個字符作為 token，加上 day 前綴以便識別
   return `day${day}-${hash.substring(0, 16)}`;
 }
@@ -62,7 +63,7 @@ export function generateDayQrToken(countdownId: string, day: number, secret: str
 /**
  * 驗證 QR code token 是否有效
  */
-export function verifyDayQrToken(token: string, countdownId: string, day: number, secret: string = 'countdown24-secret'): boolean {
-  const expected = generateDayQrToken(countdownId, day, secret);
+export function verifyDayQrToken(token: string, countdownId: string, day: number): boolean {
+  const expected = generateDayQrToken(countdownId, day);
   return token === expected;
 }

@@ -24,6 +24,7 @@ interface DayCardData {
   day: number;
   title: string;
   description: string;
+  coverImage?: string;
   type: 'story' | 'qr' | 'voucher';
   qrReward?: QrReward;
   voucherDetail?: VoucherDetail;
@@ -127,6 +128,14 @@ function DayCardEditor({
             className="w-full bg-white/5 rounded-xl px-4 py-2.5 min-h-[80px] border border-white/10 focus:border-aurora focus:outline-none"
           />
         </div>
+        <ImageUploadField
+          label="小卡封面圖"
+          value={dayCardDraft.coverImage || ''}
+          onChange={(url) => onFieldChange('coverImage', url)}
+          placeholder="https://example.com/cover.jpg"
+          folder={countdownId ? `countdowns/${countdownId}/days/${activeDay}/cover` : undefined}
+          helperText="小卡在列表中顯示的封面圖片"
+        />
       </div>
 
       {/* CG 劇本編輯 */}
@@ -207,13 +216,6 @@ function DayCardEditor({
               className="w-full bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 focus:border-aurora focus:outline-none"
             />
           </div>
-          <ImageUploadField
-            label="兌換卷封面圖"
-            value={dayCardDraft.coverImage || ''}
-            onChange={(url) => onFieldChange('coverImage', url)}
-            placeholder="https://example.com/voucher-cover.jpg"
-            folder={countdownId ? `countdowns/${countdownId}/days/${activeDay}/voucher` : undefined}
-          />
           <div>
             <label className="text-xs text-gray-400 block mb-1">內容描述</label>
             <textarea

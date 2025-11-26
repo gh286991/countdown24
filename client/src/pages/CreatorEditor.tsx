@@ -252,13 +252,11 @@ function CreatorEditor() {
             onDaySelect={handleDaySelect}
           />
           
-          {/* 每日解鎖禮品卡生成區塊 - 移到左側 */}
-          {dayCardDraft.type === 'qr' && (
-            <DayQrCodeGenerator
-              activeDay={activeDay}
-              countdownId={id || ''}
-            />
-          )}
+          {/* 每日解鎖 QR Code 生成區塊 */}
+          <DayQrCodeGenerator
+            activeDay={activeDay}
+            countdownId={id || ''}
+          />
         </div>
 
         {/* 中間：編輯區 */}

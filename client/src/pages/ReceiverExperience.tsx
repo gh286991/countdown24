@@ -43,9 +43,9 @@ function ReceiverExperience() {
       return (countdown.dayCards || []).map((card: any) => {
         const availableDay = countdown.availableDay || 0;
         const scheduleUnlocked = card.day <= availableDay || card.unlocked;
-        const requiresGiftUnlock = card.type === 'qr';
+        // 所有類型都需要掃描 QR code 解鎖
         const qrUnlocked = unlockedDays.includes(card.day);
-        const unlocked = requiresGiftUnlock ? scheduleUnlocked && qrUnlocked : scheduleUnlocked;
+        const unlocked = scheduleUnlocked && qrUnlocked;
         const locked = !unlocked;
         return {
           ...card,
@@ -414,29 +414,21 @@ function ReceiverExperience() {
             <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
             {modalLoading && <p className="text-gray-300">載入內容中...</p>}
             {!modalLoading && !currentDayContent && modalMeta?.locked && (
-              modalMeta.type === 'qr' ? (
-                <div className="text-center py-8">
-                  <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
-                  <p className="text-sm text-gray-400 mb-4">請掃描對應的禮品卡來解鎖此日內容</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModalDay(null);
-                      setShowQrScanner(true);
-                    }}
-                    className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
-                  >
-                    掃描禮品卡
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-semibold mb-2">還沒到這一天喔</p>
-                  <p className="text-sm text-gray-400">等到指定日期，這張兌換卷就會自動開啟。</p>
-                </div>
-              )
+              <div className="text-center py-8">
+                <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
+                <p className="text-sm text-gray-400 mb-4">請掃描對應的解鎖碼來解鎖此日內容</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalDay(null);
+                    setShowQrScanner(true);
+                  }}
+                  className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
+                >
+                  掃描解鎖碼
+                </button>
+              </div>
             )}
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
               <QrCardPreview

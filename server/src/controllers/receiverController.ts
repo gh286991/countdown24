@@ -115,10 +115,10 @@ export async function getReceiverDayContent(req: AuthenticatedRequest, res: Resp
     return res.status(403).json({ message: 'Day not available yet.' });
   }
 
-  // 檢查是否已通過禮品卡解鎖（僅針對禮品類型）
+  // 檢查是否已通過 QR code 解鎖（所有類型都需要）
   const unlockedDays = assignment.unlockedDays || [];
-  if (dayCard.type === 'qr' && !unlockedDays.includes(requestedDay)) {
-    return res.status(403).json({ message: 'Day not unlocked yet. Please scan the gift card.' });
+  if (!unlockedDays.includes(requestedDay)) {
+    return res.status(403).json({ message: 'Day not unlocked yet. Please scan the unlock code.' });
   }
 
   return res.json({

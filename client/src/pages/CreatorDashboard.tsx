@@ -30,11 +30,11 @@ function CreatorDashboard() {
   });
 
   useEffect(() => {
-    // 只在尚未載入且用戶是創作者時才發起請求
-    if (user?.role === 'creator' && status !== 'loading' && items.length === 0) {
+    // 只在尚未載入過（idle 狀態）且用戶是創作者時才發起請求
+    if (user?.role === 'creator' && status === 'idle') {
       dispatch(fetchCreatorCountdowns());
     }
-  }, [dispatch, user, status, items.length]);
+  }, [dispatch, user, status]);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

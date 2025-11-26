@@ -34,3 +34,9 @@ export const MINIO_PUBLIC_URL: string = process.env.MINIO_PUBLIC_URL || '';
 export const MINIO_PRESIGNED_EXPIRES: number = process.env.MINIO_PRESIGNED_EXPIRES
   ? Number(process.env.MINIO_PRESIGNED_EXPIRES)
   : 7 * 24 * 60 * 60;
+
+// 密碼加密用的 Secret Key
+export const PASSWORD_SECRET: string = process.env.PASSWORD_SECRET || 'dev-password-secret-change-in-production';
+
+// QR Token 生成用的 Secret Key
+export const QR_TOKEN_SECRET: string = process.env.QR_TOKEN_SECRET || 'dev-qr-token-secret-change-in-production';
