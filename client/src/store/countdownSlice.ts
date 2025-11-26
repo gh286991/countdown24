@@ -1,6 +1,24 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import api from '../api/client';
 
+export type PrintCardTemplate = 'imageLeft' | 'imageRight' | 'stacked' | 'spotlight';
+
+export interface PrintCard {
+  id: string | null;
+  countdownId?: string;
+  day: number;
+  template: PrintCardTemplate;
+  imageUrl: string;
+  qrCode: string;
+  title: string;
+  subtitle: string;
+  note: string;
+  accentColor: string;
+  isConfigured?: boolean;
+  canvasJson?: any;
+  previewImage?: string;
+}
+
 interface Countdown {
   id: string;
   title: string;
@@ -16,6 +34,7 @@ interface Countdown {
   totalDays?: number;
   availableDay?: number;
   dayCards?: any[];
+  printCards?: PrintCard[];
   [key: string]: any;
 }
 
@@ -29,6 +48,7 @@ interface CountdownState {
   assignments: any[];
   receivers: any[];
   receiversStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  printCardsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
 export const fetchCreatorCountdowns = createAsyncThunk(
@@ -166,6 +186,45 @@ export const acceptInvitation = createAsyncThunk(
   },
 );
 
+export const fetchPrintCards = createAsyncThunk(
+  'countdowns/fetchPrintCards',
+  async (countdownId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${countdownId}/print-cards`);
+      return { countdownId, cards: data.cards || [] };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得列印小卡');
+    }
+  },
+);
+
+export const savePrintCard = createAsyncThunk(
+  'countdowns/savePrintCard',
+  async (
+    { countdownId, day, card }: { countdownId: string; day: number; card: Partial<PrintCard> },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.put(`/countdowns/${countdownId}/print-cards/${day}`, card);
+      return { countdownId, cards: data.cards || [], card: data.card };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '儲存列印小卡失敗');
+    }
+  },
+);
+
+export const deletePrintCard = createAsyncThunk(
+  'countdowns/deletePrintCard',
+  async ({ countdownId, day }: { countdownId: string; day: number }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.delete(`/countdowns/${countdownId}/print-cards/${day}`);
+      return { countdownId, cards: data.cards || [], card: data.card };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '刪除列印小卡失敗');
+    }
+  },
+);
+
 const initialState: CountdownState = {
   items: [],
   selected: null,
@@ -176,6 +235,7 @@ const initialState: CountdownState = {
   assignments: [],
   receivers: [],
   receiversStatus: 'idle',
+  printCardsStatus: 'idle',
 };
 
 const countdownSlice = createSlice({
@@ -243,10 +303,31 @@ const countdownSlice = createSlice({
       })
       .addCase(removeReceiver.fulfilled, (state, action: PayloadAction<{ receiverId: string }>) => {
         state.receivers = state.receivers.filter((r) => r.receiverId !== action.payload.receiverId);
+      })
+      .addCase(fetchPrintCards.pending, (state) => {
+        state.printCardsStatus = 'loading';
+      })
+      .addCase(fetchPrintCards.fulfilled, (state, action) => {
+        state.printCardsStatus = 'succeeded';
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          state.selected.printCards = action.payload.cards;
+        }
+      })
+      .addCase(fetchPrintCards.rejected, (state) => {
+        state.printCardsStatus = 'failed';
+      })
+      .addCase(savePrintCard.fulfilled, (state, action) => {
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          state.selected.printCards = action.payload.cards;
+        }
+      })
+      .addCase(deletePrintCard.fulfilled, (state, action) => {
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          state.selected.printCards = action.payload.cards;
+        }
       });
   },
 });
 
 export const { clearCountdownSelection } = countdownSlice.actions;
 export default countdownSlice.reducer;
-

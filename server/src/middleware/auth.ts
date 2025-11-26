@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest, User } from '../types/index';
+import { AuthenticatedRequest } from '../types/index';
 import { Tokens, Users } from '../db/connection';
 import { sanitizeUser } from '../utils/helpers';
 
@@ -55,4 +55,3 @@ async function purgeExpiredTokens(): Promise<void> {
   const now = Date.now();
   await Tokens.deleteMany({ expiresAt: { $lte: now } });
 }
-

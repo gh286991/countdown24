@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
 import { Countdowns, Assignments, CountdownDays, Users, Invitations } from '../db/connection';
 import * as countdownService from '../services/countdownService';
+import * as printCardService from '../services/printCardService';
 import { normalizeDate, normalizeTotalDays, addDays, generateId, generateDayQrToken } from '../utils/helpers';
 import crypto from 'crypto';
 
@@ -61,8 +62,15 @@ export async function getCountdownById(req: AuthenticatedRequest, res: Response)
     }
   }
 
-  const payload: any = { countdown: countdownService.withAvailableContent(countdownWithCards) };
-  if (req.user.role === 'creator' && countdown.ownerId === req.user.id) {
+  const isOwner = req.user.role === 'creator' && countdown.ownerId === req.user.id;
+  const printCards = isOwner ? await printCardService.getPrintCards(countdown.id, countdown.totalDays) : [];
+  const countdownPayload = {
+    ...countdownWithCards,
+    printCards: isOwner ? printCards : undefined,
+  };
+
+  const payload: any = { countdown: countdownService.withAvailableContent(countdownPayload) };
+  if (isOwner) {
     payload.assignments = await Assignments.find({ countdownId: countdown.id }).toArray();
   }
   return res.json(payload);
@@ -188,7 +196,8 @@ export async function updateCountdown(req: AuthenticatedRequest, res: Response) 
   );
   await countdownService.ensureRecipientAssignments(id, updatedRecipients);
 
-  const responseCountdown = { ...nextCountdown, dayCards: nextDayCards };
+  const printCards = await printCardService.getPrintCards(id, nextTotalDays);
+  const responseCountdown = { ...nextCountdown, dayCards: nextDayCards, printCards };
   return res.json({ countdown: countdownService.withAvailableContent(responseCountdown) });
 }
 
@@ -476,3 +485,62 @@ export async function generateDayQrCode(req: AuthenticatedRequest, res: Response
   });
 }
 
+export async function getPrintCardsForCountdown(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params;
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  const cards = await printCardService.getPrintCards(id, countdown.totalDays);
+  return res.json({ cards });
+}
+
+export async function savePrintCard(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, day: dayParam } = req.params;
+  const day = Number(dayParam);
+  if (!day || Number.isNaN(day) || day < 1) {
+    return res.status(400).json({ message: 'Invalid day parameter' });
+  }
+
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+  if (day > (countdown.totalDays || 24)) {
+    return res.status(400).json({ message: 'Day exceeds total days' });
+  }
+
+  const card = await printCardService.savePrintCard(id, day, req.body || {});
+  const cards = await printCardService.getPrintCards(id, countdown.totalDays);
+  return res.json({ card, cards });
+}
+
+export async function deletePrintCard(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, day: dayParam } = req.params;
+  const day = Number(dayParam);
+  if (!day || Number.isNaN(day) || day < 1) {
+    return res.status(400).json({ message: 'Invalid day parameter' });
+  }
+
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  const card = await printCardService.deletePrintCard(id, day);
+  const cards = await printCardService.getPrintCards(id, countdown.totalDays);
+  return res.json({ card, cards });
+}

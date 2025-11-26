@@ -60,6 +60,111 @@
   .border-gradient {
     border-image: linear-gradient(135deg, #c85a5a, #6b9b7a, #d4a574) 1;
   }
+
+  .a4-preview-container {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .a4-page {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff;
+    border-radius: 4px;
+    box-shadow: 
+      0 0 0 1px rgba(15, 23, 42, 0.1),
+      0 20px 60px rgba(15, 23, 42, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .a4-page-label {
+    position: absolute;
+    top: -28px;
+    left: 0;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .print-stack {
+    width: 100%;
+    height: 100%;
+    padding: 8mm;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 4mm;
+    align-content: start;
+  }
+
+  .print-card-slot {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    page-break-inside: avoid;
+  }
+
+  .print-card-slot > * {
+    width: 100%;
+  }
+
+  .print-card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .print-card__template {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .print-card__media {
+    width: 100%;
+    height: 52mm;
+    border-radius: 22px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .print-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .print-card__qr {
+    width: 36mm;
+    height: 36mm;
+    padding: 4mm;
+  }
+
+  .print-card__note {
+    font-size: 0.68rem;
+    line-height: 1.2;
+    color: #334155;
+  }
+
+  .print-card-image {
+    width: 100%;
+    height: auto;
+    border-radius: 28px;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+    page-break-inside: avoid;
+  }
+
+  .print-card.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
 }
 
 @layer utilities {
@@ -73,5 +178,83 @@
 
   .animation-delay-600 {
     animation-delay: 600ms;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
+@media print {
+  /* 隱藏頁首頁尾 */
+  @page {
+    margin: 8mm;
+  }
+
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 隱藏所有不需要列印的元素 */
+  .no-print,
+  header,
+  nav,
+  .no-print * {
+    display: none !important;
+  }
+
+  .a4-preview-container {
+    gap: 0 !important;
+  }
+
+  .a4-page {
+    width: 100% !important;
+    min-height: auto !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .a4-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .a4-page-label {
+    display: none !important;
+  }
+
+  .print-stack {
+    max-width: none !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4mm !important;
+  }
+
+  .print-card-slot {
+    width: 100% !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .print-card-image {
+    width: 100% !important;
+    height: auto !important;
+    border-radius: 8px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }

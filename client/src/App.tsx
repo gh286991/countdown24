@@ -12,6 +12,7 @@ import ProfilePage from './pages/ProfilePage';
 import ReceiverExperience from './pages/ReceiverExperience';
 import ReceiverInbox from './pages/ReceiverInbox';
 import ScanPage from './pages/ScanPage';
+import PrintCardsPage from './pages/PrintCardsPage';
 import { bootstrapSession, logout } from './store/authSlice';
 import type { RootState } from './store';
 
@@ -33,7 +34,7 @@ function App() {
       <div className="snow-layer snow-layer-fast"></div>
       <div className="snow-layer" style={{ animation: 'snowfall4 22s linear infinite', animationDelay: '-8s', opacity: 0.35 }}></div> */}
       
-      <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 py-6 px-6 relative z-10">
+      <header className="no-print max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 py-6 px-6 relative z-10">
         <Link to="/" className="text-2xl font-semibold tracking-[0.4em] uppercase text-white flex items-center gap-2">
           <HiOutlineGift className="w-6 h-6" />
           倒數禮物盒
@@ -101,6 +102,14 @@ function App() {
           }
         />
         <Route
+          path="/creator/countdowns/:id/print"
+          element={
+            <ProtectedRoute allow={['creator']}>
+              <PrintCardsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/receiver"
           element={
             <ProtectedRoute allow={['creator', 'receiver']}>
@@ -131,4 +140,3 @@ function App() {
 }
 
 export default App;
-

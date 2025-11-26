@@ -20,6 +20,8 @@ router.delete('/:id/receivers/:receiverId', requireAuth, requireRole('creator'),
 router.post('/:id/invite', requireAuth, requireRole('creator'), asyncHandler(countdownController.createInvitation));
 router.post('/invite/accept/:token', requireAuth, asyncHandler(countdownController.acceptInvitation));
 router.post('/:id/generate-qr', requireAuth, requireRole('creator'), asyncHandler(countdownController.generateDayQrCode));
+router.get('/:id/print-cards', requireAuth, requireRole('creator'), asyncHandler(countdownController.getPrintCardsForCountdown));
+router.put('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.savePrintCard));
+router.delete('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.deletePrintCard));
 
 export default router;
-

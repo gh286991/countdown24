@@ -7,9 +7,18 @@ import DayCardEditor from '../components/DayCardEditor';
 import DayCardPreviewPanel from '../components/DayCardPreviewPanel';
 import DayQrCodeGenerator from '../components/DayQrCodeGenerator';
 import ReceiversModal from '../components/ReceiversModal';
+import PrintCardPanel from '../components/PrintCardPanel';
+import PrintCardEditorModal from '../components/PrintCardEditorModal';
 import { useToast } from '../components/ToastProvider';
 import sampleCgScript from '../data/sampleCgScript';
-import { assignReceivers, createInvitation, fetchCountdownDetail, updateCountdown } from '../store/countdownSlice';
+import {
+  assignReceivers,
+  createInvitation,
+  deletePrintCard,
+  fetchCountdownDetail,
+  savePrintCard,
+  updateCountdown,
+} from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
 const defaultQrReward = { title: '', message: '', imageUrl: '', qrCode: '' };
@@ -25,6 +34,7 @@ function CreatorEditor() {
   const [activeDay, setActiveDay] = useState(Number(searchParams.get('day')) || 1);
   const [dayCardDraft, setDayCardDraft] = useState({ ...emptyCard, day: Number(searchParams.get('day')) || 1 });
   const [showReceiversModal, setShowReceiversModal] = useState(false);
+  const [showPrintCardModal, setShowPrintCardModal] = useState(false);
   const dayFromUrl = Number(searchParams.get('day')) || 1;
   const { showToast } = useToast();
 
@@ -87,6 +97,11 @@ function CreatorEditor() {
     }
   }, [cgScriptDraft]);
 
+  const currentPrintCard = useMemo(() => {
+    if (!selected?.printCards) return undefined;
+    return selected.printCards.find((card) => card.day === activeDay);
+  }, [selected?.printCards, activeDay]);
+
   if (detailStatus === 'loading' || !selected) {
     return <p className="text-center text-gray-400 py-10">載入倒數內容...</p>;
   }
@@ -144,8 +159,21 @@ function CreatorEditor() {
     setDayCardDraft((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePrintCardSave = (data: any) => {
+    if (!id) return;
+    dispatch(savePrintCard({ countdownId: id, day: activeDay, card: data }));
+    setShowPrintCardModal(false);
+  };
+
+  const handlePrintCardDelete = () => {
+    if (!id) return;
+    dispatch(deletePrintCard({ countdownId: id, day: activeDay }));
+    setShowPrintCardModal(false);
+  };
+
   return (
-    <section className="max-w-[1800px] mx-auto py-6 px-6 relative z-10">
+    <>
+      <section className="max-w-[1800px] mx-auto py-6 px-6 relative z-10">
       {/* 頂部：專案資訊 + 分享設定 */}
       <ProjectHeader
         title={selected.title}
@@ -209,17 +237,37 @@ function CreatorEditor() {
           />
         </div>
 
-        {/* 右側：預覽區 */}
-        <DayCardPreviewPanel
-          activeDay={activeDay}
-          type={dayCardDraft.type as 'story' | 'qr'}
-          title={dayCardDraft.title}
-          description={dayCardDraft.description}
-          qrReward={dayCardDraft.qrReward}
-          cgPreview={cgPreview}
-        />
+        {/* 右側：預覽 + 列印小卡 */}
+        <div className="space-y-4">
+          <DayCardPreviewPanel
+            activeDay={activeDay}
+            type={dayCardDraft.type as 'story' | 'qr'}
+            title={dayCardDraft.title}
+            description={dayCardDraft.description}
+            qrReward={dayCardDraft.qrReward}
+            cgPreview={cgPreview}
+          />
+
+          <PrintCardPanel
+            day={activeDay}
+            countdownId={id || ''}
+            card={currentPrintCard}
+            onEdit={() => setShowPrintCardModal(true)}
+          />
+        </div>
       </div>
     </section>
+
+      <PrintCardEditorModal
+        countdownId={id || ''}
+        day={activeDay}
+        isOpen={showPrintCardModal}
+        card={currentPrintCard}
+        onSave={handlePrintCardSave}
+        onDelete={handlePrintCardDelete}
+        onClose={() => setShowPrintCardModal(false)}
+      />
+    </>
   );
 }
 

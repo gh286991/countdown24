@@ -163,7 +163,6 @@ export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) 
   }
 
   // 檢查該天是否已解鎖
-  const countdownWithCards = await countdownService.attachDayCards(countdown);
   const unlockedDays = assignment.unlockedDays || [];
   
   if (unlockedDays.includes(day)) {
@@ -187,4 +186,3 @@ export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) 
     unlockedDays: newUnlockedDays,
   });
 }
-

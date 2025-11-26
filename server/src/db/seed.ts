@@ -1,5 +1,5 @@
 import { Users, Countdowns, Assignments } from './connection';
-import { hashPassword, generateId } from '../utils/helpers';
+import { hashPassword } from '../utils/helpers';
 import * as countdownService from '../services/countdownService';
 
 export async function seedDemoData(): Promise<void> {
@@ -228,4 +228,3 @@ export async function seedDemoData(): Promise<void> {
       countdownService.persistDayCards(countdown.id, countdown.totalDays, sampleDayCards[countdown.id] || [], countdown)),
   );
 }
-

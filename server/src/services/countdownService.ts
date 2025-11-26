@@ -1,7 +1,7 @@
-import { Countdowns, CountdownDays, Assignments, Users } from '../db/connection';
+import { CountdownDays, Assignments, Users } from '../db/connection';
 import { DEFAULT_TOTAL_DAYS } from '../config/index';
-import { generateId, normalizeDate, normalizeTotalDays, addDays, hasRewardData } from '../utils/helpers';
-import type { Countdown, DayCard, QrReward } from '../types/index';
+import { generateId, hasRewardData } from '../utils/helpers';
+import type { DayCard, QrReward } from '../types/index';
 
 export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [], countdown: any = null): DayCard[] {
   const map = new Map((cards || []).filter(Boolean).map((card) => [card.day, card]));
@@ -121,6 +121,7 @@ export function withAvailableContent(countdown: any): any {
   snapshot.storyMoments = countdown.storyMoments || [];
   snapshot.qrRewards = countdown.qrRewards || [];
   snapshot.cgScript = countdown.cgScript || null;
+  snapshot.printCards = countdown.printCards || [];
   snapshot.dayCards = buildDayCards(countdown.totalDays || DEFAULT_TOTAL_DAYS, countdown.dayCards, countdown);
   snapshot.dayCards = snapshot.dayCards.map((card: DayCard) => ({
     ...card,
@@ -188,4 +189,3 @@ export async function resolveReceiverIds(recipientIds: string[] = [], recipientE
 
   return Array.from(uniqueIds);
 }
-

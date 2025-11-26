@@ -68,3 +68,21 @@ export interface Assignment {
   status: string;
   unlockedOn: string | null;
 }
+
+export type PrintCardTemplate = 'imageLeft' | 'imageRight' | 'stacked' | 'spotlight';
+
+export interface PrintCard {
+  id: string | null;
+  countdownId: string;
+  day: number;
+  template: PrintCardTemplate;
+  imageUrl: string;
+  qrCode: string;
+  title: string;
+  subtitle: string;
+  note: string;
+  accentColor: string;
+  isConfigured?: boolean;
+  canvasJson?: any;
+  previewImage?: string;
+}
