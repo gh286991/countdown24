@@ -14,6 +14,7 @@ import ReceiverInbox from './pages/ReceiverInbox';
 import ReceiverLibrary from './pages/ReceiverLibrary';
 import ScanPage from './pages/ScanPage';
 import PrintCardsPage from './pages/PrintCardsPage';
+import VoucherRedemptionsPage from './pages/VoucherRedemptionsPage';
 import { bootstrapSession, logout } from './store/authSlice';
 import type { RootState } from './store';
 
@@ -111,6 +112,14 @@ function App() {
           element={
             <ProtectedRoute allow={['creator']}>
               <PrintCardsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/countdowns/:id/redemptions"
+          element={
+            <ProtectedRoute allow={['creator']}>
+              <VoucherRedemptionsPage />
             </ProtectedRoute>
           }
         />

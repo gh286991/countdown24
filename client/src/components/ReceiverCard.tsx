@@ -10,7 +10,7 @@ function ReceiverCard({ assignment, onOpen }: ReceiverCardProps) {
     <button
       type="button"
       onClick={() => onOpen?.(assignment)}
-      className="glass-panel text-left hover:border-aurora/70 transition p-4"
+      className="w-full block glass-panel text-left hover:border-aurora/70 transition p-4"
     >
       <div className="flex items-start gap-4">
         <img src={countdown.coverImage} alt={countdown.title} className="w-20 h-20 rounded-2xl object-cover flex-shrink-0" />

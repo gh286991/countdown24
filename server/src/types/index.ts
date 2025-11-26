@@ -110,3 +110,19 @@ export interface VoucherCard {
   canvasJson?: any;
   previewImage?: string;
 }
+
+export type VoucherRedemptionStatus = 'pending' | 'confirmed' | 'rejected';
+
+export interface VoucherRedemption {
+  id: string;
+  countdownId: string;
+  assignmentId: string;
+  day: number;
+  receiverId: string;
+  status: VoucherRedemptionStatus;
+  requestedAt: string;
+  confirmedAt?: string | null;
+  rejectedAt?: string | null;
+  note?: string; // 接收者的備註
+  creatorNote?: string; // 創作者的備註
+}

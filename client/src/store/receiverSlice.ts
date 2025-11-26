@@ -1,6 +1,22 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import api from '../api/client';
 
+export type VoucherRedemptionStatus = 'pending' | 'confirmed' | 'rejected';
+
+export interface VoucherRedemption {
+  id: string;
+  countdownId: string;
+  assignmentId: string;
+  day: number;
+  receiverId: string;
+  status: VoucherRedemptionStatus;
+  requestedAt: string;
+  confirmedAt?: string | null;
+  rejectedAt?: string | null;
+  note?: string;
+  creatorNote?: string;
+}
+
 interface ReceiverState {
   inbox: any[];
   selected: any | null;
@@ -10,6 +26,9 @@ interface ReceiverState {
   dayContent: any | null;
   error: string | null;
   dayError: string | null;
+  redemptions: VoucherRedemption[];
+  redemptionsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  redemptionError: string | null;
 }
 
 export const fetchReceiverInbox = createAsyncThunk(
@@ -60,6 +79,32 @@ export const unlockDayWithQr = createAsyncThunk(
   },
 );
 
+// 請求兌換兌換卷
+export const requestVoucherRedemption = createAsyncThunk(
+  'receiver/requestVoucherRedemption',
+  async ({ assignmentId, day, note }: { assignmentId: string; day: number; note?: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(`/receiver/countdowns/${assignmentId}/vouchers/${day}/redeem`, { note });
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '兌換請求失敗');
+    }
+  },
+);
+
+// 獲取接收者的兌換紀錄
+export const fetchReceiverRedemptions = createAsyncThunk(
+  'receiver/fetchRedemptions',
+  async (assignmentId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/receiver/countdowns/${assignmentId}/redemptions`);
+      return data.redemptions || [];
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得兌換紀錄');
+    }
+  },
+);
+
 const initialState: ReceiverState = {
   inbox: [],
   selected: null,
@@ -69,6 +114,9 @@ const initialState: ReceiverState = {
   dayContent: null,
   error: null,
   dayError: null,
+  redemptions: [],
+  redemptionsStatus: 'idle',
+  redemptionError: null,
 };
 
 const receiverSlice = createSlice({
@@ -125,6 +173,30 @@ const receiverSlice = createSlice({
       .addCase(fetchReceiverDayContent.rejected, (state, action) => {
         state.dayStatus = 'failed';
         state.dayError = (action.payload as string) || null;
+      })
+      // 兌換紀錄
+      .addCase(fetchReceiverRedemptions.pending, (state) => {
+        state.redemptionsStatus = 'loading';
+      })
+      .addCase(fetchReceiverRedemptions.fulfilled, (state, action) => {
+        state.redemptionsStatus = 'succeeded';
+        state.redemptions = action.payload;
+      })
+      .addCase(fetchReceiverRedemptions.rejected, (state, action) => {
+        state.redemptionsStatus = 'failed';
+        state.redemptionError = (action.payload as string) || null;
+      })
+      // 請求兌換
+      .addCase(requestVoucherRedemption.fulfilled, (state, action) => {
+        const redemption = action.payload.redemption;
+        if (redemption) {
+          const index = state.redemptions.findIndex((r) => r.id === redemption.id);
+          if (index >= 0) {
+            state.redemptions[index] = redemption;
+          } else {
+            state.redemptions.push(redemption);
+          }
+        }
       });
   },
 });

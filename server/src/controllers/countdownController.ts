@@ -4,6 +4,7 @@ import { Countdowns, Assignments, CountdownDays, Users, Invitations } from '../d
 import * as countdownService from '../services/countdownService';
 import * as printCardService from '../services/printCardService';
 import * as voucherCardService from '../services/voucherCardService';
+import * as voucherRedemptionService from '../services/voucherRedemptionService';
 import { normalizeDate, normalizeTotalDays, addDays, generateId, generateDayQrToken } from '../utils/helpers';
 import crypto from 'crypto';
 
@@ -607,4 +608,100 @@ export async function deleteVoucherCard(req: AuthenticatedRequest, res: Response
   const card = await voucherCardService.deleteVoucherCard(id, day);
   const cards = await voucherCardService.getVoucherCards(id, countdown.totalDays);
   return res.json({ card, cards });
+}
+
+// 獲取兌換紀錄
+export async function getVoucherRedemptions(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns || !Users) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params;
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  const redemptions = await voucherRedemptionService.getRedemptionsByCountdown(id);
+  
+  // 獲取接收者資訊
+  const receiverIds = [...new Set(redemptions.map((r) => r.receiverId))];
+  const receivers = await Users.find({ id: { $in: receiverIds } }).toArray();
+  const receiverMap = new Map(receivers.map((r) => [r.id, { id: r.id, name: r.name, email: r.email, avatar: r.avatar }]));
+
+  const redemptionsWithUser = redemptions.map((r) => ({
+    ...r,
+    receiver: receiverMap.get(r.receiverId) || null,
+  }));
+
+  const pendingCount = redemptions.filter((r) => r.status === 'pending').length;
+
+  return res.json({ 
+    redemptions: redemptionsWithUser,
+    pendingCount,
+  });
+}
+
+// 確認兌換
+export async function confirmVoucherRedemption(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, redemptionId } = req.params;
+  const { note } = req.body || {};
+
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 確認兌換請求屬於這個倒數專案
+  const redemption = await voucherRedemptionService.getRedemptionById(redemptionId);
+  if (!redemption || redemption.countdownId !== id) {
+    return res.status(404).json({ message: 'Redemption not found' });
+  }
+
+  const updated = await voucherRedemptionService.confirmRedemption(redemptionId, note);
+  if (!updated) {
+    return res.status(500).json({ message: 'Failed to confirm redemption' });
+  }
+
+  return res.json({
+    success: true,
+    message: 'Redemption confirmed',
+    redemption: updated,
+  });
+}
+
+// 拒絕兌換
+export async function rejectVoucherRedemption(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, redemptionId } = req.params;
+  const { note } = req.body || {};
+
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 確認兌換請求屬於這個倒數專案
+  const redemption = await voucherRedemptionService.getRedemptionById(redemptionId);
+  if (!redemption || redemption.countdownId !== id) {
+    return res.status(404).json({ message: 'Redemption not found' });
+  }
+
+  const updated = await voucherRedemptionService.rejectRedemption(redemptionId, note);
+  if (!updated) {
+    return res.status(500).json({ message: 'Failed to reject redemption' });
+  }
+
+  return res.json({
+    success: true,
+    message: 'Redemption rejected',
+    redemption: updated,
+  });
 }

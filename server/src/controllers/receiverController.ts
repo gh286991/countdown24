@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../types/index';
 import { Assignments, Countdowns, Users } from '../db/connection';
 import * as countdownService from '../services/countdownService';
 import * as voucherCardService from '../services/voucherCardService';
+import * as voucherRedemptionService from '../services/voucherRedemptionService';
 import { verifyDayQrToken } from '../utils/helpers';
 
 export async function getInbox(req: AuthenticatedRequest, res: Response) {
@@ -193,4 +194,76 @@ export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) 
     message: 'Day unlocked successfully',
     unlockedDays: newUnlockedDays,
   });
+}
+
+// 請求兌換兌換卷
+export async function requestVoucherRedemption(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Assignments || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { assignmentId, day } = req.params;
+  const { note } = req.body || {};
+  const dayNum = Number(day);
+
+  if (!Number.isFinite(dayNum) || dayNum < 1) {
+    return res.status(400).json({ message: 'Invalid day parameter' });
+  }
+
+  const assignment = await Assignments.findOne({ id: assignmentId, receiverId: req.user.id });
+  if (!assignment) {
+    return res.status(404).json({ message: 'Assignment not found' });
+  }
+
+  const countdown = await Countdowns.findOne({ id: assignment.countdownId });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // 檢查該天是否是兌換卷類型
+  const countdownWithCards = await countdownService.attachDayCards(countdown);
+  const dayCard = (countdownWithCards.dayCards || []).find((card: any) => card.day === dayNum);
+  if (!dayCard || dayCard.type !== 'voucher') {
+    return res.status(400).json({ message: 'This day is not a voucher type' });
+  }
+
+  // 檢查該天是否已解鎖（可用）
+  const availableDay = countdownService.computeAvailableDay(countdown);
+  if (dayNum > availableDay) {
+    return res.status(403).json({ message: 'Day not available yet' });
+  }
+
+  try {
+    const redemption = await voucherRedemptionService.requestRedemption(
+      countdown.id,
+      assignmentId,
+      dayNum,
+      req.user.id!,
+      note
+    );
+
+    return res.json({
+      success: true,
+      message: redemption.status === 'pending' ? 'Redemption requested' : 'Redemption already exists',
+      redemption,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || 'Failed to request redemption' });
+  }
+}
+
+// 獲取接收者的兌換紀錄
+export async function getReceiverRedemptions(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Assignments) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { assignmentId } = req.params;
+  const assignment = await Assignments.findOne({ id: assignmentId, receiverId: req.user.id });
+  if (!assignment) {
+    return res.status(404).json({ message: 'Assignment not found' });
+  }
+
+  const redemptions = await voucherRedemptionService.getRedemptionsByAssignment(assignmentId);
+  return res.json({ redemptions });
 }

@@ -1,27 +1,34 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { HiOutlineXMark, HiOutlineLockClosed, HiOutlineQrCode, HiOutlineCamera } from 'react-icons/hi2';
+import { HiOutlineXMark, HiOutlineLockClosed, HiOutlineQrCode, HiOutlineCamera, HiOutlineCheckCircle, HiOutlineClock, HiOutlineXCircle } from 'react-icons/hi2';
 import { Html5Qrcode } from 'html5-qrcode';
 import DayTimeline from '../components/DayTimeline';
 import CgPlayer from '../components/CgPlayer';
 import QrCardPreview from '../components/QrCardPreview';
 import PrintCardPreview from '../components/PrintCardPreview';
 import { useToast } from '../components/ToastProvider';
-import { clearDayContent, fetchReceiverDayContent, fetchReceiverExperience, unlockDayWithQr } from '../store/receiverSlice';
+import { clearDayContent, fetchReceiverDayContent, fetchReceiverExperience, unlockDayWithQr, fetchReceiverRedemptions, requestVoucherRedemption } from '../store/receiverSlice';
 import type { RootState, AppDispatch } from '../store';
 
 function ReceiverExperience() {
   const { assignmentId } = useParams();
   const dispatch = useDispatch<AppDispatch>();
-  const { selected, experienceStatus, dayStatus, dayContent } = useSelector((state: RootState) => state.receiver);
+  const { selected, experienceStatus, dayStatus, dayContent, redemptions } = useSelector((state: RootState) => state.receiver);
   const { showToast } = useToast();
+  const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
     if (assignmentId) {
       dispatch(fetchReceiverExperience(assignmentId));
+      dispatch(fetchReceiverRedemptions(assignmentId));
     }
   }, [assignmentId, dispatch]);
+
+  // 根據 day 獲取兌換狀態
+  const getRedemptionForDay = (day: number) => {
+    return redemptions.find((r) => r.day === day);
+  };
 
   // 所有 Hooks 必須在條件返回之前調用
   const countdown = selected?.countdown || null;
@@ -49,7 +56,7 @@ function ReceiverExperience() {
     [countdown, unlockedDays],
   );
   const voucherCards = countdown?.voucherCards || [];
-  const voucherCardMap = useMemo(() => new Map((voucherCards || []).map((card: any) => [card.day, card])), [voucherCards]);
+  const voucherCardMap = useMemo(() => new Map<number, any>((voucherCards || []).map((card: any) => [card.day, card])), [voucherCards]);
   
   const [modalDay, setModalDay] = useState<number | null>(null);
   const [showQrScanner, setShowQrScanner] = useState(false);
@@ -489,6 +496,65 @@ function ReceiverExperience() {
                 ) : (
                   <p className="text-sm text-gray-400">創作者尚未上傳兌換卷設計。</p>
                 )}
+                
+                {/* 兌換按鈕和狀態 */}
+                {(() => {
+                  const redemption = getRedemptionForDay(modalDay);
+                  if (!redemption) {
+                    return (
+                      <button
+                        type="button"
+                        disabled={redeeming}
+                        onClick={async () => {
+                          if (!assignmentId) return;
+                          setRedeeming(true);
+                          try {
+                            await dispatch(requestVoucherRedemption({ assignmentId, day: modalDay })).unwrap();
+                            showToast('已送出兌換請求，等待確認中', 'success');
+                          } catch (error: any) {
+                            showToast(error || '兌換請求失敗', 'error');
+                          } finally {
+                            setRedeeming(false);
+                          }
+                        }}
+                        className="w-full py-3 bg-christmas-green hover:bg-christmas-green-light rounded-xl text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {redeeming ? '送出中...' : '🎁 我要兌換'}
+                      </button>
+                    );
+                  }
+                  if (redemption.status === 'pending') {
+                    return (
+                      <div className="w-full py-3 bg-yellow-600/20 border border-yellow-500/50 rounded-xl text-yellow-300 font-semibold flex items-center justify-center gap-2">
+                        <HiOutlineClock className="w-5 h-5" />
+                        已送出兌換請求，等待確認中
+                      </div>
+                    );
+                  }
+                  if (redemption.status === 'confirmed') {
+                    return (
+                      <div className="w-full py-3 bg-green-600/20 border border-green-500/50 rounded-xl text-green-300 font-semibold flex items-center justify-center gap-2">
+                        <HiOutlineCheckCircle className="w-5 h-5" />
+                        已兌換完成
+                        {redemption.creatorNote && (
+                          <span className="text-xs font-normal ml-2">備註：{redemption.creatorNote}</span>
+                        )}
+                      </div>
+                    );
+                  }
+                  if (redemption.status === 'rejected') {
+                    return (
+                      <div className="w-full py-3 bg-red-600/20 border border-red-500/50 rounded-xl text-red-300 font-semibold flex items-center justify-center gap-2">
+                        <HiOutlineXCircle className="w-5 h-5" />
+                        兌換被拒絕
+                        {redemption.creatorNote && (
+                          <span className="text-xs font-normal ml-2">原因：{redemption.creatorNote}</span>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             ) : null}
             {!modalLoading && currentDayContent && currentDayContent.type === 'story' ? (

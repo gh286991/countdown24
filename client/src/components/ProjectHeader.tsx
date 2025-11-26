@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   HiOutlineQrCode, 
@@ -9,7 +10,8 @@ import {
   HiOutlinePrinter,
   HiOutlinePencil,
   HiOutlineCheck,
-  HiOutlineXCircle
+  HiOutlineXCircle,
+  HiOutlineGift
 } from 'react-icons/hi2';
 import { useToast } from './ToastProvider';
 import ImageUploadField from './ImageUploadField';
@@ -309,6 +311,14 @@ function ProjectHeader({
               查看已分享名單 ({recipientCount})
             </span>
           </button>
+          
+          <Link
+            to={`/creator/countdowns/${countdownId}/redemptions`}
+            className="w-full py-2 text-xs text-gray-300 hover:text-aurora border border-white/10 hover:border-aurora/50 rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <HiOutlineGift className="w-4 h-4" />
+            兌換請求管理
+          </Link>
         </div>
       </div>
 

@@ -27,4 +27,9 @@ router.get('/:id/voucher-cards', requireAuth, requireRole('creator'), asyncHandl
 router.put('/:id/voucher-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.saveVoucherCard));
 router.delete('/:id/voucher-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.deleteVoucherCard));
 
+// 兌換卷兌換管理
+router.get('/:id/voucher-redemptions', requireAuth, requireRole('creator'), asyncHandler(countdownController.getVoucherRedemptions));
+router.post('/:id/voucher-redemptions/:redemptionId/confirm', requireAuth, requireRole('creator'), asyncHandler(countdownController.confirmVoucherRedemption));
+router.post('/:id/voucher-redemptions/:redemptionId/reject', requireAuth, requireRole('creator'), asyncHandler(countdownController.rejectVoucherRedemption));
+
 export default router;

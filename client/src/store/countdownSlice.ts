@@ -34,6 +34,28 @@ export interface VoucherCard {
   previewImage?: string;
 }
 
+export type VoucherRedemptionStatus = 'pending' | 'confirmed' | 'rejected';
+
+export interface VoucherRedemption {
+  id: string;
+  countdownId: string;
+  assignmentId: string;
+  day: number;
+  receiverId: string;
+  status: VoucherRedemptionStatus;
+  requestedAt: string;
+  confirmedAt?: string | null;
+  rejectedAt?: string | null;
+  note?: string;
+  creatorNote?: string;
+  receiver?: {
+    id: string;
+    name?: string;
+    email?: string;
+    avatar?: string;
+  } | null;
+}
+
 interface Countdown {
   id: string;
   title: string;
@@ -66,6 +88,9 @@ interface CountdownState {
   receiversStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   printCardsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   voucherCardsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  redemptions: VoucherRedemption[];
+  redemptionsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  pendingRedemptionsCount: number;
 }
 
 export const fetchCreatorCountdowns = createAsyncThunk(
@@ -281,6 +306,49 @@ export const deleteVoucherCard = createAsyncThunk(
   },
 );
 
+// 兌換卷兌換管理
+export const fetchVoucherRedemptions = createAsyncThunk(
+  'countdowns/fetchVoucherRedemptions',
+  async (countdownId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${countdownId}/voucher-redemptions`);
+      return { redemptions: data.redemptions || [], pendingCount: data.pendingCount || 0 };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得兌換紀錄');
+    }
+  },
+);
+
+export const confirmVoucherRedemption = createAsyncThunk(
+  'countdowns/confirmVoucherRedemption',
+  async (
+    { countdownId, redemptionId, note }: { countdownId: string; redemptionId: string; note?: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.post(`/countdowns/${countdownId}/voucher-redemptions/${redemptionId}/confirm`, { note });
+      return data.redemption;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '確認兌換失敗');
+    }
+  },
+);
+
+export const rejectVoucherRedemption = createAsyncThunk(
+  'countdowns/rejectVoucherRedemption',
+  async (
+    { countdownId, redemptionId, note }: { countdownId: string; redemptionId: string; note?: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.post(`/countdowns/${countdownId}/voucher-redemptions/${redemptionId}/reject`, { note });
+      return data.redemption;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '拒絕兌換失敗');
+    }
+  },
+);
+
 const initialState: CountdownState = {
   items: [],
   selected: null,
@@ -293,6 +361,9 @@ const initialState: CountdownState = {
   receiversStatus: 'idle',
   printCardsStatus: 'idle',
   voucherCardsStatus: 'idle',
+  redemptions: [],
+  redemptionsStatus: 'idle',
+  pendingRedemptionsCount: 0,
 };
 
 const countdownSlice = createSlice({
@@ -404,6 +475,34 @@ const countdownSlice = createSlice({
         if (state.selected && state.selected.id === action.payload.countdownId) {
           state.selected.voucherCards = action.payload.cards;
         }
+      })
+      // 兌換紀錄
+      .addCase(fetchVoucherRedemptions.pending, (state) => {
+        state.redemptionsStatus = 'loading';
+      })
+      .addCase(fetchVoucherRedemptions.fulfilled, (state, action) => {
+        state.redemptionsStatus = 'succeeded';
+        state.redemptions = action.payload.redemptions;
+        state.pendingRedemptionsCount = action.payload.pendingCount;
+      })
+      .addCase(fetchVoucherRedemptions.rejected, (state) => {
+        state.redemptionsStatus = 'failed';
+      })
+      .addCase(confirmVoucherRedemption.fulfilled, (state, action) => {
+        const updated = action.payload;
+        const index = state.redemptions.findIndex((r) => r.id === updated.id);
+        if (index >= 0) {
+          state.redemptions[index] = updated;
+        }
+        state.pendingRedemptionsCount = state.redemptions.filter((r) => r.status === 'pending').length;
+      })
+      .addCase(rejectVoucherRedemption.fulfilled, (state, action) => {
+        const updated = action.payload;
+        const index = state.redemptions.findIndex((r) => r.id === updated.id);
+        if (index >= 0) {
+          state.redemptions[index] = updated;
+        }
+        state.pendingRedemptionsCount = state.redemptions.filter((r) => r.status === 'pending').length;
       });
   },
 });
