@@ -1,0 +1,116 @@
+{
+  "id": "christmas-classic",
+  "name": "聖誕紅綠經典",
+  "description": "紅綠配色、經典聖誕氛圍",
+  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%231a472a' width='180' height='100'/%3E%3Crect x='10' y='10' width='70' height='60' rx='8' fill='%23c41e3a'/%3E%3Crect x='90' y='15' width='40' height='40' rx='4' fill='white'/%3E%3Ctext x='110' y='40' text-anchor='middle' fill='%231a472a' font-size='8'%3EQR%3C/text%3E%3Ctext x='110' y='70' fill='white' font-size='10' font-weight='bold'%3EDay 1%3C/text%3E%3Ccircle cx='160' cy='20' r='6' fill='%23ffd700' opacity='0.8'/%3E%3Ccircle cx='20' cy='85' r='4' fill='%23ffd700' opacity='0.6'/%3E%3C/svg%3E",
+  "canvasJson": {
+    "version": "6.0.0",
+    "objects": [
+      {
+        "type": "Rect",
+        "left": 40,
+        "top": 40,
+        "width": 380,
+        "height": 300,
+        "fill": "#c41e3a",
+        "rx": 20,
+        "ry": 20,
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 150,
+        "top": 160,
+        "width": 180,
+        "text": "放入圖片",
+        "fontSize": 24,
+        "fill": "rgba(255,255,255,0.7)",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Rect",
+        "name": "qr-placeholder-bg",
+        "left": 480,
+        "top": 40,
+        "width": 180,
+        "height": 180,
+        "fill": "white",
+        "rx": 12,
+        "ry": 12,
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "name": "qr-placeholder-text",
+        "left": 510,
+        "top": 110,
+        "width": 120,
+        "text": "QR Code",
+        "fontSize": 18,
+        "fill": "#1a472a",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 480,
+        "top": 225,
+        "width": 180,
+        "text": "掃描解鎖當日驚喜",
+        "fontSize": 12,
+        "fill": "rgba(255,255,255,0.7)",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 480,
+        "top": 260,
+        "width": 180,
+        "text": "Day 1",
+        "fontSize": 48,
+        "fill": "#ffd700",
+        "fontFamily": "Georgia, serif",
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 480,
+        "top": 310,
+        "width": 180,
+        "text": "聖誕快樂！",
+        "fontSize": 20,
+        "fill": "white",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 820,
+        "top": 30,
+        "radius": 20,
+        "fill": "#ffd700",
+        "opacity": 0.8,
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 760,
+        "top": 420,
+        "radius": 15,
+        "fill": "#ffd700",
+        "opacity": 0.6,
+        "selectable": true
+      }
+    ],
+    "background": "#1a472a"
+  }
+}
+

@@ -1,0 +1,136 @@
+{
+  "id": "minimal-tree",
+  "name": "簡約聖誕樹",
+  "description": "綠色主題、清新簡約風格",
+  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%23f5f5dc' width='180' height='100'/%3E%3Crect x='10' y='10' width='75' height='55' rx='6' fill='%23228b22'/%3E%3Crect x='95' y='15' width='35' height='35' rx='4' fill='white' stroke='%23228b22' stroke-width='1'/%3E%3Ctext x='113' y='37' text-anchor='middle' fill='%23228b22' font-size='7'%3EQR%3C/text%3E%3Ctext x='113' y='65' fill='%23228b22' font-size='10' font-weight='bold'%3EDay 1%3C/text%3E%3Cpolygon points='155,25 165,55 145,55' fill='%23228b22'/%3E%3Crect x='152' y='55' width='6' height='8' fill='%238b4513'/%3E%3C/svg%3E",
+  "canvasJson": {
+    "version": "6.0.0",
+    "objects": [
+      {
+        "type": "Rect",
+        "left": 40,
+        "top": 50,
+        "width": 380,
+        "height": 280,
+        "fill": "#228b22",
+        "rx": 20,
+        "ry": 20,
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 150,
+        "top": 170,
+        "width": 160,
+        "text": "放入圖片",
+        "fontSize": 22,
+        "fill": "rgba(255,255,255,0.7)",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Rect",
+        "name": "qr-placeholder-bg",
+        "left": 470,
+        "top": 50,
+        "width": 160,
+        "height": 160,
+        "fill": "white",
+        "stroke": "#228b22",
+        "strokeWidth": 3,
+        "rx": 12,
+        "ry": 12,
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "name": "qr-placeholder-text",
+        "left": 495,
+        "top": 110,
+        "width": 110,
+        "text": "QR Code",
+        "fontSize": 16,
+        "fill": "#228b22",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 470,
+        "top": 215,
+        "width": 160,
+        "text": "掃描解鎖當日驚喜",
+        "fontSize": 11,
+        "fill": "#2e8b57",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 470,
+        "top": 245,
+        "width": 160,
+        "text": "Day 1",
+        "fontSize": 44,
+        "fill": "#228b22",
+        "fontFamily": "Georgia, serif",
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 470,
+        "top": 290,
+        "width": 160,
+        "text": "簡單的幸福",
+        "fontSize": 18,
+        "fill": "#2e8b57",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Rect",
+        "left": 40,
+        "top": 360,
+        "width": 380,
+        "height": 4,
+        "fill": "#228b22",
+        "opacity": 0.3,
+        "selectable": true
+      },
+      {
+        "type": "Triangle",
+        "left": 720,
+        "top": 60,
+        "width": 80,
+        "height": 100,
+        "fill": "#228b22",
+        "selectable": true
+      },
+      {
+        "type": "Rect",
+        "left": 745,
+        "top": 160,
+        "width": 30,
+        "height": 30,
+        "fill": "#8b4513",
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 752,
+        "top": 50,
+        "radius": 8,
+        "fill": "#ffd700",
+        "selectable": true
+      }
+    ],
+    "background": "#f5f5dc"
+  }
+}
+

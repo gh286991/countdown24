@@ -1,25 +1,33 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Canvas as FabricCanvas, Textbox, Image as FabricImage } from 'fabric';
 import QRCode from 'qrcode';
+import api from '../api/client';
 
 interface PrintCardCanvasEditorProps {
+  countdownId: string;
+  day: number;
   initialJson?: any;
   onChange: (payload: { canvasJson: any; previewImage: string }) => void;
   width?: number;
   height?: number;
 }
 
+export interface PrintCardCanvasEditorRef {
+  loadTemplate: (templateJson: any) => Promise<void>;
+}
+
 const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 500;
 
-function PrintCardCanvasEditor({ initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT }: PrintCardCanvasEditorProps) {
+const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanvasEditorProps>(
+  function PrintCardCanvasEditor({ countdownId, day, initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT }, ref) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const onChangeRef = useRef(onChange);
   const isInitializingRef = useRef(false);
   const emitSnapshotRef = useRef<(() => void) | null>(null);
-  const [qrValue, setQrValue] = useState('');
+  const [addingQr, setAddingQr] = useState(false);
   const [activeColor, setActiveColor] = useState('#1f2937');
   const [background, setBackground] = useState('#e2e8f0');
 
@@ -32,7 +40,7 @@ function PrintCardCanvasEditor({ initialJson, onChange, width = CANVAS_WIDTH, he
     const canvas = fabricRef.current;
     if (!canvas) return;
     try {
-      const json = canvas.toJSON(['selectable']);
+      const json = canvas.toJSON(['selectable', 'name']);
       const preview = canvas.toDataURL({ format: 'png', multiplier: 2 });
       onChangeRef.current({ canvasJson: json, previewImage: preview });
     } catch (error) {
@@ -44,6 +52,35 @@ function PrintCardCanvasEditor({ initialJson, onChange, width = CANVAS_WIDTH, he
   useEffect(() => {
     emitSnapshotRef.current = emitSnapshot;
   }, [emitSnapshot]);
+
+  // 暴露 loadTemplate 方法給父組件
+  useImperativeHandle(ref, () => ({
+    loadTemplate: async (templateJson: any) => {
+      const canvas = fabricRef.current;
+      if (!canvas) {
+        console.warn('Canvas not initialized');
+        return;
+      }
+      try {
+        // 清除現有內容
+        canvas.getObjects().forEach((obj) => canvas.remove(obj));
+        
+        // 載入模板
+        await canvas.loadFromJSON(templateJson);
+        
+        // 設置背景色
+        if (templateJson.background) {
+          canvas.backgroundColor = templateJson.background;
+          setBackground(templateJson.background);
+        }
+        
+        canvas.requestRenderAll();
+        emitSnapshotRef.current?.();
+      } catch (error) {
+        console.error('Error loading template:', error);
+      }
+    },
+  }), []);
 
   useEffect(() => {
     const canvasElement = canvasRef.current;
@@ -216,19 +253,64 @@ function PrintCardCanvasEditor({ initialJson, onChange, width = CANVAS_WIDTH, he
       console.warn('Canvas not initialized');
       return;
     }
-    if (!qrValue.trim()) {
-      console.warn('QR value is empty');
+    if (!countdownId) {
+      console.warn('countdownId is missing');
       return;
     }
     if (isInitializingRef.current) {
       console.warn('Canvas is still initializing');
       return;
     }
+    
+    setAddingQr(true);
     try {
-      const dataUrl = await QRCode.toDataURL(qrValue.trim(), { margin: 1, scale: 8 });
-      addImageFromUrl(dataUrl);
+      // 呼叫 API 獲取當天的 QR URL
+      const { data } = await api.post(`/countdowns/${countdownId}/generate-qr`, { day });
+      const qrUrl = data.qrUrl;
+      
+      // 尋找 QR 佔位區
+      const objects = canvas.getObjects();
+      const placeholderBg = objects.find((obj: any) => obj.name === 'qr-placeholder-bg');
+      const placeholderText = objects.find((obj: any) => obj.name === 'qr-placeholder-text');
+      
+      // 決定 QR Code 的位置和大小
+      let qrLeft = 40;
+      let qrTop = 40;
+      let qrSize = 160; // 預設大小
+      
+      if (placeholderBg) {
+        // 使用佔位區的位置和大小
+        qrLeft = placeholderBg.left || 40;
+        qrTop = placeholderBg.top || 40;
+        qrSize = Math.min(placeholderBg.width || 160, placeholderBg.height || 160);
+        
+        // 移除佔位區背景和文字
+        canvas.remove(placeholderBg);
+        if (placeholderText) {
+          canvas.remove(placeholderText);
+        }
+      }
+      
+      // 生成 QR Code 圖片
+      const dataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, scale: 8 });
+      
+      // 加入 QR Code 到佔位區的位置
+      const img = await FabricImage.fromURL(dataUrl, { crossOrigin: 'anonymous' });
+      const scale = qrSize / Math.max(img.width || 1, img.height || 1);
+      img.set({
+        left: qrLeft,
+        top: qrTop,
+        scaleX: scale,
+        scaleY: scale,
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+      emitSnapshot();
     } catch (error) {
-      console.error('Failed to generate QR code', error);
+      console.error('Failed to generate QR code:', error);
+    } finally {
+      setAddingQr(false);
     }
   };
 
@@ -285,22 +367,14 @@ function PrintCardCanvasEditor({ initialJson, onChange, width = CANVAS_WIDTH, he
         >
           🖼️ 插入圖片
         </button>
-        <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg">
-          <input
-            type="text"
-            value={qrValue}
-            onChange={(event) => setQrValue(event.target.value)}
-            placeholder="QR 內容"
-            className="bg-transparent text-sm focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={handleAddQr}
-            className="text-xs px-2 py-1 rounded bg-aurora/30 text-white"
-          >
-            加入 QR
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleAddQr}
+          disabled={addingQr || !countdownId}
+          className="px-3 py-1.5 rounded-lg bg-aurora/30 hover:bg-aurora/40 disabled:opacity-50"
+        >
+          {addingQr ? '加入中...' : '🔗 加入解鎖 QR'}
+        </button>
         <label className="flex items-center gap-2 text-xs text-gray-300">
           背景
           <input
@@ -344,6 +418,6 @@ function PrintCardCanvasEditor({ initialJson, onChange, width = CANVAS_WIDTH, he
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
     </div>
   );
-}
+});
 
 export default PrintCardCanvasEditor;

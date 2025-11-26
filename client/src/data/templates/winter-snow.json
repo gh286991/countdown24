@@ -1,0 +1,134 @@
+{
+  "id": "winter-snow",
+  "name": "冬日雪景",
+  "description": "藍白配色、冰雪風格",
+  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%231e3a5f' width='180' height='100'/%3E%3Crect x='10' y='10' width='80' height='55' rx='8' fill='%2387ceeb'/%3E%3Crect x='100' y='10' width='35' height='35' rx='4' fill='white'/%3E%3Ctext x='118' y='32' text-anchor='middle' fill='%231e3a5f' font-size='7'%3EQR%3C/text%3E%3Ctext x='118' y='60' fill='white' font-size='9' font-weight='bold'%3EDay%3C/text%3E%3Ccircle cx='25' cy='80' r='3' fill='white' opacity='0.8'/%3E%3Ccircle cx='60' cy='85' r='2' fill='white' opacity='0.6'/%3E%3Ccircle cx='150' cy='75' r='4' fill='white' opacity='0.7'/%3E%3C/svg%3E",
+  "canvasJson": {
+    "version": "6.0.0",
+    "objects": [
+      {
+        "type": "Rect",
+        "left": 40,
+        "top": 40,
+        "width": 420,
+        "height": 280,
+        "fill": "#87ceeb",
+        "rx": 24,
+        "ry": 24,
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 170,
+        "top": 160,
+        "width": 160,
+        "text": "放入圖片",
+        "fontSize": 22,
+        "fill": "rgba(30,58,95,0.5)",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Rect",
+        "name": "qr-placeholder-bg",
+        "left": 500,
+        "top": 40,
+        "width": 160,
+        "height": 160,
+        "fill": "white",
+        "rx": 16,
+        "ry": 16,
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "name": "qr-placeholder-text",
+        "left": 525,
+        "top": 100,
+        "width": 110,
+        "text": "QR Code",
+        "fontSize": 16,
+        "fill": "#1e3a5f",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 500,
+        "top": 205,
+        "width": 160,
+        "text": "掃描解鎖當日驚喜",
+        "fontSize": 11,
+        "fill": "rgba(255,255,255,0.6)",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 500,
+        "top": 235,
+        "width": 160,
+        "text": "Day 1",
+        "fontSize": 42,
+        "fill": "white",
+        "fontFamily": "Georgia, serif",
+        "fontWeight": "bold",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Textbox",
+        "left": 500,
+        "top": 280,
+        "width": 160,
+        "text": "冬日祝福",
+        "fontSize": 18,
+        "fill": "#87ceeb",
+        "fontFamily": "sans-serif",
+        "textAlign": "center",
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 60,
+        "top": 380,
+        "radius": 12,
+        "fill": "white",
+        "opacity": 0.8,
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 200,
+        "top": 400,
+        "radius": 8,
+        "fill": "white",
+        "opacity": 0.6,
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 750,
+        "top": 350,
+        "radius": 15,
+        "fill": "white",
+        "opacity": 0.7,
+        "selectable": true
+      },
+      {
+        "type": "Circle",
+        "left": 820,
+        "top": 420,
+        "radius": 10,
+        "fill": "white",
+        "opacity": 0.5,
+        "selectable": true
+      }
+    ],
+    "background": "#1e3a5f"
+  }
+}
+

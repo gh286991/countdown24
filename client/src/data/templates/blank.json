@@ -1,0 +1,12 @@
+{
+  "id": "blank",
+  "name": "空白畫布",
+  "description": "從空白開始自由創作",
+  "thumbnail": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 100'%3E%3Crect fill='%23e2e8f0' width='180' height='100'/%3E%3Ctext x='90' y='55' text-anchor='middle' fill='%2394a3b8' font-size='12'%3E空白畫布%3C/text%3E%3C/svg%3E",
+  "canvasJson": {
+    "version": "6.0.0",
+    "objects": [],
+    "background": "#e2e8f0"
+  }
+}
+

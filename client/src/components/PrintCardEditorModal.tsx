@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { HiOutlineXMark, HiOutlineTrash, HiOutlineEye } from 'react-icons/hi2';
-import PrintCardCanvasEditor from './PrintCardCanvasEditor';
+import PrintCardCanvasEditor, { type PrintCardCanvasEditorRef } from './PrintCardCanvasEditor';
 import type { PrintCard } from '../store/countdownSlice';
+import { printCardTemplates, blankTemplate, type PrintCardTemplate } from '../data/printCardTemplates';
 
 interface PrintCardEditorModalProps {
   countdownId: string;
@@ -22,11 +23,16 @@ function PrintCardEditorModal({
   onDelete,
   onClose,
 }: PrintCardEditorModalProps) {
+  const canvasRef = useRef<PrintCardCanvasEditorRef>(null);
   const [canvasState, setCanvasState] = useState<{ canvasJson: any; previewImage: string }>({
     canvasJson: null,
     previewImage: '',
   });
   const [showPreview, setShowPreview] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(!card?.isConfigured);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  const allTemplates = [blankTemplate, ...printCardTemplates];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -34,7 +40,16 @@ function PrintCardEditorModal({
       canvasJson: card?.canvasJson || null,
       previewImage: card?.previewImage || '',
     });
+    setShowTemplates(!card?.isConfigured);
+    setSelectedTemplateId(null);
   }, [card, day, isOpen]);
+
+  const handleSelectTemplate = (template: PrintCardTemplate) => {
+    setSelectedTemplateId(template.id);
+    // 透過 ref 載入模板
+    canvasRef.current?.loadTemplate(template.canvasJson);
+    setShowTemplates(false);
+  };
 
   const handleSave = () => {
     if (!canvasState.previewImage) {
@@ -73,7 +88,58 @@ function PrintCardEditorModal({
         </div>
 
         <div className="space-y-6">
-          <PrintCardCanvasEditor initialJson={card?.canvasJson} onChange={(payload) => setCanvasState(payload)} />
+          {/* 模板選擇器 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-300">
+                {showTemplates ? '選擇模板開始編輯' : '已選擇模板'}
+              </p>
+              {!showTemplates && (
+                <button
+                  type="button"
+                  onClick={() => setShowTemplates(true)}
+                  className="text-xs text-aurora hover:underline"
+                >
+                  更換模板
+                </button>
+              )}
+            </div>
+            
+            {showTemplates && (
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                {allTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleSelectTemplate(template)}
+                    className={`group relative rounded-xl overflow-hidden border-2 transition-all ${
+                      selectedTemplateId === template.id
+                        ? 'border-aurora ring-2 ring-aurora/30'
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <img
+                      src={template.thumbnail}
+                      alt={template.name}
+                      className="w-full aspect-[9/5] object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute bottom-0 left-0 right-0 p-2 text-center">
+                      <p className="text-[10px] text-white font-medium truncate">{template.name}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <PrintCardCanvasEditor
+            ref={canvasRef}
+            countdownId={countdownId}
+            day={day}
+            initialJson={card?.canvasJson}
+            onChange={(payload) => setCanvasState(payload)}
+          />
           <div className="rounded-2xl border border-white/10 p-4 text-xs text-gray-400 space-y-1">
             <p>．拖曳 Canvas 內的圖片、文字與 QR Code，自由排版。</p>
             <p>．儲存後會將畫布輸出為高解析 PNG，並用於列印與 PDF。</p>
