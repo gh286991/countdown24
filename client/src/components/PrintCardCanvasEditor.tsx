@@ -20,7 +20,10 @@ const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 500;
 
 const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanvasEditorProps>(
-  function PrintCardCanvasEditor({ countdownId, day, initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT }, ref) {
+  function PrintCardCanvasEditor(
+    { countdownId, day, initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT, allowQr = true },
+    ref,
+  ) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -367,14 +370,16 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         >
           🖼️ 插入圖片
         </button>
-        <button
-          type="button"
-          onClick={handleAddQr}
-          disabled={addingQr || !countdownId}
-          className="px-3 py-1.5 rounded-lg bg-aurora/30 hover:bg-aurora/40 disabled:opacity-50"
-        >
-          {addingQr ? '加入中...' : '🔗 加入禮品卡'}
-        </button>
+        {allowQr && (
+          <button
+            type="button"
+            onClick={handleAddQr}
+            disabled={addingQr || !countdownId}
+            className="px-3 py-1.5 rounded-lg bg-aurora/30 hover:bg-aurora/40 disabled:opacity-50"
+          >
+            {addingQr ? '加入中...' : '🔗 加入解鎖 QR'}
+          </button>
+        )}
         <label className="flex items-center gap-2 text-xs text-gray-300">
           背景
           <input

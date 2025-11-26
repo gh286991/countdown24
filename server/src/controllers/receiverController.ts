@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../types/index';
 import { Assignments, Countdowns, Users } from '../db/connection';
 import * as countdownService from '../services/countdownService';
+import * as voucherCardService from '../services/voucherCardService';
 import { verifyDayQrToken } from '../utils/helpers';
 
 export async function getInbox(req: AuthenticatedRequest, res: Response) {
@@ -65,12 +66,13 @@ export async function getReceiverCountdown(req: AuthenticatedRequest, res: Respo
   } : null;
 
   const countdownWithCards = await countdownService.attachDayCards(countdown);
+  const voucherCards = await voucherCardService.getVoucherCards(countdown.id, countdown.totalDays);
   return res.json({ 
     assignment: {
       ...assignment,
       unlockedDays: assignment.unlockedDays || [],
     }, 
-    countdown: countdownService.withAvailableContent(countdownWithCards),
+    countdown: countdownService.withAvailableContent({ ...countdownWithCards, voucherCards }),
     creator: creatorInfo,
   });
 }
@@ -107,10 +109,15 @@ export async function getReceiverDayContent(req: AuthenticatedRequest, res: Resp
     return res.status(404).json({ message: 'Content not found for this day' });
   }
 
-  // 檢查是否已通過 QR code 解鎖
+  const availableDay = countdownService.computeAvailableDay(countdown);
+  if (requestedDay > availableDay) {
+    return res.status(403).json({ message: 'Day not available yet.' });
+  }
+
+  // 檢查是否已通過禮品卡解鎖（僅針對禮品類型）
   const unlockedDays = assignment.unlockedDays || [];
-  if (!unlockedDays.includes(requestedDay)) {
-    return res.status(403).json({ message: 'Day not unlocked yet. Please scan the QR code.' });
+  if (dayCard.type === 'qr' && !unlockedDays.includes(requestedDay)) {
+    return res.status(403).json({ message: 'Day not unlocked yet. Please scan the gift card.' });
   }
 
   return res.json({
@@ -123,6 +130,7 @@ export async function getReceiverDayContent(req: AuthenticatedRequest, res: Resp
     coverImage: dayCard.coverImage,
     cgScript: dayCard.type === 'story' ? dayCard.cgScript : null,
     qrReward: dayCard.type === 'qr' ? dayCard.qrReward : null,
+    voucherDetail: dayCard.type === 'voucher' ? dayCard.voucherDetail : null,
   });
 }
 

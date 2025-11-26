@@ -61,10 +61,18 @@ function DayListSidebar({ totalDays, activeDay, dayCards, onDaySelect }: DayList
                         ? 'bg-blue-500/20 text-blue-300'
                         : card?.type === 'qr'
                         ? 'bg-purple-500/20 text-purple-300'
+                        : card?.type === 'voucher'
+                        ? 'bg-amber-500/20 text-amber-200'
                         : 'bg-gray-500/20 text-gray-400'
                     }`}
                   >
-                    {card?.type === 'story' ? 'CG' : card?.type === 'qr' ? '禮品' : '未設定'}
+                    {card?.type === 'story'
+                      ? 'CG'
+                      : card?.type === 'qr'
+                      ? '禮品'
+                      : card?.type === 'voucher'
+                      ? '兌換卷'
+                      : '未設定'}
                   </span>
                 </div>
                 <h3 className="text-sm font-semibold truncate">

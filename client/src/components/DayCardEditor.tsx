@@ -2,6 +2,8 @@ import { ChangeEvent } from 'react';
 import { HiOutlineBookOpen, HiOutlineGift } from 'react-icons/hi2';
 import CgScriptEditor from './CgScriptEditor';
 import ImageUploadField from './ImageUploadField';
+import VoucherDesignEditor from './VoucherDesignEditor';
+import type { VoucherCard } from '../store/countdownSlice';
 
 interface QrReward {
   title?: string;
@@ -10,12 +12,21 @@ interface QrReward {
   qrCode?: string;
 }
 
+interface VoucherDetail {
+  title?: string;
+  message?: string;
+  location?: string;
+  terms?: string;
+  validUntil?: string;
+}
+
 interface DayCardData {
   day: number;
   title: string;
   description: string;
-  type: 'story' | 'qr';
+  type: 'story' | 'qr' | 'voucher';
   qrReward?: QrReward;
+  voucherDetail?: VoucherDetail;
 }
 
 interface DayCardEditorProps {
@@ -24,10 +35,13 @@ interface DayCardEditorProps {
   dayCardDraft: DayCardData;
   cgScriptDraft: string;
   countdownId: string;
-  onTypeChange: (type: 'story' | 'qr') => void;
+  onTypeChange: (type: 'story' | 'qr' | 'voucher') => void;
   onFieldChange: (field: keyof DayCardData, value: any) => void;
   onCgScriptChange: (value: string) => void;
   onSave: () => void;
+  voucherCard?: VoucherCard;
+  onVoucherSave: (card: Partial<VoucherCard>) => void;
+  onVoucherDelete: () => void;
 }
 
 function DayCardEditor({
@@ -40,6 +54,9 @@ function DayCardEditor({
   onFieldChange,
   onCgScriptChange,
   onSave,
+  voucherCard,
+  onVoucherSave,
+  onVoucherDelete,
 }: DayCardEditorProps) {
   return (
     <div className="glass-panel p-6 space-y-4">
@@ -54,11 +71,11 @@ function DayCardEditor({
 
       {/* 類型切換 */}
       <div className="flex gap-3">
-        {['story', 'qr'].map((mode) => (
+        {['story', 'qr', 'voucher'].map((mode) => (
           <button
             type="button"
             key={mode}
-            onClick={() => onTypeChange(mode as 'story' | 'qr')}
+            onClick={() => onTypeChange(mode as 'story' | 'qr' | 'voucher')}
             className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
               dayCardDraft.type === mode
                 ? 'border-aurora bg-aurora text-slate-900'
@@ -70,10 +87,15 @@ function DayCardEditor({
                 <HiOutlineBookOpen className="w-4 h-4" />
                 CG 對話劇情
               </span>
-            ) : (
+            ) : mode === 'qr' ? (
               <span className="flex items-center gap-2">
                 <HiOutlineGift className="w-4 h-4" />
                 禮品卡片
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <HiOutlineGift className="w-4 h-4" />
+                兌換卷
               </span>
             )}
           </button>
@@ -166,6 +188,87 @@ function DayCardEditor({
               className="w-full bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 focus:border-aurora focus:outline-none"
             />
           </div>
+        </div>
+      )}
+
+      {/* 兌換卷設定 */}
+      {dayCardDraft.type === 'voucher' && (
+        <div className="space-y-3 pt-2 border-t border-white/10">
+          <h3 className="text-sm font-semibold text-gray-300">兌換卷設定</h3>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">兌換卷標題</label>
+            <input
+              type="text"
+              placeholder="例：電影約會卷"
+              value={dayCardDraft.voucherDetail?.title || ''}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                onFieldChange('voucherDetail', { ...dayCardDraft.voucherDetail, title: event.target.value })
+              }
+              className="w-full bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 focus:border-aurora focus:outline-none"
+            />
+          </div>
+          <ImageUploadField
+            label="兌換卷封面圖"
+            value={dayCardDraft.coverImage || ''}
+            onChange={(url) => onFieldChange('coverImage', url)}
+            placeholder="https://example.com/voucher-cover.jpg"
+            folder={countdownId ? `countdowns/${countdownId}/days/${activeDay}/voucher` : undefined}
+          />
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">內容描述</label>
+            <textarea
+              placeholder="想帶對方去哪裡，或這張卷可以換到什麼？"
+              value={dayCardDraft.voucherDetail?.message || ''}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                onFieldChange('voucherDetail', { ...dayCardDraft.voucherDetail, message: event.target.value })
+              }
+              className="w-full bg-white/5 rounded-xl px-4 py-2.5 min-h-[80px] border border-white/10 focus:border-aurora focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">主題 / 地點</label>
+              <input
+                type="text"
+                placeholder="例：想去哪裡我就陪你去"
+                value={dayCardDraft.voucherDetail?.location || ''}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  onFieldChange('voucherDetail', { ...dayCardDraft.voucherDetail, location: event.target.value })
+                }
+                className="w-full bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 focus:border-aurora focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">使用期限</label>
+              <input
+                type="text"
+                placeholder="例：2025 / 12 / 31 前"
+                value={dayCardDraft.voucherDetail?.validUntil || ''}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  onFieldChange('voucherDetail', { ...dayCardDraft.voucherDetail, validUntil: event.target.value })
+                }
+                className="w-full bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 focus:border-aurora focus:outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">備註 / 注意事項</label>
+            <textarea
+              placeholder="使用方式、次數限制或其它貼心提醒"
+              value={dayCardDraft.voucherDetail?.terms || ''}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                onFieldChange('voucherDetail', { ...dayCardDraft.voucherDetail, terms: event.target.value })
+              }
+              className="w-full bg-white/5 rounded-xl px-4 py-2.5 min-h-[80px] border border-white/10 focus:border-aurora focus:outline-none"
+            />
+          </div>
+          <VoucherDesignEditor
+            countdownId={countdownId}
+            day={activeDay}
+            card={voucherCard}
+            onSave={onVoucherSave}
+            onDelete={onVoucherDelete}
+          />
         </div>
       )}
 

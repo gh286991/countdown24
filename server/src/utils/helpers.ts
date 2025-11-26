@@ -37,6 +37,11 @@ export function hasRewardData(reward: any): boolean {
   return Boolean(reward.title || reward.message || reward.imageUrl || reward.qrCode);
 }
 
+export function hasVoucherData(voucher: any): boolean {
+  if (!voucher) return false;
+  return Boolean(voucher.title || voucher.message || voucher.location || voucher.terms || voucher.validUntil);
+}
+
 export function sanitizeUser(user: any): any {
   if (!user) return null;
   const { password, _id, ...rest } = user;
@@ -61,4 +66,3 @@ export function verifyDayQrToken(token: string, countdownId: string, day: number
   const expected = generateDayQrToken(countdownId, day, secret);
   return token === expected;
 }
-

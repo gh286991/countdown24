@@ -14,15 +14,26 @@ import sampleCgScript from '../data/sampleCgScript';
 import {
   assignReceivers,
   createInvitation,
+  deleteVoucherCard,
   deletePrintCard,
   fetchCountdownDetail,
   savePrintCard,
+  saveVoucherCard,
   updateCountdown,
 } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
 const defaultQrReward = { title: '', message: '', imageUrl: '', qrCode: '' };
-const emptyCard = { day: 1, title: '', description: '', coverImage: '', type: 'story' as 'story' | 'qr', qrReward: { ...defaultQrReward } };
+const defaultVoucherDetail = { title: '', message: '', location: '', terms: '', validUntil: '' };
+const emptyCard = {
+  day: 1,
+  title: '',
+  description: '',
+  coverImage: '',
+  type: 'story' as 'story' | 'qr' | 'voucher',
+  qrReward: { ...defaultQrReward },
+  voucherDetail: { ...defaultVoucherDetail },
+};
 
 function CreatorEditor() {
   const { id } = useParams();
@@ -79,6 +90,7 @@ function CreatorEditor() {
       ...currentDayCard,
       day: activeDay,
       qrReward: { ...defaultQrReward, ...(currentDayCard.qrReward || {}) },
+      voucherDetail: { ...defaultVoucherDetail, ...(currentDayCard.voucherDetail || {}) },
     };
     setDayCardDraft(normalized);
     setCgScriptDraft(
@@ -101,6 +113,11 @@ function CreatorEditor() {
     if (!selected?.printCards) return undefined;
     return selected.printCards.find((card) => card.day === activeDay);
   }, [selected?.printCards, activeDay]);
+
+  const currentVoucherCard = useMemo(() => {
+    if (!selected?.voucherCards) return undefined;
+    return selected.voucherCards.find((card) => card.day === activeDay);
+  }, [selected?.voucherCards, activeDay]);
 
   if (detailStatus === 'loading' || !selected) {
     return <p className="text-center text-gray-400 py-10">載入倒數內容...</p>;
@@ -127,14 +144,19 @@ function CreatorEditor() {
       }
     }
 
+    const nextType = dayCardDraft.type === 'qr' ? 'qr' : dayCardDraft.type === 'voucher' ? 'voucher' : 'story';
     const normalizedCard = {
       ...dayCardDraft,
       day: activeDay,
-      type: dayCardDraft.type === 'qr' ? 'qr' : 'story',
-      cgScript: dayCardDraft.type === 'story' ? parsedScript : null,
+      type: nextType,
+      cgScript: nextType === 'story' ? parsedScript : null,
       qrReward:
-        dayCardDraft.type === 'qr'
+        nextType === 'qr'
           ? { ...defaultQrReward, ...(dayCardDraft.qrReward || {}) }
+          : null,
+      voucherDetail:
+        nextType === 'voucher'
+          ? { ...defaultVoucherDetail, ...(dayCardDraft.voucherDetail || {}) }
           : null,
     };
 
@@ -151,8 +173,13 @@ function CreatorEditor() {
     }
   };
 
-  const handleTypeChange = (mode: 'story' | 'qr') => {
-    setDayCardDraft((prev) => ({ ...prev, type: mode }));
+  const handleTypeChange = (mode: 'story' | 'qr' | 'voucher') => {
+    setDayCardDraft((prev) => ({
+      ...prev,
+      type: mode,
+      qrReward: mode === 'qr' ? { ...defaultQrReward, ...(prev.qrReward || {}) } : prev.qrReward,
+      voucherDetail: mode === 'voucher' ? { ...defaultVoucherDetail, ...(prev.voucherDetail || {}) } : prev.voucherDetail,
+    }));
   };
 
   const handleFieldChange = (field: string, value: any) => {
@@ -169,6 +196,16 @@ function CreatorEditor() {
     if (!id) return;
     dispatch(deletePrintCard({ countdownId: id, day: activeDay }));
     setShowPrintCardModal(false);
+  };
+
+  const handleVoucherCardSave = (data: any) => {
+    if (!id) return;
+    dispatch(saveVoucherCard({ countdownId: id, day: activeDay, card: data }));
+  };
+
+  const handleVoucherCardDelete = () => {
+    if (!id) return;
+    dispatch(deleteVoucherCard({ countdownId: id, day: activeDay }));
   };
 
   return (
@@ -216,10 +253,12 @@ function CreatorEditor() {
           />
           
           {/* 每日解鎖禮品卡生成區塊 - 移到左側 */}
-          <DayQrCodeGenerator
-            activeDay={activeDay}
-            countdownId={id || ''}
-          />
+          {dayCardDraft.type === 'qr' && (
+            <DayQrCodeGenerator
+              activeDay={activeDay}
+              countdownId={id || ''}
+            />
+          )}
         </div>
 
         {/* 中間：編輯區 */}
@@ -234,6 +273,9 @@ function CreatorEditor() {
             onFieldChange={handleFieldChange}
             onCgScriptChange={setCgScriptDraft}
             onSave={handleDayCardSave}
+            voucherCard={currentVoucherCard}
+            onVoucherSave={handleVoucherCardSave}
+            onVoucherDelete={handleVoucherCardDelete}
           />
         </div>
 
@@ -241,13 +283,15 @@ function CreatorEditor() {
         <div className="space-y-4">
           <DayCardPreviewPanel
             activeDay={activeDay}
-            type={dayCardDraft.type as 'story' | 'qr'}
+            type={dayCardDraft.type as 'story' | 'qr' | 'voucher'}
             title={dayCardDraft.title}
             description={dayCardDraft.description}
+            coverImage={dayCardDraft.coverImage}
             qrReward={dayCardDraft.qrReward}
             cgPreview={cgPreview}
+            voucherDetail={dayCardDraft.voucherDetail}
+            voucherCard={currentVoucherCard}
           />
-
           <PrintCardPanel
             day={activeDay}
             countdownId={id || ''}

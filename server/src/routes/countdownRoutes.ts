@@ -23,5 +23,8 @@ router.post('/:id/generate-qr', requireAuth, requireRole('creator'), asyncHandle
 router.get('/:id/print-cards', requireAuth, requireRole('creator'), asyncHandler(countdownController.getPrintCardsForCountdown));
 router.put('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.savePrintCard));
 router.delete('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.deletePrintCard));
+router.get('/:id/voucher-cards', requireAuth, requireRole('creator'), asyncHandler(countdownController.getVoucherCardsForCountdown));
+router.put('/:id/voucher-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.saveVoucherCard));
+router.delete('/:id/voucher-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.deleteVoucherCard));
 
 export default router;

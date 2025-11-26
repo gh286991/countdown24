@@ -1,7 +1,7 @@
 import { CountdownDays, Assignments, Users } from '../db/connection';
 import { DEFAULT_TOTAL_DAYS } from '../config/index';
-import { generateId, hasRewardData } from '../utils/helpers';
-import type { DayCard, QrReward } from '../types/index';
+import { generateId, hasRewardData, hasVoucherData } from '../utils/helpers';
+import type { DayCard, QrReward, VoucherDetail } from '../types/index';
 
 export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [], countdown: any = null): DayCard[] {
   const map = new Map((cards || []).filter(Boolean).map((card) => [card.day, card]));
@@ -10,8 +10,10 @@ export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [],
   return Array.from({ length: totalDays }).map((_, index) => {
     const day = index + 1;
     const base = map.get(day) || {};
-    const type = base.type === 'qr' ? 'qr' : 'story';
+    const baseType = base.type || countdown?.type || 'story';
+    const type = baseType === 'qr' ? 'qr' : baseType === 'voucher' ? 'voucher' : 'story';
     let qrReward: QrReward | null = null;
+    let voucherDetail: VoucherDetail | null = null;
     
     if (type === 'qr') {
       const source = hasRewardData(base.qrReward) ? base.qrReward : rewardMap.get(day);
@@ -25,6 +27,16 @@ export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [],
         };
       }
     }
+    if (type === 'voucher') {
+      const source = hasVoucherData(base.voucherDetail) ? base.voucherDetail : null;
+      voucherDetail = {
+        title: source?.title || '',
+        message: source?.message || '',
+        location: source?.location || '',
+        terms: source?.terms || '',
+        validUntil: source?.validUntil || null,
+      };
+    }
     
     return {
       id: base.id || null,
@@ -35,6 +47,7 @@ export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [],
       type,
       cgScript: type === 'story' ? base.cgScript || null : null,
       qrReward,
+      voucherDetail: type === 'voucher' ? voucherDetail : null,
     };
   });
 }
@@ -64,6 +77,7 @@ export async function persistDayCards(
           type: card.type,
           cgScript: card.type === 'story' ? card.cgScript || null : null,
           qrReward: card.type === 'qr' ? card.qrReward || null : null,
+          voucherDetail: card.type === 'voucher' ? card.voucherDetail || null : null,
           updatedAt: timestamp,
         },
         $setOnInsert: {
@@ -120,6 +134,7 @@ export function withAvailableContent(countdown: any): any {
   snapshot.availableDay = availableDay;
   snapshot.storyMoments = countdown.storyMoments || [];
   snapshot.qrRewards = countdown.qrRewards || [];
+  snapshot.voucherCards = countdown.voucherCards || [];
   snapshot.cgScript = countdown.cgScript || null;
   snapshot.printCards = countdown.printCards || [];
   snapshot.dayCards = buildDayCards(countdown.totalDays || DEFAULT_TOTAL_DAYS, countdown.dayCards, countdown);

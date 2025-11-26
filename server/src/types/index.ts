@@ -23,9 +23,10 @@ export interface DayCard {
   title: string;
   description: string;
   coverImage: string;
-  type: 'story' | 'qr';
+  type: 'story' | 'qr' | 'voucher';
   cgScript?: any;
   qrReward?: QrReward | null;
+  voucherDetail?: VoucherDetail | null;
   unlocked?: boolean;
 }
 
@@ -36,6 +37,14 @@ export interface QrReward {
   qrCode: string;
   availableOn: string | null;
   day?: number;
+}
+
+export interface VoucherDetail {
+  title: string;
+  message: string;
+  location?: string;
+  terms?: string;
+  validUntil?: string | null;
 }
 
 export interface Countdown {
@@ -78,6 +87,21 @@ export interface PrintCard {
   template: PrintCardTemplate;
   imageUrl: string;
   qrCode: string;
+  title: string;
+  subtitle: string;
+  note: string;
+  accentColor: string;
+  isConfigured?: boolean;
+  canvasJson?: any;
+  previewImage?: string;
+}
+
+export interface VoucherCard {
+  id: string | null;
+  countdownId: string;
+  day: number;
+  template: string;
+  imageUrl: string;
   title: string;
   subtitle: string;
   note: string;

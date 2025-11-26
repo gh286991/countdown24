@@ -11,6 +11,7 @@ export let Tokens: Collection | null = null;
 export let CountdownDays: Collection | null = null;
 export let Invitations: Collection | null = null;
 export let PrintCards: Collection | null = null;
+export let VoucherCards: Collection | null = null;
 
 export async function connectDatabase(): Promise<void> {
   client = new MongoClient(MONGODB_URI);
@@ -24,6 +25,7 @@ export async function connectDatabase(): Promise<void> {
   CountdownDays = database.collection('countdownDays');
   Invitations = database.collection('invitations');
   PrintCards = database.collection('printCards');
+  VoucherCards = database.collection('voucherCards');
 
   await Users.createIndex({ email: 1 }, { unique: true });
   await Users.createIndex({ id: 1 }, { unique: true });
@@ -37,6 +39,8 @@ export async function connectDatabase(): Promise<void> {
   await Invitations.createIndex({ countdownId: 1 });
   await PrintCards.createIndex({ id: 1 }, { unique: true });
   await PrintCards.createIndex({ countdownId: 1, day: 1 }, { unique: true });
+  await VoucherCards.createIndex({ id: 1 }, { unique: true });
+  await VoucherCards.createIndex({ countdownId: 1, day: 1 }, { unique: true });
 }
 
 export async function closeDatabase(): Promise<void> {

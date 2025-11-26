@@ -4,7 +4,7 @@ import type { PrintCard, PrintCardTemplate } from '../store/countdownSlice';
 
 interface PrintCardPreviewProps {
   card: Partial<PrintCard> & { day: number };
-  variant?: 'preview' | 'print';
+  variant?: 'preview' | 'print' | 'voucher';
 }
 
 const clampText = (value: string, limit = 180) => {
@@ -14,7 +14,8 @@ const clampText = (value: string, limit = 180) => {
 
 function PrintCardPreview({ card, variant = 'preview' }: PrintCardPreviewProps) {
   const isPrint = variant === 'print';
-  const template = (card.template || 'imageLeft') as PrintCardTemplate;
+  const isVoucher = variant === 'voucher';
+  const templateKey = (isVoucher ? 'imageLeft' : card.template || 'imageLeft') as PrintCardTemplate;
   const accentColor = card.accentColor || '#f472b6';
   const title = card.title || `Day ${card.day}`;
   const subtitle = card.subtitle || '在這裡寫一句給接收者的話';
@@ -82,13 +83,21 @@ function PrintCardPreview({ card, variant = 'preview' }: PrintCardPreviewProps) 
     </div>
   );
 
-  const qrElement = card.qrCode ? (
-    <div className={qrWrapperClass}>
-      <QRCodeSVG value={card.qrCode} size={qrSize} />
-    </div>
-  ) : (
-    <div className={`${qrWrapperClass} ${qrPlaceholderClass}`}>禮品卡</div>
-  );
+  const qrElement = !isVoucher
+    ? card.qrCode
+      ? (
+        <div className={qrWrapperClass}>
+          <QRCodeSVG value={card.qrCode} size={qrSize} />
+        </div>
+      )
+      : (
+        <div className={`${qrWrapperClass} ${qrPlaceholderClass}`}>禮品卡</div>
+      )
+    : (
+      <div className={`${qrWrapperClass} bg-white/80 border border-slate-200 text-[11px] text-slate-500`}>
+        可放簽名或貼紙
+      </div>
+    );
 
   const heading = (
     <>
@@ -181,7 +190,11 @@ function PrintCardPreview({ card, variant = 'preview' }: PrintCardPreviewProps) 
     ),
   };
 
-  return <div className={wrapperClass}><div className={templateWrapperClass}>{templates[template]}</div></div>;
+  return (
+    <div className={wrapperClass}>
+      <div className={templateWrapperClass}>{templates[templateKey]}</div>
+    </div>
+  );
 }
 
 export default PrintCardPreview;

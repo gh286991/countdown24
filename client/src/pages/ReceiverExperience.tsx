@@ -6,6 +6,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import DayTimeline from '../components/DayTimeline';
 import CgPlayer from '../components/CgPlayer';
 import QrCardPreview from '../components/QrCardPreview';
+import PrintCardPreview from '../components/PrintCardPreview';
 import { useToast } from '../components/ToastProvider';
 import { clearDayContent, fetchReceiverDayContent, fetchReceiverExperience, unlockDayWithQr } from '../store/receiverSlice';
 import type { RootState, AppDispatch } from '../store';
@@ -32,13 +33,23 @@ function ReceiverExperience() {
   const cards = useMemo(
     () => {
       if (!countdown) return [];
-      return (countdown.dayCards || []).map((card: any) => ({
-        ...card,
-        locked: !unlockedDays.includes(card.day),
-      }));
+      return (countdown.dayCards || []).map((card: any) => {
+        const availableDay = countdown.availableDay || 0;
+        const scheduleUnlocked = card.day <= availableDay || card.unlocked;
+        const requiresGiftUnlock = card.type === 'qr';
+        const qrUnlocked = unlockedDays.includes(card.day);
+        const unlocked = requiresGiftUnlock ? scheduleUnlocked && qrUnlocked : scheduleUnlocked;
+        const locked = !unlocked;
+        return {
+          ...card,
+          locked,
+        };
+      });
     },
     [countdown, unlockedDays],
   );
+  const voucherCards = countdown?.voucherCards || [];
+  const voucherCardMap = useMemo(() => new Map((voucherCards || []).map((card: any) => [card.day, card])), [voucherCards]);
   
   const [modalDay, setModalDay] = useState<number | null>(null);
   const [showQrScanner, setShowQrScanner] = useState(false);
@@ -61,6 +72,8 @@ function ReceiverExperience() {
 
   const currentDayContent = modalDay && dayContent?.day === modalDay ? dayContent : null;
   const modalLoading = modalDay && dayStatus === 'loading' && !currentDayContent;
+  const modalMeta = modalDay ? cards.find((c: any) => c.day === modalDay) : null;
+  const activeVoucherCard = modalDay ? voucherCardMap.get(modalDay) : null;
 
   // 停止相機的輔助函數
   const stopCamera = async () => {
@@ -370,7 +383,9 @@ function ReceiverExperience() {
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white">
                 <HiOutlineLockClosed className="w-12 h-12 mb-2 text-gray-400" />
                 <p className="text-sm font-semibold">尚未解鎖</p>
-                <p className="text-xs text-gray-400 mt-1">請掃描禮品卡解鎖</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {card.type === 'qr' ? '請掃描禮品卡解鎖' : '時間未到，敬請期待'}
+                </p>
               </div>
             )}
           </button>
@@ -391,22 +406,30 @@ function ReceiverExperience() {
             </button>
             <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
             {modalLoading && <p className="text-gray-300">載入內容中...</p>}
-            {!modalLoading && !currentDayContent && cards.find((c: any) => c.day === modalDay)?.locked && (
-              <div className="text-center py-8">
-                <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
-                <p className="text-sm text-gray-400 mb-4">請掃描對應的禮品卡來解鎖此日內容</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalDay(null);
-                    setShowQrScanner(true);
-                  }}
-                  className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
-                >
-                  掃描禮品卡
-                </button>
-              </div>
+            {!modalLoading && !currentDayContent && modalMeta?.locked && (
+              modalMeta.type === 'qr' ? (
+                <div className="text-center py-8">
+                  <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
+                  <p className="text-sm text-gray-400 mb-4">請掃描對應的禮品卡來解鎖此日內容</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalDay(null);
+                      setShowQrScanner(true);
+                    }}
+                    className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
+                  >
+                    掃描禮品卡
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg font-semibold mb-2">還沒到這一天喔</p>
+                  <p className="text-sm text-gray-400">等到指定日期，這張兌換卷就會自動開啟。</p>
+                </div>
+              )
             )}
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
               <QrCardPreview
@@ -418,6 +441,56 @@ function ReceiverExperience() {
             {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
               <p className="text-sm text-gray-300">此日尚未設定禮品內容。</p>
             )}
+            {!modalLoading && currentDayContent && currentDayContent.type === 'voucher' ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
+                  <p className="text-lg font-semibold">{currentDayContent.voucherDetail?.title || currentDayContent.title || '兌換卷'}</p>
+                  <p className="text-sm text-gray-300">{currentDayContent.voucherDetail?.message || currentDayContent.description || '尚未填寫描述'}</p>
+                  <div className="grid gap-2 text-xs text-gray-400">
+                    {currentDayContent.voucherDetail?.location && (
+                      <p>
+                        主題 / 地點：<span className="text-white">{currentDayContent.voucherDetail.location}</span>
+                      </p>
+                    )}
+                    {currentDayContent.voucherDetail?.validUntil && (
+                      <p>
+                        使用期限：<span className="text-white">{currentDayContent.voucherDetail.validUntil}</span>
+                      </p>
+                    )}
+                    {currentDayContent.voucherDetail?.terms && (
+                      <p>
+                        注意事項：<span className="text-white">{currentDayContent.voucherDetail.terms}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {activeVoucherCard ? (
+                  activeVoucherCard.previewImage ? (
+                    <img
+                      src={activeVoucherCard.previewImage}
+                      alt={`Day ${modalDay} Voucher`}
+                      className="w-full rounded-[28px] border border-white/10 shadow-lg"
+                    />
+                  ) : (
+                    <PrintCardPreview
+                      variant="voucher"
+                      card={{
+                        day: modalDay,
+                        template: activeVoucherCard.template,
+                        imageUrl: activeVoucherCard.imageUrl,
+                        qrCode: '',
+                        title: activeVoucherCard.title,
+                        subtitle: activeVoucherCard.subtitle,
+                        note: activeVoucherCard.note,
+                        accentColor: activeVoucherCard.accentColor,
+                      }}
+                    />
+                  )
+                ) : (
+                  <p className="text-sm text-gray-400">創作者尚未上傳兌換卷設計。</p>
+                )}
+              </div>
+            ) : null}
             {!modalLoading && currentDayContent && currentDayContent.type === 'story' ? (
               currentDayContent.cgScript ? (
                 <CgPlayer key={`receiver-player-${modalDay}`} script={currentDayContent.cgScript} />

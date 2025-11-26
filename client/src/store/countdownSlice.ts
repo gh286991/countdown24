@@ -19,10 +19,25 @@ export interface PrintCard {
   previewImage?: string;
 }
 
+export interface VoucherCard {
+  id: string | null;
+  countdownId?: string;
+  day: number;
+  template: string;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  note: string;
+  accentColor: string;
+  isConfigured?: boolean;
+  canvasJson?: any;
+  previewImage?: string;
+}
+
 interface Countdown {
   id: string;
   title: string;
-  type: 'story' | 'qr';
+  type: 'story' | 'qr' | 'voucher';
   description?: string;
   coverImage?: string;
   theme?: {
@@ -35,6 +50,7 @@ interface Countdown {
   availableDay?: number;
   dayCards?: any[];
   printCards?: PrintCard[];
+  voucherCards?: VoucherCard[];
   [key: string]: any;
 }
 
@@ -49,6 +65,7 @@ interface CountdownState {
   receivers: any[];
   receiversStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   printCardsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  voucherCardsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
 export const fetchCreatorCountdowns = createAsyncThunk(
@@ -225,6 +242,45 @@ export const deletePrintCard = createAsyncThunk(
   },
 );
 
+export const fetchVoucherCards = createAsyncThunk(
+  'countdowns/fetchVoucherCards',
+  async (countdownId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${countdownId}/voucher-cards`);
+      return { countdownId, cards: data.cards || [] };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得兌換卷');
+    }
+  },
+);
+
+export const saveVoucherCard = createAsyncThunk(
+  'countdowns/saveVoucherCard',
+  async (
+    { countdownId, day, card }: { countdownId: string; day: number; card: Partial<VoucherCard> },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.put(`/countdowns/${countdownId}/voucher-cards/${day}`, card);
+      return { countdownId, cards: data.cards || [], card: data.card };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '儲存兌換卷失敗');
+    }
+  },
+);
+
+export const deleteVoucherCard = createAsyncThunk(
+  'countdowns/deleteVoucherCard',
+  async ({ countdownId, day }: { countdownId: string; day: number }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.delete(`/countdowns/${countdownId}/voucher-cards/${day}`);
+      return { countdownId, cards: data.cards || [], card: data.card };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '刪除兌換卷失敗');
+    }
+  },
+);
+
 const initialState: CountdownState = {
   items: [],
   selected: null,
@@ -236,6 +292,7 @@ const initialState: CountdownState = {
   receivers: [],
   receiversStatus: 'idle',
   printCardsStatus: 'idle',
+  voucherCardsStatus: 'idle',
 };
 
 const countdownSlice = createSlice({
@@ -324,6 +381,28 @@ const countdownSlice = createSlice({
       .addCase(deletePrintCard.fulfilled, (state, action) => {
         if (state.selected && state.selected.id === action.payload.countdownId) {
           state.selected.printCards = action.payload.cards;
+        }
+      })
+      .addCase(fetchVoucherCards.pending, (state) => {
+        state.voucherCardsStatus = 'loading';
+      })
+      .addCase(fetchVoucherCards.fulfilled, (state, action) => {
+        state.voucherCardsStatus = 'succeeded';
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          state.selected.voucherCards = action.payload.cards;
+        }
+      })
+      .addCase(fetchVoucherCards.rejected, (state) => {
+        state.voucherCardsStatus = 'failed';
+      })
+      .addCase(saveVoucherCard.fulfilled, (state, action) => {
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          state.selected.voucherCards = action.payload.cards;
+        }
+      })
+      .addCase(deleteVoucherCard.fulfilled, (state, action) => {
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          state.selected.voucherCards = action.payload.cards;
         }
       });
   },
