@@ -6,6 +6,7 @@ import { PresignedImage } from './PresignedImage';
 import { compressImage } from '../utils/imageCompression';
 import AssetLibraryModal from './AssetLibraryModal';
 import type { UserAsset } from '../types/assets';
+import ImageCropModal from './ImageCropModal';
 
 interface ImageUploadFieldProps {
   label?: string;
@@ -39,20 +40,41 @@ function ImageUploadField({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showLibraryModal, setShowLibraryModal] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
   const { showToast } = useToast();
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const resetFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setPendingFile(file);
+    setShowCropModal(true);
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setPendingFile(null);
+    resetFileInput();
+  };
+
+  const handleCropConfirm = async ({ blob, fileName }: { blob: Blob; fileName: string }) => {
+    if (!blob) return;
+    setShowCropModal(false);
     setUploading(true);
     try {
-      let uploadFile = file;
+      let uploadFile = new File([blob], fileName, { type: blob.type || pendingFile?.type || 'image/png' });
       try {
-        uploadFile = await compressImage(file);
+        uploadFile = await compressImage(uploadFile);
       } catch (compressionError) {
         console.warn('Image compression skipped', compressionError);
       }
@@ -62,9 +84,8 @@ function ImageUploadField({
       if (folder) {
         formData.append('folder', folder);
       }
-      // 上傳時要求返回預簽名 URL
       formData.append('usePresigned', 'true');
-      
+
       const { data } = await api.post('/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -75,9 +96,8 @@ function ImageUploadField({
       showToast(error?.response?.data?.message || '圖片上傳失敗', 'error');
     } finally {
       setUploading(false);
-      if (event.target) {
-        event.target.value = '';
-      }
+      setPendingFile(null);
+      resetFileInput();
     }
   };
 
@@ -142,6 +162,14 @@ function ImageUploadField({
           setShowLibraryModal(false);
         }}
       />
+      {pendingFile && (
+        <ImageCropModal
+          file={pendingFile}
+          isOpen={showCropModal}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 }

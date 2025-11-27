@@ -3,7 +3,13 @@ import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { uploadImage, getPresignedUrl, extractKeyFromUrl } from '../services/storageService.js';
 import { MINIO_PRESIGNED_EXPIRES } from '../config/index.js';
-import { createAssetRecord, findAssetByEtag, listAssetsForUser, markAssetUsed } from '../services/assetLibraryService.js';
+import {
+  createAssetRecord,
+  findAssetByEtag,
+  listAssetsForUser,
+  markAssetUsed,
+  deleteAsset,
+} from '../services/assetLibraryService.js';
 
 export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {
@@ -21,8 +27,12 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   }
 
   try {
-    const folder = typeof req.body?.folder === 'string' ? req.body.folder : undefined;
+    let folder = typeof req.body?.folder === 'string' ? req.body.folder : undefined;
     const usePresigned = req.body?.usePresigned === 'true' || req.body?.usePresigned === true;
+    const isAssetLibraryUpload = req.body?.assetLibrary === 'true' || req.body?.assetLibrary === true;
+    if (!folder && isAssetLibraryUpload) {
+      folder = `users/${userId}/library`;
+    }
     const computedEtag = crypto.createHash('md5').update(file.buffer).digest('hex');
 
     const existingAsset = await findAssetByEtag(userId, computedEtag);
@@ -163,5 +173,31 @@ export async function getAssetLibrary(req: AuthenticatedRequest, res: Response) 
   } catch (error) {
     console.error('Failed to fetch asset library:', error);
     return res.status(500).json({ message: '取得素材庫資料失敗' });
+  }
+}
+
+export async function removeAssetFromLibrary(req: AuthenticatedRequest, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(400).json({ message: '無法識別使用者' });
+  }
+
+  const { assetId } = req.params;
+  if (!assetId) {
+    return res.status(400).json({ message: '缺少素材 ID' });
+  }
+
+  try {
+    const asset = await deleteAsset(userId, assetId);
+    if (!asset) {
+      return res.status(404).json({ message: '找不到素材或已被刪除' });
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete asset:', error);
+    return res.status(500).json({ message: '刪除素材失敗' });
   }
 }

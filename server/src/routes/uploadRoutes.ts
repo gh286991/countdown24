@@ -12,6 +12,7 @@ const upload = multer({
 
 router.post('/', requireAuth, requireRole('creator'), upload.single('file'), asyncHandler(uploadController.uploadAsset));
 router.get('/library', requireAuth, requireRole('creator'), asyncHandler(uploadController.getAssetLibrary));
+router.delete('/library/:assetId', requireAuth, requireRole('creator'), asyncHandler(uploadController.removeAssetFromLibrary));
 router.post('/presigned', requireAuth, asyncHandler(uploadController.getPresignedUrlForAsset));
 
 export default router;

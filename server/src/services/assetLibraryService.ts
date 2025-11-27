@@ -1,6 +1,7 @@
 import { Assets } from '../db/connection.js';
 import { generateId } from '../utils/helpers.js';
 import type { UserAsset } from '../types/index.js';
+import { deleteObject } from '../services/storageService.js';
 
 interface CreateAssetPayload {
   userId: string;
@@ -101,4 +102,16 @@ function normalizeCursor(asset?: UserAsset): string | null {
     }
   }
   return null;
+}
+
+export async function deleteAsset(userId: string, assetId: string): Promise<UserAsset | null> {
+  if (!Assets) throw new Error('Database not initialized');
+  const asset = (await Assets.findOne({ userId, id: assetId })) as UserAsset | null;
+  if (!asset) {
+    return null;
+  }
+
+  await deleteObject(asset.key);
+  await Assets.deleteOne({ userId, id: assetId });
+  return asset;
 }

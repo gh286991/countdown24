@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
 import {
@@ -87,6 +87,19 @@ export async function uploadImage(buffer: Buffer, contentType?: string, folder?:
   const etag = response?.ETag ? response.ETag.replace(/"/g, '') : undefined;
 
   return { key, url, etag };
+}
+
+export async function deleteObject(key: string): Promise<void> {
+  if (!s3Client || !MINIO_BUCKET) {
+    throw new Error('Storage is not configured');
+  }
+
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: MINIO_BUCKET,
+      Key: key,
+    }),
+  );
 }
 
 /**

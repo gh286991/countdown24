@@ -11,5 +11,6 @@ export interface UserAsset {
   updatedAt: string;
   lastUsedAt?: string;
   usageCount?: number;
+  key?: string;
+  etag?: string;
 }
-
