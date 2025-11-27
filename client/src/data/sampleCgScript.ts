@@ -96,6 +96,7 @@ const sampleCgScript = {
         },
         { speaker: '你', text: '我會準備好迎接下一個選項。' },
       ],
+      next: 'hidden-clues',
     },
     {
       id: 'hidden-clues',
@@ -103,12 +104,6 @@ const sampleCgScript = {
       background: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=80',
       accent: '#f472b6',
       hotspotMode: 'manual',
-      dialogue: [
-        {
-          speaker: '旁白',
-          text: '畫面中藏有三個小物，只有找到信封才能繼續。',
-        },
-      ],
       hotspots: [
         {
           id: 'coffee',
