@@ -59,7 +59,11 @@ function buildFolderPath(folder?: string) {
     .join('/') || 'uploads';
 }
 
-export async function uploadImage(buffer: Buffer, contentType?: string, folder?: string) {
+export async function uploadImage(buffer: Buffer, contentType?: string, folder?: string): Promise<{
+  key: string;
+  url: string;
+  etag?: string;
+}> {
   if (!s3Client || !MINIO_BUCKET) {
     throw new Error('Storage is not configured');
   }
@@ -68,7 +72,7 @@ export async function uploadImage(buffer: Buffer, contentType?: string, folder?:
   const extension = guessExtension(contentType);
   const key = `${safeFolder}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}${extension ? `.${extension}` : ''}`;
 
-  await s3Client.send(
+  const response = await s3Client.send(
     new PutObjectCommand({
       Bucket: MINIO_BUCKET,
       Key: key,
@@ -80,7 +84,9 @@ export async function uploadImage(buffer: Buffer, contentType?: string, folder?:
   const publicBase = MINIO_PUBLIC_URL || endpointBase;
   const url = publicBase ? `${publicBase}/${MINIO_BUCKET}/${key}` : key;
 
-  return { key, url };
+  const etag = response?.ETag ? response.ETag.replace(/"/g, '') : undefined;
+
+  return { key, url, etag };
 }
 
 /**

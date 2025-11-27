@@ -1,14 +1,21 @@
+import crypto from 'crypto';
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { uploadImage, getPresignedUrl, extractKeyFromUrl } from '../services/storageService.js';
 import { MINIO_PRESIGNED_EXPIRES } from '../config/index.js';
+import { createAssetRecord, findAssetByEtag, listAssetsForUser, markAssetUsed } from '../services/assetLibraryService.js';
 
 export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  const file = (req as AuthenticatedRequest & { file?: { buffer: Buffer; mimetype: string } }).file;
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(400).json({ message: '無法識別使用者' });
+  }
+
+  const file = (req as AuthenticatedRequest & { file?: Express.Multer.File }).file;
   if (!file) {
     return res.status(400).json({ message: '請選擇要上傳的圖片' });
   }
@@ -16,6 +23,28 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   try {
     const folder = typeof req.body?.folder === 'string' ? req.body.folder : undefined;
     const usePresigned = req.body?.usePresigned === 'true' || req.body?.usePresigned === true;
+    const computedEtag = crypto.createHash('md5').update(file.buffer).digest('hex');
+
+    const existingAsset = await findAssetByEtag(userId, computedEtag);
+    if (existingAsset) {
+      await markAssetUsed(existingAsset.id);
+      let reuseUrl = existingAsset.url;
+      if (usePresigned) {
+        try {
+          reuseUrl = await getPresignedUrl(existingAsset.key);
+        } catch (presignedError) {
+          console.warn('Failed to generate presigned URL for existing asset, using stored URL:', presignedError);
+        }
+      }
+
+      return res.status(200).json({
+        key: existingAsset.key,
+        url: reuseUrl,
+        ...(usePresigned && { originalUrl: existingAsset.url }),
+        assetId: existingAsset.id,
+        reused: true,
+      });
+    }
     
     const result = await uploadImage(file.buffer, file.mimetype, folder);
     
@@ -29,12 +58,25 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
         // 如果生成預簽名 URL 失敗，回退到原始 URL
       }
     }
+    const folderFromKey = result.key.includes('/') ? result.key.split('/').slice(0, -1).join('/') : null;
+    const asset = await createAssetRecord({
+      userId,
+      key: result.key,
+      url: result.url,
+      etag: result.etag || computedEtag,
+      fileName: (file as any).originalname,
+      contentType: file.mimetype,
+      size: (file as any).size,
+      folder: folderFromKey || folder,
+    });
     
     return res.status(201).json({
-      key: result.key,
+      key: asset.key,
       url: finalUrl,
+      assetId: asset.id,
+      reused: false,
       // 如果使用預簽名 URL，也提供原始 URL 供參考
-      ...(usePresigned && { originalUrl: result.url }),
+      ...(usePresigned && { originalUrl: asset.url }),
     });
   } catch (error) {
     console.error('Upload failed:', error);
@@ -74,5 +116,52 @@ export async function getPresignedUrlForAsset(req: AuthenticatedRequest, res: Re
   } catch (error) {
     console.error('Failed to generate presigned URL:', error);
     return res.status(500).json({ message: '生成預簽名 URL 失敗' });
+  }
+}
+
+export async function getAssetLibrary(req: AuthenticatedRequest, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(400).json({ message: '無法識別使用者' });
+  }
+
+  const limit = req.query.limit ? Number(req.query.limit) : undefined;
+  const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
+  const search = typeof req.query.q === 'string' ? req.query.q : undefined;
+
+  try {
+    const { items, nextCursor } = await listAssetsForUser({
+      userId,
+      limit,
+      cursor: cursor || null,
+      search,
+    });
+
+    const normalized = items.map((asset) => ({
+      id: asset.id,
+      key: asset.key,
+      url: asset.url,
+      etag: asset.etag,
+      fileName: asset.fileName,
+      folder: asset.folder,
+      contentType: asset.contentType,
+      size: asset.size,
+      createdAt: asset.createdAt instanceof Date ? asset.createdAt.toISOString() : asset.createdAt,
+      updatedAt: asset.updatedAt instanceof Date ? asset.updatedAt.toISOString() : asset.updatedAt,
+      lastUsedAt: asset.lastUsedAt instanceof Date ? asset.lastUsedAt.toISOString() : asset.lastUsedAt,
+      usageCount: asset.usageCount || 0,
+    }));
+
+    return res.json({
+      items: normalized,
+      nextCursor,
+    });
+  } catch (error) {
+    console.error('Failed to fetch asset library:', error);
+    return res.status(500).json({ message: '取得素材庫資料失敗' });
   }
 }

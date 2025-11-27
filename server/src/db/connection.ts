@@ -13,6 +13,7 @@ export let Invitations: Collection | null = null;
 export let PrintCards: Collection | null = null;
 export let VoucherCards: Collection | null = null;
 export let VoucherRedemptions: Collection | null = null;
+export let Assets: Collection | null = null;
 
 export async function connectDatabase(): Promise<void> {
   client = new MongoClient(MONGODB_URI);
@@ -28,6 +29,7 @@ export async function connectDatabase(): Promise<void> {
   PrintCards = database.collection('printCards');
   VoucherCards = database.collection('voucherCards');
   VoucherRedemptions = database.collection('voucherRedemptions');
+  Assets = database.collection('assets');
 
   await Users.createIndex({ email: 1 }, { unique: true });
   await Users.createIndex({ id: 1 }, { unique: true });
@@ -46,6 +48,9 @@ export async function connectDatabase(): Promise<void> {
   await VoucherRedemptions.createIndex({ id: 1 }, { unique: true });
   await VoucherRedemptions.createIndex({ countdownId: 1, day: 1, receiverId: 1 });
   await VoucherRedemptions.createIndex({ assignmentId: 1, day: 1 });
+  await Assets.createIndex({ id: 1 }, { unique: true });
+  await Assets.createIndex({ userId: 1, createdAt: -1 });
+  await Assets.createIndex({ userId: 1, etag: 1 }, { unique: true });
 }
 
 export async function closeDatabase(): Promise<void> {

@@ -4,6 +4,8 @@ import api from '../api/client';
 import { useToast } from './ToastProvider';
 import { PresignedImage } from './PresignedImage';
 import { compressImage } from '../utils/imageCompression';
+import AssetLibraryModal from './AssetLibraryModal';
+import type { UserAsset } from '../types/assets';
 
 interface ImageUploadFieldProps {
   label?: string;
@@ -36,6 +38,7 @@ function ImageUploadField({
 }: ImageUploadFieldProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
   const { showToast } = useToast();
 
   const handleUploadClick = () => {
@@ -81,7 +84,7 @@ function ImageUploadField({
   return (
     <div className={className}>
       {label && <label className="block text-xs text-gray-400 mb-1">{label}</label>}
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-start">
         <input
           type="url"
           value={value || ''}
@@ -92,15 +95,24 @@ function ImageUploadField({
             'flex-1 bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/10 focus:border-aurora focus:outline-none'
           }
         />
-        <button
-          type="button"
-          onClick={handleUploadClick}
-          disabled={uploading}
-          className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-xs flex items-center gap-1 text-gray-200 hover:bg-white/20 disabled:opacity-50"
-        >
-          <HiOutlineCloudArrowUp className="w-4 h-4" />
-          {uploading ? '上傳中...' : '上傳'}
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-xs flex items-center gap-1 text-gray-200 hover:bg-white/20 disabled:opacity-50"
+          >
+            <HiOutlineCloudArrowUp className="w-4 h-4" />
+            {uploading ? '上傳中...' : '上傳'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLibraryModal(true)}
+            className="px-3 py-2 rounded-lg border border-dashed border-white/20 text-xs text-gray-300 hover:border-white/40"
+          >
+            我的素材庫
+          </button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -121,6 +133,15 @@ function ImageUploadField({
           }}
         />
       )}
+      <AssetLibraryModal
+        isOpen={showLibraryModal}
+        onClose={() => setShowLibraryModal(false)}
+        onSelect={(asset: UserAsset) => {
+          onChange(asset.url);
+          showToast('已套用素材庫圖片', 'success');
+          setShowLibraryModal(false);
+        }}
+      />
     </div>
   );
 }

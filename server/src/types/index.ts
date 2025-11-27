@@ -128,3 +128,19 @@ export interface VoucherRedemption {
   note?: string; // 接收者的備註
   creatorNote?: string; // 創作者的備註
 }
+
+export interface UserAsset {
+  id: string;
+  userId: string;
+  key: string;
+  url: string;
+  etag: string;
+  fileName?: string | null;
+  contentType?: string | null;
+  folder?: string | null;
+  size?: number | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  lastUsedAt?: Date | string;
+  usageCount?: number;
+}

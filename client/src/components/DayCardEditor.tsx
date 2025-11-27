@@ -1,11 +1,13 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useState } from 'react';
 import { HiOutlineBookOpen, HiOutlineGift } from 'react-icons/hi2';
 import CgScriptEditor from './CgScriptEditor';
 import ImageUploadField from './ImageUploadField';
-import { useState } from 'react';
 import VoucherDesignEditorModal from './VoucherDesignEditorModal';
+import AssetLibraryModal from './AssetLibraryModal';
 import type { VoucherCard } from '../store/countdownSlice';
 import type { VoucherDetail } from '../types/voucher';
+import type { UserAsset } from '../types/assets';
+import { useToast } from './ToastProvider';
 
 interface QrReward {
   title?: string;
@@ -54,15 +56,26 @@ function DayCardEditor({
   onVoucherDelete,
 }: DayCardEditorProps) {
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [showGlobalAssetModal, setShowGlobalAssetModal] = useState(false);
+  const { showToast } = useToast();
   return (
     <div className="glass-panel p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">編輯 Day {activeDay}</h2>
-        <p className="text-xs text-gray-400">
-          {startDate
-            ? `釋出：${new Date(new Date(startDate).getTime() + (activeDay - 1) * 86400000).toLocaleDateString()}`
-            : '未設定日期'}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold">編輯 Day {activeDay}</h2>
+          <p className="text-xs text-gray-400">
+            {startDate
+              ? `釋出：${new Date(new Date(startDate).getTime() + (activeDay - 1) * 86400000).toLocaleDateString()}`
+              : '未設定日期'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowGlobalAssetModal(true)}
+          className="text-xs text-gray-200 border border-white/20 rounded-full px-4 py-1.5 hover:border-white/40"
+        >
+          開啟素材庫
+        </button>
       </div>
 
       {/* 類型切換 */}
@@ -294,6 +307,26 @@ function DayCardEditor({
       >
         💾 儲存 Day {activeDay} 小卡
       </button>
+      <AssetLibraryModal
+        isOpen={showGlobalAssetModal}
+        onClose={() => setShowGlobalAssetModal(false)}
+        onSelect={async (asset: UserAsset) => {
+          try {
+            const canUseClipboard = typeof navigator !== 'undefined' && navigator.clipboard?.writeText;
+            if (canUseClipboard) {
+              await navigator.clipboard.writeText(asset.url);
+              showToast('已複製素材連結，可貼到任一圖片欄位', 'success');
+            } else {
+              throw new Error('Clipboard not supported');
+            }
+          } catch (error) {
+            console.warn('Failed to copy asset url', error);
+            showToast('此瀏覽器無法自動複製，請手動貼上', 'warning');
+          } finally {
+            setShowGlobalAssetModal(false);
+          }
+        }}
+      />
     </div>
   );
 }
