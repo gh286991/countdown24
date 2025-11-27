@@ -1,7 +1,7 @@
-import { DEFAULT_TOTAL_DAYS } from '../config/index';
-import { PrintCards } from '../db/connection';
-import { generateId } from '../utils/helpers';
-import type { PrintCard, PrintCardTemplate } from '../types/index';
+import { DEFAULT_TOTAL_DAYS } from '../config/index.js';
+import { PrintCards } from '../db/connection.js';
+import { generateId } from '../utils/helpers.js';
+import type { PrintCard, PrintCardTemplate } from '../types/index.js';
 
 export const PRINT_CARD_TEMPLATES: PrintCardTemplate[] = ['imageLeft', 'imageRight', 'stacked', 'spotlight'];
 

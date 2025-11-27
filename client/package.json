@@ -2,6 +2,7 @@
   "name": "countdown24-client",
   "private": true,
   "version": "0.1.0",
+  "description": "Countdown24 Experience 的互動倒數體驗平台前端 Web 介面",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"

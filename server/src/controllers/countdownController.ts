@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../types/index';
-import { Countdowns, Assignments, CountdownDays, Users, Invitations } from '../db/connection';
-import * as countdownService from '../services/countdownService';
-import * as printCardService from '../services/printCardService';
-import * as voucherCardService from '../services/voucherCardService';
-import * as voucherRedemptionService from '../services/voucherRedemptionService';
-import { normalizeDate, normalizeTotalDays, addDays, generateId, generateDayQrToken } from '../utils/helpers';
+import { AuthenticatedRequest } from '../types/index.js';
+import { Countdowns, Assignments, CountdownDays, Users, Invitations } from '../db/connection.js';
+import * as countdownService from '../services/countdownService.js';
+import * as printCardService from '../services/printCardService.js';
+import * as voucherCardService from '../services/voucherCardService.js';
+import * as voucherRedemptionService from '../services/voucherRedemptionService.js';
+import { normalizeDate, normalizeTotalDays, addDays, generateId, generateDayQrToken } from '../utils/helpers.js';
 import crypto from 'crypto';
 
 export async function getCountdowns(req: AuthenticatedRequest, res: Response) {

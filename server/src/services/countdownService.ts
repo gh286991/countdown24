@@ -1,7 +1,7 @@
-import { CountdownDays, Assignments, Users } from '../db/connection';
-import { DEFAULT_TOTAL_DAYS } from '../config/index';
-import { generateId, hasRewardData, hasVoucherData } from '../utils/helpers';
-import type { DayCard, QrReward, VoucherDetail } from '../types/index';
+import { CountdownDays, Assignments, Users } from '../db/connection.js';
+import { DEFAULT_TOTAL_DAYS } from '../config/index.js';
+import { generateId, hasRewardData, hasVoucherData } from '../utils/helpers.js';
+import type { DayCard, QrReward, VoucherDetail } from '../types/index.js';
 
 export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [], countdown: any = null): DayCard[] {
   const map = new Map((cards || []).filter(Boolean).map((card) => [card.day, card]));

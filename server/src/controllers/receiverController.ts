@@ -1,10 +1,10 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../types/index';
-import { Assignments, Countdowns, Users } from '../db/connection';
-import * as countdownService from '../services/countdownService';
-import * as voucherCardService from '../services/voucherCardService';
-import * as voucherRedemptionService from '../services/voucherRedemptionService';
-import { verifyDayQrToken } from '../utils/helpers';
+import { AuthenticatedRequest } from '../types/index.js';
+import { Assignments, Countdowns, Users } from '../db/connection.js';
+import * as countdownService from '../services/countdownService.js';
+import * as voucherCardService from '../services/voucherCardService.js';
+import * as voucherRedemptionService from '../services/voucherRedemptionService.js';
+import { verifyDayQrToken } from '../utils/helpers.js';
 
 export async function getInbox(req: AuthenticatedRequest, res: Response) {
   if (!req.user || !Assignments || !Countdowns || !Users) {

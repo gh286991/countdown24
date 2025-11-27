@@ -1,7 +1,7 @@
-import { DEFAULT_TOTAL_DAYS } from '../config/index';
-import { VoucherCards } from '../db/connection';
-import { generateId } from '../utils/helpers';
-import type { VoucherCard } from '../types/index';
+import { DEFAULT_TOTAL_DAYS } from '../config/index.js';
+import { VoucherCards } from '../db/connection.js';
+import { generateId } from '../utils/helpers.js';
+import type { VoucherCard } from '../types/index.js';
 
 const DEFAULT_ACCENT = '#fbbf24';
 

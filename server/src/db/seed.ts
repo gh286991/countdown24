@@ -1,6 +1,6 @@
-import { Users, Countdowns, Assignments } from './connection';
-import { hashPassword } from '../utils/helpers';
-import * as countdownService from '../services/countdownService';
+import { Users, Countdowns, Assignments } from './connection.js';
+import { hashPassword } from '../utils/helpers.js';
+import * as countdownService from '../services/countdownService.js';
 
 export async function seedDemoData(): Promise<void> {
   if (!Users || !Countdowns || !Assignments) {

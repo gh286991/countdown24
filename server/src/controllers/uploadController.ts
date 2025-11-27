@@ -1,7 +1,7 @@
 import type { Response } from 'express';
-import type { AuthenticatedRequest } from '../types/index';
-import { uploadImage, getPresignedUrl, extractKeyFromUrl } from '../services/storageService';
-import { MINIO_PRESIGNED_EXPIRES } from '../config/index';
+import type { AuthenticatedRequest } from '../types/index.js';
+import { uploadImage, getPresignedUrl, extractKeyFromUrl } from '../services/storageService.js';
+import { MINIO_PRESIGNED_EXPIRES } from '../config/index.js';
 
 export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {

@@ -1,7 +1,7 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import * as authController from '../controllers/authController';
-import { requireAuth } from '../middleware/auth';
-import { asyncHandler } from '../middleware/asyncHandler';
+import * as authController from '../controllers/authController.js';
+import { requireAuth } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router: ExpressRouter = Router();
 

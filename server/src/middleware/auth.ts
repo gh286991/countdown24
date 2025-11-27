@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../types/index';
-import { Tokens, Users } from '../db/connection';
-import { sanitizeUser } from '../utils/helpers';
+import { AuthenticatedRequest } from '../types/index.js';
+import { Tokens, Users } from '../db/connection.js';
+import { sanitizeUser } from '../utils/helpers.js';
 
 export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {

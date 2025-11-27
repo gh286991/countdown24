@@ -1,6 +1,6 @@
-import { VoucherRedemptions } from '../db/connection';
-import { VoucherRedemption, VoucherRedemptionStatus } from '../types/index';
-import { generateId } from '../utils/helpers';
+import { VoucherRedemptions } from '../db/connection.js';
+import { VoucherRedemption, VoucherRedemptionStatus } from '../types/index.js';
+import { generateId } from '../utils/helpers.js';
 
 export async function getRedemptionsByCountdown(countdownId: string): Promise<VoucherRedemption[]> {
   if (!VoucherRedemptions) return [];

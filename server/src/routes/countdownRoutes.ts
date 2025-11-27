@@ -1,7 +1,7 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import * as countdownController from '../controllers/countdownController';
-import { requireAuth, requireRole } from '../middleware/auth';
-import { asyncHandler } from '../middleware/asyncHandler';
+import * as countdownController from '../controllers/countdownController.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router: ExpressRouter = Router();
 

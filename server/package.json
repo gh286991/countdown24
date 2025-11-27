@@ -2,6 +2,7 @@
   "name": "countdown24-server",
   "private": true,
   "version": "0.1.0",
+  "description": "Countdown24 Experience 的互動倒數體驗平台後端 API",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"

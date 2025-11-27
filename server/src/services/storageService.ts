@@ -11,7 +11,7 @@ import {
   MINIO_USE_SSL,
   MINIO_PUBLIC_URL,
   MINIO_PRESIGNED_EXPIRES,
-} from '../config/index';
+} from '../config/index.js';
 
 const hasValidConfig = Boolean(MINIO_ACCESS_KEY && MINIO_SECRET_KEY && MINIO_ENDPOINT && MINIO_BUCKET);
 

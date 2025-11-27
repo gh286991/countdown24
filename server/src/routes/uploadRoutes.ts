@@ -1,8 +1,8 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import multer from 'multer';
-import { requireAuth, requireRole } from '../middleware/auth';
-import { asyncHandler } from '../middleware/asyncHandler';
-import * as uploadController from '../controllers/uploadController';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import * as uploadController from '../controllers/uploadController.js';
 
 const router: ExpressRouter = Router();
 const upload = multer({

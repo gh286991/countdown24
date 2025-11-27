@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { Tokens, Users } from '../db/connection';
-import { hashPassword, sanitizeUser, generateId } from '../utils/helpers';
-import type { User } from '../types/index';
+import { Tokens, Users } from '../db/connection.js';
+import { hashPassword, sanitizeUser, generateId } from '../utils/helpers.js';
+import type { User } from '../types/index.js';
 
 export async function issueToken(userId: string): Promise<{ token: string; expiresAt: number }> {
   if (!Tokens) throw new Error('Tokens collection not initialized');

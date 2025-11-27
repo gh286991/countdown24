@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../types/index';
-import * as authService from '../services/authService';
-import { Countdowns, Assignments, Users } from '../db/connection';
-import * as countdownService from '../services/countdownService';
+import { AuthenticatedRequest } from '../types/index.js';
+import * as authService from '../services/authService.js';
+import { Countdowns, Assignments, Users } from '../db/connection.js';
+import * as countdownService from '../services/countdownService.js';
 
 export async function register(req: Request, res: Response) {
   const { name, email, password, role } = req.body || {};

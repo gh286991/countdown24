@@ -1,5 +1,5 @@
 import { MongoClient, Db, Collection } from 'mongodb';
-import { MONGODB_URI, DB_NAME } from '../config/index';
+import { MONGODB_URI, DB_NAME } from '../config/index.js';
 
 let client: MongoClient | null = null;
 let database: Db | null = null;

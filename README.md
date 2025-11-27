@@ -42,6 +42,39 @@ pnpm --filter client build      # 輸出靜態檔案到 client/dist
 PORT=4000 pnpm --filter server start
 ```
 
+## 使用 Docker 部署
+
+> 需求：Docker、事先建立好的 MongoDB 連線（雲端或自架）
+
+1. 準備 `.env`（可直接沿用開發時的設定）：
+
+   - `PORT=4000`
+   - `MONGODB_URI=...`
+   - `DB_NAME=countdown24`
+   - `PASSWORD_SECRET=...`
+   - `QR_TOKEN_SECRET=...`
+   - 以及 MinIO / S3 相關設定（若有使用檔案上傳）
+
+2. 建置 image（第一版 demo 建議使用 0.1.0 tag）：
+
+```bash
+docker build -t countdown24:0.1.0 .
+```
+
+3. 執行 container（預設會啟動 API + 提供前端靜態頁面）：
+
+```bash
+docker run --rm \
+  -p 4000:4000 \
+  --env-file .env \
+  countdown24:0.1.0
+```
+
+啟動後：
+
+- 後端 API：`http://localhost:4000/api`
+- 前端頁面：`http://localhost:4000/`
+
 ### 環境變數
 | 變數 | 預設 | 說明 |
 | --- | --- | --- |
@@ -49,6 +82,8 @@ PORT=4000 pnpm --filter server start
 | `CLIENT_ORIGIN` | `http://localhost:5173` | CORS 允許來源 |
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017` | MongoDB 連線 URI |
 | `DB_NAME` | `countdown24` | MongoDB 資料庫名稱 |
+| `PASSWORD_SECRET` | - | 密碼雜湊用的 HMAC key（必填，請使用隨機長字串） |
+| `QR_TOKEN_SECRET` | - | 每日解鎖 QR code token 用的 HMAC key（必填，請使用隨機長字串） |
 
 ## 測試帳號
 | 角色 | Email | 密碼 |

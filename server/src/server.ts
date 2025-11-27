@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
-import { resolve } from 'path';
+import path, { resolve } from 'path';
 import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
 
 // 載入 .env 檔案：嘗試多個可能的位置
 const cwd = process.cwd();
@@ -29,13 +30,13 @@ import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
-import { PORT, CLIENT_ORIGIN, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET } from './config/index';
-import { connectDatabase } from './db/connection';
-import { seedDemoData } from './db/seed';
-import authRoutes from './routes/authRoutes';
-import countdownRoutes from './routes/countdownRoutes';
-import receiverRoutes from './routes/receiverRoutes';
-import uploadRoutes from './routes/uploadRoutes';
+import { PORT, CLIENT_ORIGIN, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET } from './config/index.js';
+import { connectDatabase } from './db/connection.js';
+import { seedDemoData } from './db/seed.js';
+import authRoutes from './routes/authRoutes.js';
+import countdownRoutes from './routes/countdownRoutes.js';
+import receiverRoutes from './routes/receiverRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 import type { Request, Response, NextFunction } from 'express';
 
 const app = express();
@@ -51,6 +52,15 @@ app.use(express.json({ limit: '2mb' }));
 app.use(compression());
 app.use(morgan('dev'));
 
+// 靜態檔案服務（部署時提供前端 build 結果）
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientBuildPath = resolve(__dirname, '../../client/dist');
+
+if (existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+}
+
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -61,6 +71,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/countdowns', countdownRoutes);
 app.use('/api/receiver', receiverRoutes);
 app.use('/api/uploads', uploadRoutes);
+
+// 前端路由：非 /api/* 的請求交給 React 處理
+if (existsSync(clientBuildPath)) {
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(resolve(clientBuildPath, 'index.html'));
+  });
+}
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

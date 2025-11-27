@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { DEFAULT_TOTAL_DAYS, PASSWORD_SECRET, QR_TOKEN_SECRET } from '../config/index';
+import { DEFAULT_TOTAL_DAYS, PASSWORD_SECRET, QR_TOKEN_SECRET } from '../config/index.js';
 
 export function hashPassword(value: string): string {
   // 使用 PASSWORD_SECRET 作為 salt 來加密密碼
