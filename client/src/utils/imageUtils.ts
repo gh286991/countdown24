@@ -1,12 +1,52 @@
 import api from '../api/client';
 
+// 預簽名 URL 緩存時間（毫秒）
+const PRESIGNED_CACHE_TTL = 45 * 60 * 1000; // 45 分鐘
+const presignedCache = new Map<string, { url: string; expiresAt: number }>();
+const pendingPresigned = new Map<string, Promise<string>>();
+const batchQueue = new Map<string, { resolvers: Array<(value: string) => void>; rejecters: Array<(error: any) => void> }>();
+let batchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function now() {
+  return Date.now();
+}
+
+function getCacheKey(urlOrKey: string) {
+  return urlOrKey;
+}
+
+function getCachedPresignedUrlInternal(urlOrKey: string) {
+  const cacheKey = getCacheKey(urlOrKey);
+  const cached = presignedCache.get(cacheKey);
+  if (cached && cached.expiresAt > now()) {
+    return cached.url;
+  }
+  if (cached) {
+    presignedCache.delete(cacheKey);
+  }
+  return undefined;
+}
+
+function setCachedPresignedUrl(urlOrKey: string, value: string) {
+  const cacheKey = getCacheKey(urlOrKey);
+  presignedCache.set(cacheKey, { url: value, expiresAt: now() + PRESIGNED_CACHE_TTL });
+}
+
+export function clearPresignedCache() {
+  presignedCache.clear();
+  pendingPresigned.clear();
+  batchQueue.clear();
+  if (batchTimer) {
+    clearTimeout(batchTimer);
+    batchTimer = null;
+  }
+}
+
 /**
  * 判斷 URL 是否來自我們的 MinIO 儲存
  */
 export function isMinIOUrl(url: string): boolean {
   if (!url) return false;
-  // 檢查是否包含 MinIO endpoint 或 bucket 名稱
-  // 注意：預簽名 URL 也包含這些標識，所以也會被識別為 MinIO URL
   return url.includes('tomminio-api.zeabur.app') || url.includes('/countdown24/');
 }
 
@@ -15,13 +55,13 @@ export function isMinIOUrl(url: string): boolean {
  */
 export function isPresignedUrl(url: string): boolean {
   if (!url) return false;
-  // 預簽名 URL 通常包含 X-Amz-Algorithm, X-Amz-Signature 等查詢參數
-  // 或者包含其他簽名相關的查詢參數
-  return url.includes('X-Amz-Algorithm') || 
-         url.includes('X-Amz-Signature') || 
-         url.includes('X-Amz-Credential') ||
-         url.includes('AWSAccessKeyId') ||
-         (url.includes('?') && (url.includes('Signature=') || url.includes('Expires=')));
+  return (
+    url.includes('X-Amz-Algorithm') ||
+    url.includes('X-Amz-Signature') ||
+    url.includes('X-Amz-Credential') ||
+    url.includes('AWSAccessKeyId') ||
+    (url.includes('?') && (url.includes('Signature=') || url.includes('Expires=')))
+  );
 }
 
 /**
@@ -29,48 +69,101 @@ export function isPresignedUrl(url: string): boolean {
  */
 export function extractKeyFromUrl(url: string): string | null {
   if (!isMinIOUrl(url)) return null;
-  
-  // 如果是預簽名 URL，先移除查詢參數
   const urlWithoutQuery = url.split('?')[0];
-  
-  // 提取 key（bucket 名稱後的路徑）
-  // 支援多種 URL 格式：
-  // - https://tomminio-api.zeabur.app/countdown24/path/to/file.jpg
-  // - tomminio-api.zeabur.app/countdown24/path/to/file.jpg
-  // - /countdown24/path/to/file.jpg
-  // - 預簽名 URL: https://...?X-Amz-Algorithm=...
   const match = urlWithoutQuery.match(/\/countdown24\/(.+?)$/);
   if (match) {
     return match[1];
   }
-  
-  // 如果 URL 已經是 key 格式（不包含協議和域名）
   if (!urlWithoutQuery.includes('://') && !urlWithoutQuery.includes('tomminio-api.zeabur.app')) {
     return urlWithoutQuery;
   }
-  
   return null;
 }
 
-/**
- * 獲取預簽名 URL
- */
-export async function getPresignedUrl(urlOrKey: string): Promise<string> {
-  try {
-    const key = extractKeyFromUrl(urlOrKey);
-    if (!key) {
-      // 如果不是 MinIO URL，直接返回原 URL
-      return urlOrKey;
-    }
+export function getCachedPresignedUrl(urlOrKey: string): string | undefined {
+  return getCachedPresignedUrlInternal(urlOrKey);
+}
 
-    const { data } = await api.post('/uploads/presigned', {
-      key: key,
+interface PresignOptions {
+  forceRefresh?: boolean;
+}
+
+function enqueueBatchRequest(urlOrKey: string): Promise<string> {
+  if (pendingPresigned.has(urlOrKey)) {
+    return pendingPresigned.get(urlOrKey)!;
+  }
+
+  const promise = new Promise<string>((resolve, reject) => {
+    const existing = batchQueue.get(urlOrKey);
+    if (existing) {
+      existing.resolvers.push(resolve);
+      existing.rejecters.push(reject);
+    } else {
+      batchQueue.set(urlOrKey, { resolvers: [resolve], rejecters: [reject] });
+    }
+  });
+
+  pendingPresigned.set(urlOrKey, promise);
+  if (!batchTimer) {
+    batchTimer = setTimeout(() => {
+      batchTimer = null;
+      flushBatchQueue();
+    }, 0);
+  }
+
+  return promise;
+}
+
+async function flushBatchQueue() {
+  if (!batchQueue.size) return;
+  const entries = Array.from(batchQueue.entries());
+  batchQueue.clear();
+
+  const urls = entries.map(([url]) => url);
+
+  try {
+    const { data } = await api.post('/uploads/presigned/batch', { urls });
+    const responseMap: Record<string, string> = data?.urls || {};
+    entries.forEach(([url, { resolvers }]) => {
+      const signed = responseMap[url] || url;
+      setCachedPresignedUrl(url, signed);
+      pendingPresigned.delete(url);
+      resolvers.forEach((resolve) => resolve(signed));
     });
-    
-    return data.url;
   } catch (error) {
-    console.error('Failed to get presigned URL:', error);
-    // 如果獲取失敗，返回原 URL（可能會顯示錯誤，但至少不會崩潰）
+    console.error('Failed to get batch presigned URLs:', error);
+    entries.forEach(([url, { rejecters }]) => {
+      pendingPresigned.delete(url);
+      rejecters.forEach((reject) => reject(error));
+    });
+  }
+}
+
+/**
+ * 獲取預簽名 URL，帶有內部緩存與併發控制
+ */
+export async function getPresignedUrl(urlOrKey: string, options: PresignOptions = {}): Promise<string> {
+  if (!isMinIOUrl(urlOrKey) || isPresignedUrl(urlOrKey)) {
+    return urlOrKey;
+  }
+
+  if (!options.forceRefresh) {
+    const cached = getCachedPresignedUrlInternal(urlOrKey);
+    if (cached) {
+      return cached;
+    }
+    return enqueueBatchRequest(urlOrKey);
+  }
+
+  const key = extractKeyFromUrl(urlOrKey);
+  if (!key) return urlOrKey;
+  try {
+    const { data } = await api.post('/uploads/presigned', { key });
+    const signed = data?.url || urlOrKey;
+    setCachedPresignedUrl(urlOrKey, signed);
+    return signed;
+  } catch (error) {
+    console.error('Failed to refresh presigned URL:', error);
     return urlOrKey;
   }
 }
@@ -80,22 +173,30 @@ export async function getPresignedUrl(urlOrKey: string): Promise<string> {
  */
 export async function getPresignedUrls(urls: string[]): Promise<Map<string, string>> {
   const urlMap = new Map<string, string>();
-  
-  // 過濾出需要預簽名的 URL
-  const minioUrls = urls.filter(isMinIOUrl);
-  const otherUrls = urls.filter(url => !isMinIOUrl(url));
-  
-  // 其他 URL 直接映射
-  otherUrls.forEach(url => urlMap.set(url, url));
-  
-  // 批量獲取預簽名 URL
-  const promises = minioUrls.map(async (url) => {
-    const presignedUrl = await getPresignedUrl(url);
-    urlMap.set(url, presignedUrl);
-  });
-  
-  await Promise.all(promises);
-  
+  const minioTargets = urls.filter(isMinIOUrl);
+  const otherTargets = urls.filter((url) => !isMinIOUrl(url));
+
+  otherTargets.forEach((url) => urlMap.set(url, url));
+
+  const uniqueTargets = Array.from(new Set(minioTargets));
+  if (!uniqueTargets.length) {
+    return urlMap;
+  }
+
+  try {
+    const { data } = await api.post('/uploads/presigned/batch', { urls: uniqueTargets });
+    const responseMap: Record<string, string> = data?.urls || {};
+    uniqueTargets.forEach((url) => {
+      const signed = responseMap[url] || url;
+      setCachedPresignedUrl(url, signed);
+      urlMap.set(url, signed);
+    });
+  } catch (error) {
+    console.error('Failed to batch fetch presigned URLs:', error);
+    uniqueTargets.forEach((url) => {
+      urlMap.set(url, url);
+    });
+  }
+
   return urlMap;
 }
-

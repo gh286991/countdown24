@@ -129,6 +129,62 @@ export async function getPresignedUrlForAsset(req: AuthenticatedRequest, res: Re
   }
 }
 
+export async function getBatchPresignedUrls(req: AuthenticatedRequest, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { urls, keys, expiresIn } = req.body || {};
+  const urlList = Array.isArray(urls) ? urls.filter((url: any) => typeof url === 'string' && url.trim().length) : [];
+  const keyList = Array.isArray(keys) ? keys.filter((key: any) => typeof key === 'string' && key.trim().length) : [];
+
+  if (!urlList.length && !keyList.length) {
+    return res.status(400).json({ message: '請提供 urls 或 keys' });
+  }
+
+  const maxExpiration = MINIO_PRESIGNED_EXPIRES;
+  const expiration = expiresIn ? Math.min(Number(expiresIn), maxExpiration) : undefined;
+
+  const responseMap: Record<string, string> = {};
+  const keyCache = new Map<string, string>();
+
+  const queue: Array<{ identifier: string; key: string | null }> = [];
+  const seen = new Set<string>();
+
+  urlList.forEach((url) => {
+    if (seen.has(url)) return;
+    seen.add(url);
+    queue.push({ identifier: url, key: extractKeyFromUrl(url) });
+  });
+
+  keyList.forEach((key) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    queue.push({ identifier: key, key });
+  });
+
+  await Promise.all(
+    queue.map(async ({ identifier, key }) => {
+      if (!key) {
+        responseMap[identifier] = identifier;
+        return;
+      }
+      try {
+        if (!keyCache.has(key)) {
+          const signed = await getPresignedUrl(key, expiration);
+          keyCache.set(key, signed);
+        }
+        responseMap[identifier] = keyCache.get(key) as string;
+      } catch (error) {
+        console.error('Failed to batch presign asset:', key, error);
+        responseMap[identifier] = identifier;
+      }
+    }),
+  );
+
+  return res.json({ urls: responseMap, count: Object.keys(responseMap).length });
+}
+
 export async function getAssetLibrary(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });

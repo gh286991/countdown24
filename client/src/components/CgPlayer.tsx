@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContext } from 'react-visual-novel';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContext, useGameContext } from 'react-visual-novel';
 import { QueryParamProvider } from 'use-query-params';
 import { ReactRouter6Adapter } from 'use-query-params/adapters/react-router-6';
 import 'react-visual-novel/dist/index.css';
@@ -8,6 +8,8 @@ import { getPresignedUrls, isMinIOUrl } from '../utils/imageUtils';
 const COVER_LABEL = 'cover';
 const ENDING_LABEL = 'ending';
 const INITIAL_BRANCH_ID = 'Story';
+type SceneRange = { id: string; start: number; end: number };
+const ActiveSceneContext = createContext<string | null>(null);
 
 interface CgDialogue {
   speaker?: string;
@@ -39,6 +41,7 @@ interface CgScene {
   next?: string;
   accent?: string;
   hotspots?: Array<CgHotspot>;
+  hotspotMode?: 'auto' | 'manual';
 }
 
 interface CgScript {
@@ -144,7 +147,11 @@ function CgPlayer({ script }: CgPlayerProps) {
               );
             }
 
-            return <div className="h-[520px] w-full">{render()}</div>;
+            return (
+              <ActiveSceneProvider ranges={config.sceneRanges}>
+                <div className="h-[520px] w-full">{render()}</div>
+              </ActiveSceneProvider>
+            );
           }}
         </Game>
       </QueryParamProvider>
@@ -191,6 +198,70 @@ function rewriteCgAssets(value: any, map: Map<string, string>): any {
   return value;
 }
 
+interface ActiveSceneProviderProps {
+  ranges: SceneRange[];
+  children: React.ReactNode;
+}
+
+function ActiveSceneProvider({ ranges, children }: ActiveSceneProviderProps) {
+  const { focusedLocation } = useGameContext();
+  const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const currentIndex = focusedLocation.statementIndex;
+    const match = ranges.find((range) => currentIndex >= range.start && currentIndex < range.end);
+    setActiveSceneId(match ? match.id : null);
+  }, [focusedLocation, ranges]);
+
+  return <ActiveSceneContext.Provider value={activeSceneId}>{children}</ActiveSceneContext.Provider>;
+}
+
+function SceneHotspotWrapper({
+  scene,
+  hotspots,
+  fallbackNextId,
+  labelColor,
+  hasChoices,
+}: {
+  scene: CgScene;
+  hotspots: CgHotspot[];
+  fallbackNextId?: string;
+  labelColor?: string;
+  hasChoices?: boolean;
+}) {
+  const [armed, setArmed] = useState(scene.hotspotMode !== 'manual');
+  const activeSceneId = useContext(ActiveSceneContext);
+  const shouldRender = hotspots.length > 0 && (scene.hotspotMode !== 'manual' || activeSceneId === scene.id);
+  if (!shouldRender) {
+    return null;
+  }
+  return (
+    <>
+      {scene.hotspotMode === 'manual' && !armed ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 flex justify-center">
+          <div className="pointer-events-auto rounded-2xl bg-slate-900/80 px-5 py-3 text-center shadow-2xl">
+            <p className="text-sm text-gray-100">發現場景中的秘密物品，準備好後開始尋找。</p>
+            <button
+              type="button"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-aurora px-4 py-2 text-sm font-semibold text-slate-900 shadow hover:bg-aurora/90"
+              onClick={() => setArmed(true)}
+            >
+              🔍 開始尋找
+            </button>
+          </div>
+        </div>
+      ) : (
+        <HotspotLayer
+          hotspots={hotspots}
+          fallbackNextId={fallbackNextId}
+          labelColor={labelColor}
+          hasChoices={hasChoices}
+        />
+      )}
+    </>
+  );
+}
+
 function HotspotLayer({
   hotspots,
   fallbackNextId,
@@ -225,34 +296,47 @@ function HotspotLayer({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
-      {hotspots.map((spot) => (
-        <button
-          key={spot.id}
-          type="button"
-          className="pointer-events-auto absolute rounded-2xl border-2 border-white/60 bg-white/5 transition hover:bg-white/20"
-          style={{
-            left: `${spot.x}%`,
-            top: `${spot.y}%`,
-            width: `${spot.width}%`,
-            height: `${spot.height}%`,
-            borderColor: spot.accent || labelColor || 'rgba(255,255,255,0.6)',
-            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.45)',
-            backgroundImage: spot.image ? `url(${spot.image})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-            handleClick(spot);
-          }}
-        >
-          {spot.label ? (
-            <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
-              {spot.label}
-            </span>
-          ) : null}
-        </button>
-      ))}
+      {hotspots.map((spot) => {
+        const active = activeSpot?.id === spot.id;
+        return (
+          <button
+            key={spot.id}
+            type="button"
+            className={`group pointer-events-auto absolute rounded-2xl border-2 transition-all focus-visible:outline-none
+            ${active ? 'opacity-100 shadow-xl' : 'opacity-0'}
+            hover:opacity-100 focus-visible:opacity-100`}
+            style={{
+              left: `${spot.x}%`,
+              top: `${spot.y}%`,
+              width: `${spot.width}%`,
+              height: `${spot.height}%`,
+              borderColor: spot.accent || labelColor || 'rgba(255,255,255,0.6)',
+              backgroundImage: spot.image ? `url(${spot.image})` : undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundColor: active ? 'rgba(15,23,42,0.35)' : 'rgba(15,23,42,0.2)',
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleClick(spot);
+            }}
+            aria-label={spot.label || 'hotspot'}
+          >
+            {spot.label ? (
+              <span
+                className={`absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] transition
+                ${active ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 group-focus-visible:opacity-100`}
+                style={{
+                  backgroundColor: 'rgba(15,23,42,0.8)',
+                  color: 'white',
+                }}
+              >
+                {spot.label}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
       {activeSpot?.message && (
         <div className="pointer-events-auto absolute inset-x-0 bottom-6 flex justify-center">
           <div className="max-w-md rounded-2xl bg-slate-900/90 px-5 py-3 text-center text-sm text-white shadow-lg">
@@ -273,18 +357,27 @@ function buildGameConfig(script: CgScript | null) {
   const sceneMap = new Map(scenes.map((scene) => [scene.id, scene]));
   const startLabel = script.startScene && sceneMap.has(script.startScene) ? script.startScene : scenes[0]?.id || ENDING_LABEL;
 
+  let statementCursor = countCoverStatements(script.cover, Boolean(startLabel), Boolean(script.ending));
+  const sceneRanges: SceneRange[] = [];
+
   const BranchStory = () => (
     <Branch>
       {renderCover(script.cover, startLabel, Boolean(script.ending))}
-      {scenes.map((scene, index) =>
-        renderScene(scene, sceneMap, scenes[index + 1]?.id, Boolean(script.ending)),
-      )}
+      {scenes.map((scene, index) => {
+        const count = countSceneStatements(scene);
+        const start = statementCursor;
+        const end = start + count;
+        statementCursor = end;
+        sceneRanges.push({ id: scene.id, start, end });
+        return renderScene(scene, sceneMap, scenes[index + 1]?.id, Boolean(script.ending));
+      })}
       {renderEnding(script.ending)}
     </Branch>
   );
 
+  statementCursor += countEndingStatements(script.ending);
   const branches = prepareBranches({ BranchStory });
-  return { branches };
+  return { branches, sceneRanges };
 }
 
 function renderCover(cover: CgScript['cover'], startLabel: string | null, hasEnding: boolean) {
@@ -390,7 +483,13 @@ function renderScene(
         );
       })}
       {scene.hotspots && scene.hotspots.length > 0 && (
-        <HotspotLayer hotspots={scene.hotspots} labelColor={scene.accent} fallbackNextId={nextLabel} hasChoices={choices.length > 0} />
+        <SceneHotspotWrapper
+          scene={scene}
+          hotspots={scene.hotspots}
+          labelColor={scene.accent}
+          fallbackNextId={nextLabel}
+          hasChoices={choices.length > 0}
+        />
       )}
       {choices.length > 0 && (
         <Menu
@@ -483,6 +582,36 @@ function resolveChoiceTarget(
     return defaultLabel;
   }
   return hasEnding ? ENDING_LABEL : COVER_LABEL;
+}
+
+function countCoverStatements(cover: CgScript['cover'], hasStart: boolean, hasEnding: boolean): number {
+  let count = 0;
+  if (cover?.image || cover?.background) count += 1;
+  count += 1;
+  if (cover?.description) count += 1;
+  if (hasStart || hasEnding) count += 1;
+  return count;
+}
+
+function countSceneStatements(scene: CgScene): number {
+  let count = 0;
+  if (scene.background) count += 1;
+  const lines = Array.isArray(scene.dialogue) ? scene.dialogue.length : 0;
+  count += lines;
+  if (scene.hotspots && scene.hotspots.length) count += 1;
+  const choices = Array.isArray(scene.choices) ? scene.choices.length : 0;
+  if (choices) count += 1;
+  if (!lines && !choices) count += 1;
+  return count || 1;
+}
+
+function countEndingStatements(ending: CgScript['ending']): number {
+  if (!ending) return 0;
+  let count = 0;
+  if (ending.image) count += 1;
+  count += 1;
+  count += 1;
+  return count;
 }
 
 export default CgPlayer;

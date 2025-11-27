@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { HiOutlineGift } from 'react-icons/hi2';
 import { useToast } from '../components/ToastProvider';
-import { googleLogin } from '../store/authSlice';
+import { googleLogin, loginAccount } from '../store/authSlice';
 import { acceptInvitation } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
@@ -12,6 +12,8 @@ declare global {
     google?: any;
   }
 }
+
+const DEV_UI_ENABLED = import.meta.env.DEV;
 
 function AuthPage() {
   const [searchParams] = useSearchParams();
@@ -26,6 +28,10 @@ function AuthPage() {
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [devEmail, setDevEmail] = useState('');
+  const [devPassword, setDevPassword] = useState('');
+  const [devError, setDevError] = useState<string | null>(null);
+  const [devSubmitting, setDevSubmitting] = useState(false);
 
   useEffect(() => {
     if (user && !inviteToken) {
@@ -123,6 +129,43 @@ function AuthPage() {
       cancelled = true;
     };
   }, []);
+
+  const handleDevLogin = useCallback(async () => {
+    if (!DEV_UI_ENABLED || devSubmitting) return;
+    if (!devEmail.trim() || !devPassword.trim()) {
+      setDevError('請輸入帳號與密碼');
+      return;
+    }
+    setDevSubmitting(true);
+    setDevError(null);
+    try {
+      const result = await dispatch(
+        loginAccount({ email: devEmail.trim(), password: devPassword.trim() }),
+      ).unwrap();
+      showToast('開發者登入成功', 'success');
+      if (inviteToken) {
+        try {
+          await dispatch(acceptInvitation(inviteToken)).unwrap();
+          navigate('/receiver');
+        } catch (devInviteError: any) {
+          showToast(devInviteError || '接受邀請失敗', 'warning');
+          navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+        }
+      } else {
+        navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+      }
+    } catch (devLoginError: any) {
+      if (typeof devLoginError === 'string') {
+        setDevError(devLoginError);
+      } else if (devLoginError?.message) {
+        setDevError(devLoginError.message);
+      } else {
+        setDevError('開發者登入失敗');
+      }
+    } finally {
+      setDevSubmitting(false);
+    }
+  }, [dispatch, devEmail, devPassword, inviteToken, navigate, preferredRole, showToast, acceptInvitation, devSubmitting]);
 
   useEffect(() => {
     if (!googleClientId || googleError) {
@@ -233,6 +276,44 @@ function AuthPage() {
         </p>
 
         {error && <p className="text-sm text-center text-rose-400">{error}</p>}
+
+        {DEV_UI_ENABLED && (
+          <div className="border border-amber-500/30 bg-amber-500/5 rounded-2xl p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-200">開發者測試登入</p>
+              <p className="text-xs text-amber-100/70">
+                只在本機 / develop 環境顯示，可直接輸入帳號密碼測試，正式環境不會出現。
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input
+                type="email"
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-aurora focus:outline-none"
+                placeholder="dev@example.com"
+                value={devEmail}
+                onChange={(e) => setDevEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-aurora focus:outline-none"
+                placeholder="開發密碼"
+                value={devPassword}
+                onChange={(e) => setDevPassword(e.target.value)}
+              />
+            </div>
+            {devError && <p className="text-xs text-rose-300">{devError}</p>}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleDevLogin}
+                className="px-4 py-2 rounded-xl bg-amber-500/80 text-slate-900 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50"
+                disabled={devSubmitting}
+              >
+                使用開發帳號登入
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -42,8 +42,11 @@ export function PresignedImage({ src, onError, ...props }: PresignedImageProps) 
       // 如果是 MinIO URL 且載入失敗，可能是預簽名 URL 過期，嘗試重新獲取
       if (currentSrc && isMinIOUrl(currentSrc) && retryCountRef.current < maxRetries) {
         try {
-          console.log(`Presigned URL may have expired (attempt ${retryCountRef.current + 1}/${maxRetries}), refreshing...`, currentSrc);
-          const newPresignedUrl = await getPresignedUrl(currentSrc);
+          console.log(
+            `Presigned URL may have expired (attempt ${retryCountRef.current + 1}/${maxRetries}), refreshing...`,
+            currentSrc,
+          );
+          const newPresignedUrl = await getPresignedUrl(currentSrc, { forceRefresh: true });
           retryCountRef.current += 1;
           // 直接更新圖片 src，觸發重新載入
           img.src = newPresignedUrl;
@@ -71,4 +74,3 @@ export function PresignedImage({ src, onError, ...props }: PresignedImageProps) 
 
   return <img src={presignedUrl} onError={handleError} {...props} />;
 }
-

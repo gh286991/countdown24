@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { HiOutlineFilm, HiOutlineXMark } from 'react-icons/hi2';
 import ImageUploadField from './ImageUploadField';
 
@@ -59,6 +59,16 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
       return { scenes: [] };
     }
   });
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(value);
+      setScript(parsed);
+    } catch {
+      // ignore parsing errors from outer source
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const updateScript = (newScript: CgScript) => {
     setScript(newScript);

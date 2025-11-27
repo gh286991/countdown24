@@ -14,5 +14,6 @@ router.post('/', requireAuth, requireRole('creator'), upload.single('file'), asy
 router.get('/library', requireAuth, requireRole('creator'), asyncHandler(uploadController.getAssetLibrary));
 router.delete('/library/:assetId', requireAuth, requireRole('creator'), asyncHandler(uploadController.removeAssetFromLibrary));
 router.post('/presigned', requireAuth, asyncHandler(uploadController.getPresignedUrlForAsset));
+router.post('/presigned/batch', requireAuth, asyncHandler(uploadController.getBatchPresignedUrls));
 
 export default router;

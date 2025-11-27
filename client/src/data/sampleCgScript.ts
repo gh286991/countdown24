@@ -102,6 +102,7 @@ const sampleCgScript = {
       label: 'DAY 1 · 找出線索',
       background: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=80',
       accent: '#f472b6',
+      hotspotMode: 'manual',
       dialogue: [
         {
           speaker: '旁白',

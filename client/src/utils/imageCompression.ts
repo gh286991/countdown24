@@ -49,11 +49,16 @@ export async function compressImage(file: File, options: CompressOptions = {}): 
     }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
+    const targetMimeType = options.mimeType || (file.type || '').toLowerCase() || defaultOptions.mimeType;
+    const effectiveMime = targetMimeType === 'image/png' || targetMimeType === 'image/webp' || targetMimeType === 'image/gif'
+      ? 'image/png'
+      : targetMimeType;
+
     const blob: Blob | null = await new Promise((resolve) => {
       canvas.toBlob(
         (result) => resolve(result),
-        mimeType,
-        quality,
+        effectiveMime,
+        effectiveMime === 'image/jpeg' ? quality : undefined,
       );
     });
 
@@ -61,8 +66,9 @@ export async function compressImage(file: File, options: CompressOptions = {}): 
       return file;
     }
 
-    const newName = file.name.replace(/\.[^/.]+$/, '') + (mimeType === 'image/png' ? '.png' : '.jpg');
-    const compressedFile = new File([blob], newName, { type: mimeType });
+    const extension = effectiveMime === 'image/png' ? '.png' : effectiveMime === 'image/webp' ? '.webp' : '.jpg';
+    const newName = file.name.replace(/\.[^/.]+$/, '') + extension;
+    const compressedFile = new File([blob], newName, { type: effectiveMime });
 
     // 若壓縮後反而比較大，就回傳原檔
     return compressedFile.size < file.size ? compressedFile : file;
