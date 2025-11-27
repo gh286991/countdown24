@@ -43,7 +43,17 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
 
 export function requireRole(role: 'creator' | 'receiver') {
   return function roleGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-    if (!req.user || (role && req.user.role !== role)) {
+    if (!req.user) {
+      return res.status(403).json({ message: 'Insufficient permissions for this action' });
+    }
+
+    const userRole = req.user.role;
+    const hasAccess =
+      role === 'creator'
+        ? userRole === 'creator'
+        : userRole === 'receiver' || userRole === 'creator';
+
+    if (!hasAccess) {
       return res.status(403).json({ message: 'Insufficient permissions for this action' });
     }
     return next();
