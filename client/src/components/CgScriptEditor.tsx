@@ -5,6 +5,8 @@ import ImageUploadField from './ImageUploadField';
 interface CgDialogue {
   speaker?: string;
   text: string;
+  expression?: string;
+  expressionImage?: string;
 }
 
 interface CgChoice {
@@ -16,6 +18,7 @@ interface CgScene {
   id: string;
   label?: string;
   background?: string;
+  characterPortrait?: string;
   dialogue?: CgDialogue[];
   choices?: CgChoice[];
   next?: string;
@@ -267,6 +270,24 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
                       previewClassName="h-32 w-full mt-2 rounded-lg border border-white/10"
                     />
                   </div>
+                  {/* 角色立繪 */}
+                  <div className="space-y-1">
+                    <span className="text-xs text-gray-400">🧍 角色立繪（預設）</span>
+                    <ImageUploadField
+                      value={scene.characterPortrait || ''}
+                      onChange={(url) => updateScene(sceneIndex, 'characterPortrait', url)}
+                      placeholder="上傳角色（無表情）或預設立繪"
+                      folder={
+                        countdownId ? `countdowns/${countdownId}/cg/scenes/${scene.id || `scene-${sceneIndex + 1}`}/character` : undefined
+                      }
+                      inputClassName="bg-white/5 rounded-lg px-3 py-1.5 text-sm"
+                      previewClassName="h-40 w-full mt-2 rounded-lg border border-white/10 object-contain bg-white/5"
+                      previewFit="contain"
+                    />
+                    <p className="text-[11px] text-gray-500">
+                      將顯示在此場景中每句對話的左側，若某句設定了表情圖片會覆蓋這張預設立繪。
+                    </p>
+                  </div>
 
                   {/* 對話列表 */}
                   <div className="space-y-2">
@@ -281,28 +302,52 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
                       </button>
                     </div>
                     {(scene.dialogue || []).map((dialogue, dialogueIndex) => (
-                      <div key={dialogueIndex} className="flex gap-2 items-start">
-                        <input
-                          type="text"
-                          placeholder="角色"
-                          value={dialogue.speaker || ''}
-                          onChange={(e) => updateDialogue(sceneIndex, dialogueIndex, 'speaker', e.target.value)}
-                          className="w-20 bg-black/20 rounded px-2 py-1.5 text-xs"
-                        />
+                      <div key={dialogueIndex} className="space-y-2 rounded-lg border border-white/5 bg-black/10 p-3">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="角色"
+                            value={dialogue.speaker || ''}
+                            onChange={(e) => updateDialogue(sceneIndex, dialogueIndex, 'speaker', e.target.value)}
+                            className="w-24 bg-black/20 rounded px-2 py-1.5 text-xs"
+                          />
+                          <input
+                            type="text"
+                            placeholder="表情名稱（選填）"
+                            value={dialogue.expression || ''}
+                            onChange={(e) => updateDialogue(sceneIndex, dialogueIndex, 'expression', e.target.value)}
+                            className="flex-1 bg-black/20 rounded px-2 py-1.5 text-xs min-w-[140px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => deleteDialogue(sceneIndex, dialogueIndex)}
+                            className="ml-auto text-red-400 hover:text-red-300 text-xs px-1"
+                            aria-label="刪除對話"
+                          >
+                            <HiOutlineXMark className="w-5 h-5" />
+                          </button>
+                        </div>
                         <textarea
                           placeholder="對話內容"
                           value={dialogue.text}
                           onChange={(e) => updateDialogue(sceneIndex, dialogueIndex, 'text', e.target.value)}
-                          className="flex-1 bg-black/20 rounded px-2 py-1.5 text-xs min-h-[40px] resize-none"
+                          className="w-full bg-black/20 rounded px-2 py-1.5 text-xs min-h-[40px] resize-none"
                           rows={2}
                         />
-                        <button
-                          type="button"
-                          onClick={() => deleteDialogue(sceneIndex, dialogueIndex)}
-                          className="text-red-400 hover:text-red-300 text-xs px-1"
-                        >
-                          <HiOutlineXMark className="w-5 h-5" />
-                        </button>
+                        <ImageUploadField
+                          label="專屬表情圖片（選填）"
+                          value={dialogue.expressionImage || ''}
+                          onChange={(url) => updateDialogue(sceneIndex, dialogueIndex, 'expressionImage', url)}
+                          placeholder="輸入或上傳本句要顯示的表情圖"
+                          folder={
+                            countdownId
+                              ? `countdowns/${countdownId}/cg/scenes/${scene.id || `scene-${sceneIndex + 1}`}/dialogue-${dialogueIndex + 1}`
+                              : undefined
+                          }
+                          inputClassName="flex-1 bg-white/5 rounded-lg px-3 py-1.5 text-xs border border-white/10 focus:border-aurora focus:outline-none"
+                          previewClassName="h-32 w-full mt-2 rounded-lg border border-white/10 object-contain bg-white/5"
+                          previewFit="contain"
+                        />
                       </div>
                     ))}
                   </div>

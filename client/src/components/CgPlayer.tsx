@@ -1,18 +1,27 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Branch, Game, Label, Menu, Say, Scene, prepareBranches } from 'react-visual-novel';
 import { QueryParamProvider } from 'use-query-params';
 import { ReactRouter6Adapter } from 'use-query-params/adapters/react-router-6';
 import 'react-visual-novel/dist/index.css';
+import { getPresignedUrls, isMinIOUrl } from '../utils/imageUtils';
 
 const COVER_LABEL = 'cover';
 const ENDING_LABEL = 'ending';
 const INITIAL_BRANCH_ID = 'Story';
 
+interface CgDialogue {
+  speaker?: string;
+  text: string;
+  expression?: string;
+  expressionImage?: string;
+}
+
 interface CgScene {
   id: string;
   label?: string;
   background?: string;
-  dialogue?: Array<{ speaker?: string; text: string }>;
+  characterPortrait?: string;
+  dialogue?: Array<CgDialogue>;
   choices?: Array<{ label: string; next: string }>;
   next?: string;
   accent?: string;
@@ -42,10 +51,65 @@ interface CgPlayerProps {
 }
 
 function CgPlayer({ script }: CgPlayerProps) {
-  const config = useMemo(() => buildGameConfig(script), [script]);
+  const [resolvedScript, setResolvedScript] = useState<CgScript | null>(script);
+  const [assetsReady, setAssetsReady] = useState(true);
+  const latestScriptRef = useRef<CgScript | null>(script);
+  const scriptSignature = useMemo(() => (script ? JSON.stringify(script) : null), [script]);
+
+  useEffect(() => {
+    latestScriptRef.current = script;
+  }, [script]);
+
+  useEffect(() => {
+    let active = true;
+    async function hydrate() {
+      const baseScript = latestScriptRef.current;
+      if (!baseScript) {
+        setResolvedScript(null);
+        setAssetsReady(true);
+        return;
+      }
+      const urls = new Set<string>();
+      collectCgAssetUrls(baseScript, urls);
+      const targets = Array.from(urls).filter((url) => isMinIOUrl(url));
+      if (!targets.length) {
+        setResolvedScript((prev) => (prev === baseScript ? prev : baseScript));
+        setAssetsReady(true);
+        return;
+      }
+      setAssetsReady(false);
+      try {
+        const map = await getPresignedUrls(targets);
+        if (!active) return;
+        setResolvedScript(rewriteCgAssets(baseScript, map));
+      } catch (error) {
+        console.error('Failed to resolve CG assets', error);
+        if (!active) return;
+        setResolvedScript(baseScript);
+      } finally {
+        if (active) {
+          setAssetsReady(true);
+        }
+      }
+    }
+    hydrate();
+    return () => {
+      active = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scriptSignature]);
+
+  const config = useMemo(() => buildGameConfig(resolvedScript), [resolvedScript]);
 
   if (!config) {
     return <p className="text-gray-400">尚未設定 CG JSON 或內容解析失敗。</p>;
+  }
+  if (!assetsReady) {
+    return (
+      <div className="flex h-[520px] w-full flex-col items-center justify-center text-sm text-gray-300">
+        <p>載入 CG 圖片中...</p>
+      </div>
+    );
   }
 
   return (
@@ -76,6 +140,45 @@ function CgPlayer({ script }: CgPlayerProps) {
       </QueryParamProvider>
     </div>
   );
+}
+
+function isLikelyUrl(value: string) {
+  return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/');
+}
+
+function collectCgAssetUrls(value: any, bucket: Set<string>) {
+  if (!value) return;
+  if (typeof value === 'string') {
+    if (isLikelyUrl(value)) {
+      bucket.add(value);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectCgAssetUrls(item, bucket));
+    return;
+  }
+  if (typeof value === 'object') {
+    Object.values(value).forEach((val) => collectCgAssetUrls(val, bucket));
+  }
+}
+
+function rewriteCgAssets(value: any, map: Map<string, string>): any {
+  if (!value) return value;
+  if (typeof value === 'string') {
+    return map.get(value) || value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => rewriteCgAssets(item, map));
+  }
+  if (typeof value === 'object') {
+    const next: Record<string, any> = {};
+    Object.entries(value).forEach(([key, val]) => {
+      next[key] = rewriteCgAssets(val, map);
+    });
+    return next;
+  }
+  return value;
 }
 
 function buildGameConfig(script: CgScript | null) {
@@ -148,22 +251,58 @@ function renderScene(
   const nextLabel = resolveNextLabel(scene, sceneMap, fallbackNextId, hasEnding);
   const lines = Array.isArray(scene.dialogue) ? scene.dialogue : [];
   const choices = Array.isArray(scene.choices) ? scene.choices : [];
+  const defaultPortrait = scene.characterPortrait || undefined;
+  const characterImageStyle = {
+    bottom: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    height: '95%',
+    maxWidth: '70%',
+    objectFit: 'contain' as const,
+    pointerEvents: 'none' as const,
+    filter: 'drop-shadow(0 30px 40px rgba(15, 23, 42, 0.65))',
+  };
 
   return (
     <Label label={scene.id} key={scene.id}>
       {scene.background && <Scene src={scene.background} durationMs={800} />}
-      {lines.map((line, idx) => (
-        <Say
-          key={`${scene.id}-line-${idx}`}
-          placement="bottom"
-          scheme="dark"
-          scrim
-          tag={line.speaker ? { text: line.speaker, style: { letterSpacing: '0.2em', color: scene.accent } } : undefined}
-          next={!choices.length && idx === lines.length - 1 ? nextLabel : undefined}
-        >
-          {line.text}
-        </Say>
-      ))}
+      {lines.map((line, idx) => {
+        const portrait = line.expressionImage || defaultPortrait;
+        const tagText = line.speaker
+          ? `${line.speaker}${line.expression ? ` · ${line.expression}` : ''}`
+          : line.expression || '';
+        const tag =
+          tagText.length > 0
+            ? {
+                text: tagText,
+                style: {
+                  letterSpacing: '0.2em',
+                  ...(scene.accent ? { color: scene.accent } : {}),
+                },
+              }
+            : undefined;
+
+        return (
+          <Say
+            key={`${scene.id}-line-${idx}`}
+            placement="bottom"
+            scheme="dark"
+            scrim
+            image={
+              portrait
+                ? {
+                    uri: portrait,
+                    style: characterImageStyle,
+                  }
+                : undefined
+            }
+            tag={tag}
+            next={!choices.length && idx === lines.length - 1 ? nextLabel : undefined}
+          >
+            {line.text}
+          </Say>
+        );
+      })}
       {choices.length > 0 && (
         <Menu
           key={`${scene.id}-menu`}
@@ -258,4 +397,3 @@ function resolveChoiceTarget(
 }
 
 export default CgPlayer;
-

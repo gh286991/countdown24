@@ -13,10 +13,21 @@ const sampleCgScript = {
       label: 'DAY 1 · 校園屋頂',
       background: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e',
       accent: '#67e8f9',
+      characterPortrait: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
       dialogue: [
-        { speaker: '???', text: '額…你是？這裡只有受邀的人才能上來。' },
+        {
+          speaker: '???',
+          text: '額…你是？這裡只有受邀的人才能上來。',
+          expression: '疑惑',
+          expressionImage: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+        },
         { speaker: '你', text: '等等，我跟著信件指示來報到的。' },
-        { speaker: '???', text: '那就回答我的問題吧。' },
+        {
+          speaker: '???',
+          text: '那就回答我的問題吧。',
+          expression: '認真',
+          expressionImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80',
+        },
       ],
       choices: [
         { label: '額…你是？', next: 'curious' },
@@ -28,10 +39,21 @@ const sampleCgScript = {
       label: 'DAY 1 · 自我介紹',
       background: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa',
       accent: '#f472b6',
+      characterPortrait: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
       dialogue: [
-        { speaker: '轉學生', text: '哈哈，我是晴，接下來 24 天都由我引導你。' },
+        {
+          speaker: '轉學生',
+          text: '哈哈，我是晴，接下來 24 天都由我引導你。',
+          expression: '滿面笑容',
+          expressionImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80',
+        },
         { speaker: '你', text: '原來如此，那封信也是你寄的？' },
-        { speaker: '晴', text: '沒錯，現在先跟著我去教室。' },
+        {
+          speaker: '晴',
+          text: '沒錯，現在先跟著我去教室。',
+          expression: '示意',
+          expressionImage: 'https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=900&q=80',
+        },
       ],
       next: 'stargaze',
     },
@@ -40,10 +62,21 @@ const sampleCgScript = {
       label: 'DAY 1 · 調皮選項',
       background: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df',
       accent: '#c4b5fd',
+      characterPortrait: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
       dialogue: [
-        { speaker: '晴', text: '欸？你突然這樣說會讓人害羞耶。' },
+        {
+          speaker: '晴',
+          text: '欸？你突然這樣說會讓人害羞耶。',
+          expression: '害羞',
+          expressionImage: 'https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=900&q=80',
+        },
         { speaker: '你', text: '我只是說出真心話。' },
-        { speaker: '晴', text: '真是受不了你，快跟上腳步。' },
+        {
+          speaker: '晴',
+          text: '真是受不了你，快跟上腳步。',
+          expression: '無奈',
+          expressionImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80',
+        },
       ],
       next: 'stargaze',
     },
@@ -52,9 +85,15 @@ const sampleCgScript = {
       label: 'DAY 1 · 夜空 CG',
       background: 'https://images.unsplash.com/photo-1470770903676-69b98201ea1c',
       accent: '#fcd34d',
+      characterPortrait: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
       dialogue: [
         { speaker: '旁白', text: '夜幕降臨，星軌在你們頭頂延伸。' },
-        { speaker: '晴', text: '從今天開始，每晚我都會帶給你新的碎片。' },
+        {
+          speaker: '晴',
+          text: '從今天開始，每晚我都會帶給你新的碎片。',
+          expression: '柔和',
+          expressionImage: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=80',
+        },
         { speaker: '你', text: '我會準備好迎接下一個選項。' },
       ],
     },
@@ -68,4 +107,3 @@ const sampleCgScript = {
 };
 
 export default sampleCgScript;
-
