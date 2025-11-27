@@ -1,8 +1,9 @@
-import { ChangeEvent, useRef, useState } from 'react';
+import { ChangeEvent, useRef, useState, CSSProperties } from 'react';
 import { HiOutlineCloudArrowUp } from 'react-icons/hi2';
 import api from '../api/client';
 import { useToast } from './ToastProvider';
 import { PresignedImage } from './PresignedImage';
+import { compressImage } from '../utils/imageCompression';
 
 interface ImageUploadFieldProps {
   label?: string;
@@ -15,6 +16,8 @@ interface ImageUploadFieldProps {
   inputClassName?: string;
   previewClassName?: string;
   hidePreview?: boolean;
+  previewStyle?: CSSProperties;
+  previewFit?: 'cover' | 'contain';
 }
 
 function ImageUploadField({
@@ -28,6 +31,8 @@ function ImageUploadField({
   inputClassName,
   previewClassName,
   hidePreview = false,
+  previewStyle,
+  previewFit = 'cover',
 }: ImageUploadFieldProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -42,8 +47,15 @@ function ImageUploadField({
     if (!file) return;
     setUploading(true);
     try {
+      let uploadFile = file;
+      try {
+        uploadFile = await compressImage(file);
+      } catch (compressionError) {
+        console.warn('Image compression skipped', compressionError);
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile);
       if (folder) {
         formData.append('folder', folder);
       }
@@ -102,9 +114,8 @@ function ImageUploadField({
         <PresignedImage
           src={value}
           alt="圖片預覽"
-          className={
-            previewClassName || 'mt-2 w-full h-32 object-cover rounded-lg border border-white/10'
-          }
+          className={`${previewClassName || 'mt-2 w-full h-32 rounded-lg border border-white/10 bg-white/5'} ${previewFit === 'contain' ? 'object-contain' : 'object-cover'}`}
+          style={previewStyle}
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = 'none';
           }}

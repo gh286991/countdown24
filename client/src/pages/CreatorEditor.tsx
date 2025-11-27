@@ -231,6 +231,12 @@ function CreatorEditor() {
           }
         }}
         countdownId={id || ''}
+        extraPanel={
+          <DayQrCodeGenerator
+            activeDay={activeDay}
+            countdownId={id || ''}
+          />
+        }
       />
 
       {/* 接收者管理 Modal */}
@@ -251,12 +257,6 @@ function CreatorEditor() {
             dayCards={selected.dayCards || []}
             onDaySelect={handleDaySelect}
           />
-          
-          {/* 每日解鎖 QR Code 生成區塊 */}
-            <DayQrCodeGenerator
-              activeDay={activeDay}
-              countdownId={id || ''}
-            />
         </div>
 
         {/* 中間：編輯區 */}

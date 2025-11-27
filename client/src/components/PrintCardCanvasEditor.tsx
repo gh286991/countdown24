@@ -57,6 +57,30 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
   }, [emitSnapshot]);
 
   // 暴露 loadTemplate 方法給父組件
+  const applyDayToTemplate = useCallback((templateJson: any, dayNumber: number) => {
+    const clone = JSON.parse(JSON.stringify(templateJson));
+    const pad = dayNumber.toString().padStart(2, '0');
+    const plain = dayNumber.toString();
+
+    const rewrite = (node: any) => {
+      if (!node) return;
+      if (typeof node.text === 'string') {
+        node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_, label: string, digits: string) => {
+          const usePad = digits.length === 2;
+          return `${label} ${usePad ? pad : plain}`;
+        });
+      }
+      if (Array.isArray(node.objects)) {
+        node.objects.forEach(rewrite);
+      }
+    };
+
+    if (Array.isArray(clone.objects)) {
+      clone.objects.forEach(rewrite);
+    }
+    return clone;
+  }, []);
+
   useImperativeHandle(ref, () => ({
     loadTemplate: async (templateJson: any) => {
       const canvas = fabricRef.current;
@@ -65,16 +89,17 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         return;
       }
       try {
+        const templateWithDay = applyDayToTemplate(templateJson, day);
         // 清除現有內容
         canvas.getObjects().forEach((obj) => canvas.remove(obj));
         
         // 載入模板
-        await canvas.loadFromJSON(templateJson);
+        await canvas.loadFromJSON(templateWithDay);
         
         // 設置背景色
-        if (templateJson.background) {
-          canvas.backgroundColor = templateJson.background;
-          setBackground(templateJson.background);
+        if (templateWithDay.background) {
+          canvas.backgroundColor = templateWithDay.background;
+          setBackground(templateWithDay.background);
         }
         
         canvas.requestRenderAll();
@@ -83,7 +108,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         console.error('Error loading template:', error);
       }
     },
-  }), []);
+  }), [applyDayToTemplate, day]);
 
   useEffect(() => {
     const canvasElement = canvasRef.current;

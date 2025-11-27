@@ -19,7 +19,7 @@ function DayListSidebar({ totalDays, activeDay, dayCards, onDaySelect }: DayList
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-semibold text-gray-400 px-2">選擇編輯日期</h2>
-      <div className="space-y-2 max-h-[calc(100vh-500px)] overflow-y-auto pr-2">
+      <div className="space-y-2 max-h-[calc(100vh-420px)] overflow-y-auto pr-2">
         {Array.from({ length: totalDays }, (_, index) => {
           const day = index + 1;
           const card = dayCards.find((c) => c.day === day);
@@ -34,7 +34,7 @@ function DayListSidebar({ totalDays, activeDay, dayCards, onDaySelect }: DayList
               }`}
             >
               {/* 封面圖 */}
-              <div className="h-20 bg-white/5">
+              <div className="h-28 bg-white/5">
                 {card?.coverImage ? (
                   <PresignedImage
                     src={card.coverImage}

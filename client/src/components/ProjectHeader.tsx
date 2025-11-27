@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
@@ -32,6 +32,7 @@ interface ProjectHeaderProps {
   onGenerateInvite: () => Promise<{ token: string; inviteUrl: string }>;
   onUpdateProject?: (data: { title?: string; description?: string; coverImage?: string; startDate?: string; totalDays?: number }) => void;
   countdownId: string;
+  extraPanel?: ReactNode;
 }
 
 function ProjectHeader({
@@ -49,6 +50,7 @@ function ProjectHeader({
   onGenerateInvite,
   onUpdateProject,
   countdownId,
+  extraPanel,
 }: ProjectHeaderProps) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteData, setInviteData] = useState<{ token: string; inviteUrl: string } | null>(null);
@@ -123,9 +125,13 @@ function ProjectHeader({
     }
   };
 
+  const gridClass = extraPanel
+    ? 'mb-5 grid gap-6 items-stretch lg:grid-cols-[minmax(0,1fr)_360px_360px]'
+    : 'mb-5 grid gap-6 items-stretch lg:grid-cols-[minmax(0,1fr)_420px]';
+
   return (
     <>
-      <div className="mb-5 grid gap-6 items-stretch lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className={gridClass}>
         <div className="glass-panel p-6 space-y-3 flex flex-col justify-center">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -139,7 +145,9 @@ function ProjectHeader({
                     onChange={setEditCoverImage}
                     placeholder="https://example.com/image.jpg"
                     folder={countdownId ? `countdowns/${countdownId}/cover` : undefined}
-                    helperText="可貼上網址或上傳圖片"
+                    helperText="建議使用 16:9 的橫幅（例如 1600x900，1MB 以內），可貼上網址或上傳圖片"
+                    previewFit="contain"
+                    previewStyle={{ aspectRatio: '16 / 9' }}
                   />
                   {/* 專案名稱 */}
                   <div>
@@ -182,7 +190,7 @@ function ProjectHeader({
                       type="date"
                       value={editStartDate}
                       onChange={(e) => setEditStartDate(e.target.value)}
-                      className="w-full bg-white/5 rounded-lg px-3 py-2 text-sm border border-white/10 focus:border-christmas-red focus:outline-none"
+                      className="w-full bg-white/5 rounded-lg px-3 py-3 text-sm border border-white/10 focus:border-christmas-red focus:outline-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">留空則不設定開始日期</p>
                   </div>
@@ -320,6 +328,9 @@ function ProjectHeader({
             兌換請求管理
           </Link>
         </div>
+        {extraPanel && (
+          <div className="w-full">{extraPanel}</div>
+        )}
       </div>
 
       {/* 邀請禮品卡模態視窗 */}
