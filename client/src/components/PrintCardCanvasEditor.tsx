@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHand
 import { Canvas as FabricCanvas, Textbox, Image as FabricImage } from 'fabric';
 import QRCode from 'qrcode';
 import api from '../api/client';
+import type { VoucherDetail } from '../types/voucher';
 
 interface PrintCardCanvasEditorProps {
   countdownId: string;
@@ -10,20 +11,24 @@ interface PrintCardCanvasEditorProps {
   onChange: (payload: { canvasJson: any; previewImage: string }) => void;
   width?: number;
   height?: number;
+  allowQr?: boolean;
+}
+
+interface LoadTemplateOptions {
+  voucherDetail?: VoucherDetail | null;
 }
 
 export interface PrintCardCanvasEditorRef {
-  loadTemplate: (templateJson: any) => Promise<void>;
+  loadTemplate: (templateJson: any, options?: LoadTemplateOptions) => Promise<void>;
 }
 
 const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 500;
 
-const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanvasEditorProps>(
-  function PrintCardCanvasEditor(
-    { countdownId, day, initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT, allowQr = true },
-    ref,
-  ) {
+const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanvasEditorProps>(function PrintCardCanvasEditor(
+  { countdownId, day, initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT, allowQr = true },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -57,58 +62,110 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
   }, [emitSnapshot]);
 
   // 暴露 loadTemplate 方法給父組件
-  const applyDayToTemplate = useCallback((templateJson: any, dayNumber: number) => {
-    const clone = JSON.parse(JSON.stringify(templateJson));
-    const pad = dayNumber.toString().padStart(2, '0');
-    const plain = dayNumber.toString();
+  const applyTemplateBindings = useCallback(
+    (templateJson: any, dayNumber: number, detail?: VoucherDetail | null) => {
+      const clone = JSON.parse(JSON.stringify(templateJson));
+      const pad = dayNumber.toString().padStart(2, '0');
+      const plain = dayNumber.toString();
 
-    const rewrite = (node: any) => {
-      if (!node) return;
-      if (typeof node.text === 'string') {
-        node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_, label: string, digits: string) => {
-          const usePad = digits.length === 2;
-          return `${label} ${usePad ? pad : plain}`;
-        });
-      }
-      if (Array.isArray(node.objects)) {
-        node.objects.forEach(rewrite);
-      }
-    };
+      const normalize = (value?: string | null) => {
+        if (typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed ? trimmed : null;
+      };
 
-    if (Array.isArray(clone.objects)) {
-      clone.objects.forEach(rewrite);
-    }
-    return clone;
-  }, []);
-
-  useImperativeHandle(ref, () => ({
-    loadTemplate: async (templateJson: any) => {
-      const canvas = fabricRef.current;
-      if (!canvas) {
-        console.warn('Canvas not initialized');
-        return;
-      }
-      try {
-        const templateWithDay = applyDayToTemplate(templateJson, day);
-        // 清除現有內容
-        canvas.getObjects().forEach((obj) => canvas.remove(obj));
-        
-        // 載入模板
-        await canvas.loadFromJSON(templateWithDay);
-        
-        // 設置背景色
-        if (templateWithDay.background) {
-          canvas.backgroundColor = templateWithDay.background;
-          setBackground(templateWithDay.background);
+      const resolveDetailValue = (name?: string) => {
+        if (!name || !detail) return null;
+        switch (name) {
+          case 'voucherTitle':
+            return normalize(detail.title);
+          case 'voucherMessage':
+            return normalize(detail.message);
+          case 'voucherLocation':
+            return normalize(detail.location);
+          case 'voucherValidUntil':
+            return normalize(detail.validUntil);
+          case 'voucherTerms':
+            return normalize(detail.terms);
+          case 'voucherMeta': {
+            const segments: string[] = [];
+            const validUntil = normalize(detail.validUntil);
+            const terms = normalize(detail.terms);
+            if (validUntil) {
+              segments.push(`使用期限：${validUntil}`);
+            }
+            if (terms) {
+              segments.push(`備註：${terms}`);
+            }
+            return segments.length ? segments.join('\n') : null;
+          }
+          default:
+            return null;
         }
-        
-        canvas.requestRenderAll();
-        emitSnapshotRef.current?.();
-      } catch (error) {
-        console.error('Error loading template:', error);
+      };
+
+      const rewrite = (node: any) => {
+        if (!node) return;
+        if (typeof node.text === 'string') {
+          node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_, label: string, digits: string) => {
+            const usePad = digits.length === 2;
+            return `${label} ${usePad ? pad : plain}`;
+          });
+
+          const detailValue = resolveDetailValue(node.name);
+          if (detailValue) {
+            if (typeof node.bindingTemplate === 'string' && node.bindingTemplate.includes('{{value}}')) {
+              node.text = node.bindingTemplate.replace('{{value}}', detailValue);
+            } else {
+              node.text = detailValue;
+            }
+          }
+        }
+        if (Array.isArray(node.objects)) {
+          node.objects.forEach(rewrite);
+        }
+      };
+
+      if (Array.isArray(clone.objects)) {
+        clone.objects.forEach(rewrite);
       }
+      return clone;
     },
-  }), [applyDayToTemplate, day]);
+    [],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      loadTemplate: async (templateJson: any, options?: LoadTemplateOptions) => {
+        const canvas = fabricRef.current;
+        if (!canvas) {
+          console.warn('Canvas not initialized');
+          return;
+        }
+        try {
+          const templateWithBindings = applyTemplateBindings(templateJson, day, options?.voucherDetail);
+          // 清除現有內容
+          canvas.getObjects().forEach((obj) => canvas.remove(obj));
+
+          // 載入模板
+          await canvas.loadFromJSON(templateWithBindings);
+
+          // 設置背景色
+          if (templateWithBindings.background) {
+            canvas.backgroundColor = templateWithBindings.background;
+            setBackground(templateWithBindings.background);
+          }
+
+          canvas.requestRenderAll();
+          emitSnapshotRef.current?.();
+        } catch (error) {
+          console.error('Error loading template:', error);
+        }
+      },
+    }),
+    [applyTemplateBindings, day],
+  );
 
   useEffect(() => {
     const canvasElement = canvasRef.current;

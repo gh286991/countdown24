@@ -31,6 +31,15 @@ export const voucherCardTemplates: VoucherTemplate[] = [
       objects: [
         {
           type: 'rect',
+          left: 0,
+          top: 0,
+          width: 900,
+          height: 500,
+          fill: '#fdf2e9',
+          selectable: false,
+        },
+        {
+          type: 'rect',
           left: 40,
           top: 40,
           width: 820,
@@ -71,6 +80,7 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontWeight: 'bold',
           text: 'Day X Voucher',
           fill: '#0f172a',
+          name: 'voucherTitle',
         },
         {
           type: 'textbox',
@@ -80,6 +90,7 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontSize: 20,
           text: '用這張卷帶他/她去想去的地方',
           fill: '#475569',
+          name: 'voucherMessage',
         },
         {
           type: 'textbox',
@@ -89,6 +100,8 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontSize: 16,
           fill: '#475569',
           text: '體驗主題 / 地點',
+          name: 'voucherLocation',
+          bindingTemplate: '主題 / 地點：{{value}}',
         },
         {
           type: 'textbox',
@@ -98,6 +111,8 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontSize: 16,
           fill: '#475569',
           text: '使用期限',
+          name: 'voucherValidUntil',
+          bindingTemplate: '使用期限：{{value}}',
         },
         {
           type: 'textbox',
@@ -107,6 +122,8 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontSize: 16,
           fill: '#475569',
           text: '備註 / 注意事項',
+          name: 'voucherTerms',
+          bindingTemplate: '備註 / 注意事項：{{value}}',
         },
       ],
     },
@@ -121,6 +138,15 @@ export const voucherCardTemplates: VoucherTemplate[] = [
       version: '6.0.0',
       background: '#0f172a',
       objects: [
+        {
+          type: 'rect',
+          left: 0,
+          top: 0,
+          width: 900,
+          height: 500,
+          fill: '#0f172a',
+          selectable: false,
+        },
         {
           type: 'rect',
           left: 40,
@@ -150,6 +176,7 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontWeight: 'bold',
           fill: '#f8fafc',
           text: 'Day X Voucher',
+          name: 'voucherTitle',
         },
         {
           type: 'textbox',
@@ -158,7 +185,9 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           width: 360,
           fontSize: 20,
           fill: '#cbd5f5',
-          text: '今晚，由你指定目的地',
+          text: '主題 / 地點',
+          name: 'voucherLocation',
+          bindingTemplate: '主題 / 地點：{{value}}',
         },
         {
           type: 'rect',
@@ -177,7 +206,8 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           width: 340,
           fontSize: 18,
           fill: '#cbd5f5',
-          text: '寫下兌換內容、地點與細節',
+          text: '內容描述',
+          name: 'voucherMessage',
         },
         {
           type: 'textbox',
@@ -188,6 +218,8 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontWeight: 'bold',
           fill: '#f8fafc',
           text: '使用期限',
+          name: 'voucherValidUntil',
+          bindingTemplate: '使用期限：{{value}}',
         },
         {
           type: 'textbox',
@@ -196,7 +228,9 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           width: 280,
           fontSize: 18,
           fill: '#cbd5f5',
-          text: '備註 / 提醒',
+          text: '備註 / 注意事項',
+          name: 'voucherTerms',
+          bindingTemplate: '備註 / 注意事項：{{value}}',
         },
       ],
     },
@@ -211,6 +245,15 @@ export const voucherCardTemplates: VoucherTemplate[] = [
       version: '6.0.0',
       background: '#f8fafc',
       objects: [
+        {
+          type: 'rect',
+          left: 0,
+          top: 0,
+          width: 900,
+          height: 500,
+          fill: '#f8fafc',
+          selectable: false,
+        },
         {
           type: 'rect',
           left: 60,
@@ -232,6 +275,7 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           fontWeight: 'bold',
           fill: '#0f172a',
           text: 'Day X Voucher',
+          name: 'voucherTitle',
         },
         {
           type: 'textbox',
@@ -240,7 +284,8 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           width: 320,
           fontSize: 18,
           fill: '#475569',
-          text: '一句描述：這張卷可以換到什麼？',
+          text: '內容描述',
+          name: 'voucherMessage',
         },
         {
           type: 'textbox',
@@ -249,7 +294,9 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           width: 600,
           fontSize: 16,
           fill: '#475569',
-          text: '詳細內容或情境敘述...',
+          text: '主題 / 地點',
+          name: 'voucherLocation',
+          bindingTemplate: '主題 / 地點：{{value}}',
         },
         {
           type: 'rect',
@@ -268,7 +315,20 @@ export const voucherCardTemplates: VoucherTemplate[] = [
           width: 220,
           fontSize: 16,
           fill: '#475569',
-          text: '使用期限 / 備註',
+          text: '使用期限',
+          name: 'voucherValidUntil',
+          bindingTemplate: '使用期限：{{value}}',
+        },
+        {
+          type: 'textbox',
+          left: 550,
+          top: 160,
+          width: 220,
+          fontSize: 16,
+          fill: '#475569',
+          text: '備註 / 注意事項',
+          name: 'voucherTerms',
+          bindingTemplate: '備註 / 注意事項：{{value}}',
         },
       ],
     },

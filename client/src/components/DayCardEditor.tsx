@@ -2,22 +2,16 @@ import { ChangeEvent } from 'react';
 import { HiOutlineBookOpen, HiOutlineGift } from 'react-icons/hi2';
 import CgScriptEditor from './CgScriptEditor';
 import ImageUploadField from './ImageUploadField';
-import VoucherDesignEditor from './VoucherDesignEditor';
+import { useState } from 'react';
+import VoucherDesignEditorModal from './VoucherDesignEditorModal';
 import type { VoucherCard } from '../store/countdownSlice';
+import type { VoucherDetail } from '../types/voucher';
 
 interface QrReward {
   title?: string;
   message?: string;
   imageUrl?: string;
   qrCode?: string;
-}
-
-interface VoucherDetail {
-  title?: string;
-  message?: string;
-  location?: string;
-  terms?: string;
-  validUntil?: string;
 }
 
 interface DayCardData {
@@ -59,6 +53,7 @@ function DayCardEditor({
   onVoucherSave,
   onVoucherDelete,
 }: DayCardEditorProps) {
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
   return (
     <div className="glass-panel p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -203,7 +198,16 @@ function DayCardEditor({
       {/* 兌換卷設定 */}
       {dayCardDraft.type === 'voucher' && (
         <div className="space-y-3 pt-2 border-t border-white/10">
-          <h3 className="text-sm font-semibold text-gray-300">兌換卷設定</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-300">兌換卷設定</h3>
+            <button
+              type="button"
+              onClick={() => setShowVoucherModal(true)}
+              className="text-xs text-amber-300 hover:text-amber-200"
+            >
+              編輯兌換卷版型
+            </button>
+          </div>
           <div>
             <label className="text-xs text-gray-400 block mb-1">兌換卷標題</label>
             <input
@@ -264,12 +268,21 @@ function DayCardEditor({
               className="w-full bg-white/5 rounded-xl px-4 py-2.5 min-h-[80px] border border-white/10 focus:border-aurora focus:outline-none"
             />
           </div>
-          <VoucherDesignEditor
+          <VoucherDesignEditorModal
             countdownId={countdownId}
             day={activeDay}
+            isOpen={showVoucherModal}
             card={voucherCard}
-            onSave={onVoucherSave}
-            onDelete={onVoucherDelete}
+            voucherDetail={dayCardDraft.voucherDetail}
+            onSave={(payload) => {
+              onVoucherSave(payload);
+              setShowVoucherModal(false);
+            }}
+            onDelete={() => {
+              onVoucherDelete();
+              setShowVoucherModal(false);
+            }}
+            onClose={() => setShowVoucherModal(false)}
           />
         </div>
       )}

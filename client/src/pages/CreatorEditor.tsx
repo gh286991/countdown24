@@ -128,7 +128,7 @@ function CreatorEditor() {
     setSearchParams({ day: String(value) });
   };
 
-  const handleDayCardSave = () => {
+  const handleDayCardSave = async () => {
     if (!id) return;
     let parsedScript = null;
     if (dayCardDraft.type === 'story') {
@@ -167,9 +167,15 @@ function CreatorEditor() {
       const day = index + 1;
       return map.get(day) || { ...emptyCard, day };
     });
-    dispatch(updateCountdown({ id, data: { dayCards: nextCards } }));
-    if (dayCardDraft.type === 'story') {
-      dispatch(updateCountdown({ id, data: { cgScript: parsedScript } }));
+    try {
+      await dispatch(updateCountdown({ id, data: { dayCards: nextCards } })).unwrap();
+      if (dayCardDraft.type === 'story') {
+        await dispatch(updateCountdown({ id, data: { cgScript: parsedScript } })).unwrap();
+      }
+      showToast(`已儲存 Day ${activeDay} 設定`, 'success');
+    } catch (error: any) {
+      console.error('Failed to save day card', error);
+      showToast(error?.message || '儲存失敗，請稍後再試', 'error');
     }
   };
 
