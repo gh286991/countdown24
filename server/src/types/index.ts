@@ -6,6 +6,8 @@ export interface User {
   role?: 'creator' | 'receiver';
   avatar?: string;
   bio?: string;
+  googleId?: string;
+  authProvider?: 'password' | 'google';
   _id?: any;
   [key: string]: any;
 }

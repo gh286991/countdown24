@@ -40,3 +40,6 @@ export const PASSWORD_SECRET: string = process.env.PASSWORD_SECRET || 'dev-passw
 
 // QR Token 生成用的 Secret Key
 export const QR_TOKEN_SECRET: string = process.env.QR_TOKEN_SECRET || 'dev-qr-token-secret-change-in-production';
+
+// Google OAuth
+export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || '';

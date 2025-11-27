@@ -38,6 +38,29 @@ export async function login(req: Request, res: Response) {
   }
 }
 
+export async function googleLogin(req: Request, res: Response) {
+  const { credential, role } = req.body || {};
+  if (!credential) {
+    return res.status(400).json({ message: 'Missing Google credential' });
+  }
+
+  try {
+    const result = await authService.loginWithGoogle(credential, role);
+    return res.json(result);
+  } catch (error: any) {
+    if (error.message === 'Google login is not configured') {
+      return res.status(503).json({ message: 'Google 登入尚未設定' });
+    }
+    if (
+      error.message === 'Unable to verify Google credential' ||
+      error.message === 'Google account is missing email address'
+    ) {
+      return res.status(401).json({ message: error.message });
+    }
+    return res.status(400).json({ message: error.message || 'Google 登入失敗' });
+  }
+}
+
 export async function getMe(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });
@@ -141,4 +164,3 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response) {
     }
   });
 }
-

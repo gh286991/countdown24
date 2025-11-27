@@ -5,6 +5,7 @@ React + Express + Tailwind/SCSS 的 24 天倒數體驗平台。編輯者可以�
 ## 功能亮點
 - ⚛️ **前後端分離**：Vite + React 前端、Express API 後端，使用 Redux Toolkit 管理狀態。
 - 🔐 **Token 驗證**：簡易的 SHA256 密碼儲存 + 自製 token 系統，提供 `/auth/register`、`/auth/login` 與 `/me` 端點。
+- 🔑 **Google 登入**：前端採用 Google Identity Services，後端驗證 ID token 後自動建立或登入帳號。
 - 🎮 **CG 對話倒數**：建立 24 天內的照片 + 雙行文字，模擬遊戲過場劇情。
 - 🎁 **QR 禮物倒數**：建立 24 張 QR 禮物卡，內建線上 QR 產生器 URL。
 - 👥 **角色區隔**：Creator 儀表板可建立/編輯/指派倒數；Receiver 擁有專屬收件匣與體驗頁面。
@@ -23,7 +24,8 @@ countdown24/
 > 需求：Node.js 18+、pnpm 8+、本機 MongoDB（預設連線 `mongodb://127.0.0.1:27017`）
 
 1. 先啟動 MongoDB：`mongod --port 27017 --dbpath <你的資料夾>`
-2. 專案第一次啟動會自動在 `countdown24` 資料庫建立示範使用者與倒數資料。
+2. 於 `.env` 或 `server/.env` 設定 `GOOGLE_CLIENT_ID`（可從 Google Cloud console 申請 OAuth 2.0 Client ID），前端會透過 `/api/config` 自動取得這組設定。
+3. 專案第一次啟動會自動在 `countdown24` 資料庫建立示範使用者與倒數資料。
 
 ```bash
 # 安裝所有套件
@@ -84,6 +86,7 @@ docker run --rm \
 | `DB_NAME` | `countdown24` | MongoDB 資料庫名稱 |
 | `PASSWORD_SECRET` | - | 密碼雜湊用的 HMAC key（必填，請使用隨機長字串） |
 | `QR_TOKEN_SECRET` | - | 每日解鎖 QR code token 用的 HMAC key（必填，請使用隨機長字串） |
+| `GOOGLE_CLIENT_ID` | - | 啟用 Google 登入所需的 OAuth 2.0 Client ID |
 
 ## 測試帳號
 | 角色 | Email | 密碼 |
@@ -94,7 +97,7 @@ docker run --rm \
 登入後即可檢視預設的 CG 倒數與 QR 禮物專案，並體驗接收者收件匣 / 兌換頁面。
 
 ## API 總覽
-- `POST /api/auth/register`、`POST /api/auth/login`
+- `POST /api/auth/register`、`POST /api/auth/login`、`POST /api/auth/google`
 - `GET /api/me`：回傳使用者 + 倒數/指派清單
 - `GET /api/countdowns`：Creator 取得所有倒數；Receiver 取得指派清單摘要
 - `POST /api/countdowns`：建立 CG 或 QR 倒數（支援 `recipientEmails` 指派）

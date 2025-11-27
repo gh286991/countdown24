@@ -30,7 +30,7 @@ import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
-import { PORT, CLIENT_ORIGIN, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET } from './config/index.js';
+import { PORT, CLIENT_ORIGIN, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET, GOOGLE_CLIENT_ID } from './config/index.js';
 import { connectDatabase } from './db/connection.js';
 import { seedDemoData } from './db/seed.js';
 import authRoutes from './routes/authRoutes.js';
@@ -64,6 +64,12 @@ if (existsSync(clientBuildPath)) {
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/config', (_req: Request, res: Response) => {
+  res.json({
+    googleClientId: GOOGLE_CLIENT_ID || null,
+  });
 });
 
 // Routes

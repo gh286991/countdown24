@@ -45,7 +45,7 @@ export function hasVoucherData(voucher: any): boolean {
 
 export function sanitizeUser(user: any): any {
   if (!user) return null;
-  const { password, _id, ...rest } = user;
+  const { password, _id, googleId, ...rest } = user;
   return rest;
 }
 

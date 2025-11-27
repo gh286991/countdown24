@@ -1,40 +1,31 @@
-import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { HiOutlineGift } from 'react-icons/hi2';
 import { useToast } from '../components/ToastProvider';
-import { loginAccount, registerAccount } from '../store/authSlice';
+import { googleLogin } from '../store/authSlice';
 import { acceptInvitation } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 
-interface FormData {
-  name: string;
-  email: string;
-  password: string;
-  role: 'creator' | 'receiver';
+declare global {
+  interface Window {
+    google?: any;
+  }
 }
-
-const initialForm: FormData = {
-  name: '',
-  email: '',
-  password: '',
-  role: 'creator',
-};
 
 function AuthPage() {
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('invite');
-  const urlMode = searchParams.get('mode') as 'login' | 'register' | null;
-  
-  const [mode, setMode] = useState<'login' | 'register'>(urlMode || 'login');
-  const [form, setForm] = useState<FormData>({
-    ...initialForm,
-    // 如果有邀請 token，預設角色為 receiver
-    role: inviteToken ? 'receiver' : 'creator',
-  });
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { status, user, error } = useSelector((state: RootState) => state.auth);
+  const [preferredRole, setPreferredRole] = useState<'creator' | 'receiver'>(inviteToken ? 'receiver' : 'creator');
+  const buttonRef = useRef<HTMLDivElement>(null);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !inviteToken) {
@@ -42,168 +33,209 @@ function AuthPage() {
     }
   }, [user, navigate, inviteToken]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleGoogleCredential = useCallback(async (credential: string) => {
     try {
-      if (mode === 'register') {
-        const result = await dispatch(registerAccount(form)).unwrap();
-        
-        // 如果有邀請 token，註冊後自動接受邀請
-        if (inviteToken) {
-          try {
-            await dispatch(acceptInvitation(inviteToken)).unwrap();
-            showToast('註冊成功並已加入倒數專案！', 'success');
-            navigate('/receiver');
-          } catch (inviteError: any) {
-            showToast(inviteError || '接受邀請失敗，但帳號已註冊成功', 'warning');
-            navigate('/receiver');
-          }
-        } else {
+      const result = await dispatch(
+        googleLogin({
+          credential,
+          role: inviteToken ? 'receiver' : preferredRole,
+        }),
+      ).unwrap();
+
+      if (inviteToken) {
+        try {
+          await dispatch(acceptInvitation(inviteToken)).unwrap();
+          showToast('登入成功並已加入倒數專案！', 'success');
+          navigate('/receiver');
+        } catch (inviteError: any) {
+          showToast(inviteError || '接受邀請失敗', 'warning');
           navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
         }
       } else {
-        const result = await dispatch(loginAccount({ email: form.email, password: form.password })).unwrap();
-        
-        // 如果有邀請 token，登入後自動接受邀請
-        if (inviteToken) {
-          try {
-            await dispatch(acceptInvitation(inviteToken)).unwrap();
-            showToast('登入成功並已加入倒數專案！', 'success');
-            navigate('/receiver');
-          } catch (inviteError: any) {
-            showToast(inviteError || '接受邀請失敗', 'warning');
-            navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
-          }
+        showToast('成功使用 Google 登入', 'success');
+        navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+      }
+    } catch (loginError: any) {
+      const message = typeof loginError === 'string' ? loginError : 'Google 登入失敗，請稍後再試';
+      showToast(message, 'error');
+    }
+  }, [dispatch, inviteToken, preferredRole, navigate, showToast]);
+
+  const initializeGoogle = useCallback(() => {
+    if (!googleClientId) return;
+    if (!window.google || !buttonRef.current) return;
+    buttonRef.current.innerHTML = '';
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: (response: { credential?: string }) => {
+        if (!response.credential) {
+          showToast('Google 登入未完成，請再試一次', 'warning');
+          return;
+        }
+        handleGoogleCredential(response.credential);
+      },
+      ux_mode: 'popup',
+      auto_select: false,
+    });
+    window.google.accounts.id.renderButton(buttonRef.current, {
+      theme: 'filled_blue',
+      width: '100%',
+      shape: 'pill',
+      text: 'continue_with',
+      locale: 'zh-TW',
+    });
+    setGoogleReady(true);
+    setGoogleError(null);
+  }, [googleClientId, handleGoogleCredential, showToast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadGoogleConfig() {
+      try {
+        setConfigLoading(true);
+        const response = await fetch('/api/config');
+        if (!response.ok) {
+          throw new Error('Failed to load config');
+        }
+        const data = await response.json();
+        if (cancelled) return;
+        if (!data.googleClientId) {
+          setGoogleClientId(null);
+          setGoogleError('伺服器尚未設定 GOOGLE_CLIENT_ID，請聯絡系統管理員');
         } else {
-          navigate(result.user.role === 'creator' ? '/creator' : '/receiver');
+          setGoogleClientId(data.googleClientId as string);
+          setGoogleReady(false);
+          setGoogleError(null);
+        }
+      } catch (configError) {
+        if (cancelled) return;
+        console.error('Load Google config failed', configError);
+        setGoogleClientId(null);
+        setGoogleError('無法載入 Google 登入設定，請稍後再試');
+      } finally {
+        if (!cancelled) {
+          setConfigLoading(false);
         }
       }
-    } catch (submitError) {
-      console.error('Auth error', submitError);
     }
-  };
+    loadGoogleConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!googleClientId || googleError) {
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>('script[data-google-client="true"]');
+    if (window.google) {
+      initializeGoogle();
+      return;
+    }
+
+    const script = existingScript || document.createElement('script');
+    if (!existingScript) {
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.dataset.googleClient = 'true';
+      document.body.appendChild(script);
+    }
+    const handleLoad = () => initializeGoogle();
+    const handleError = () => setGoogleError('無法載入 Google 登入服務，請稍後再試');
+    script.onload = handleLoad;
+    script.onerror = handleError;
+
+    return () => {
+      script.onload = null;
+      script.onerror = null;
+    };
+  }, [googleClientId, googleError, initializeGoogle]);
 
   return (
     <section className="max-w-3xl mx-auto pt-16 px-6 relative z-10">
-      <div className="glass-panel">
+      <div className="glass-panel space-y-8">
         {inviteToken && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-christmas-red/20 to-christmas-green/20 rounded-2xl border border-christmas-red/30">
-            <p className="text-sm text-center flex items-center justify-center gap-2">
-              <HiOutlineGift className="w-4 h-4" />
-              你正在接受倒數專案邀請
-              <br />
-              <span className="text-xs text-gray-400">
-                {mode === 'register' ? '註冊後將自動加入專案（你將收到禮物）' : '登入後將自動加入專案'}
+          <div className="p-4 bg-gradient-to-r from-christmas-red/20 to-christmas-green/20 rounded-2xl border border-christmas-red/30">
+            <p className="text-sm text-center flex items-center justify-center gap-2 flex-col">
+              <span className="flex items-center gap-2">
+                <HiOutlineGift className="w-4 h-4" />
+                你正在接受倒數專案邀請
               </span>
+              <span className="text-xs text-gray-400">使用 Google 登入後將自動加入專案</span>
             </p>
           </div>
         )}
-        
-        <div className="flex gap-6">
-          <button
-            type="button"
-            onClick={() => setMode('login')}
-            className={`flex-1 py-3 rounded-full ${mode === 'login' ? 'bg-christmas-red/80 text-white font-semibold' : 'bg-white/5'}`}
-          >
-            登入
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('register')}
-            className={`flex-1 py-3 rounded-full ${mode === 'register' ? 'bg-christmas-red/80 text-white font-semibold' : 'bg-white/5'}`}
-          >
-            建立帳號
-          </button>
+
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-semibold">使用 Google 帳號登入 / 建立帳號</h1>
+          <p className="text-sm text-gray-400">
+            我們會使用你的 Google Email 建立 Countdown24 帳號，並在第一次登入時建立對應角色。
+          </p>
         </div>
 
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          {mode === 'register' && (
-            <div>
-              <label className="text-sm text-gray-400">顯示名稱</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: event.target.value })}
-                className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-christmas-red"
-                placeholder="像是 Aurora"
-                required
-              />
-            </div>
-          )}
-
+        {!inviteToken && (
           <div>
-            <label className="text-sm text-gray-400">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, email: event.target.value })}
-              className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-aurora"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-400">密碼</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, password: event.target.value })}
-              className="w-full mt-1 bg-white/5 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-aurora"
-              placeholder="至少 8 碼"
-              required
-            />
-          </div>
-
-          {mode === 'register' && !inviteToken && (
-            <div>
-              <label className="text-sm text-gray-400">角色</label>
-              <div className="flex gap-4 mt-1">
-                <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer ${form.role === 'creator' ? 'border-christmas-red text-christmas-red' : 'border-white/10'}`}>
-                  <input
-                    type="radio"
-                    name="role"
-                    value="creator"
-                    className="hidden"
-                    checked={form.role === 'creator'}
-                    onChange={() => setForm({ ...form, role: 'creator' })}
-                  />
-                  我是編輯者
-                </label>
-                <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer ${form.role === 'receiver' ? 'border-christmas-green text-christmas-green' : 'border-white/10'}`}>
-                  <input
-                    type="radio"
-                    name="role"
-                    value="receiver"
-                    className="hidden"
-                    checked={form.role === 'receiver'}
-                    onChange={() => setForm({ ...form, role: 'receiver' })}
-                  />
-                  我是接收者
-                </label>
-              </div>
+            <label className="text-sm text-gray-400">想要扮演的角色</label>
+            <div className="flex gap-4 mt-2">
+              <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer transition ${preferredRole === 'creator' ? 'border-christmas-red text-christmas-red bg-christmas-red/10' : 'border-white/10 bg-white/5'}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="creator"
+                  className="hidden"
+                  checked={preferredRole === 'creator'}
+                  onChange={() => setPreferredRole('creator')}
+                />
+                我是編輯者
+              </label>
+              <label className={`flex-1 border rounded-xl px-4 py-3 cursor-pointer transition ${preferredRole === 'receiver' ? 'border-christmas-green text-christmas-green bg-christmas-green/10' : 'border-white/10 bg-white/5'}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="receiver"
+                  className="hidden"
+                  checked={preferredRole === 'receiver'}
+                  onChange={() => setPreferredRole('receiver')}
+                />
+                我是接收者
+              </label>
             </div>
-          )}
+            <p className="text-xs text-gray-500 mt-2">第一次使用 Google 登入時，我們會依照這個角色建立帳號。</p>
+          </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="w-full py-3 rounded-full bg-gradient-to-r from-christmas-red to-christmas-green text-white font-semibold disabled:opacity-70 hover:from-christmas-red-light hover:to-christmas-green-light transition-all duration-300"
-          >
-            {status === 'loading' ? '處理中...' : (
-              <span className="flex items-center gap-2">
-                <HiOutlineGift className="w-4 h-4" />
-                {mode === 'login' ? '登入' : '立即建立'}
-              </span>
+        <div>
+          <label className="text-sm text-gray-400">Google 登入</label>
+          <div className="mt-4 space-y-3">
+            <div className="w-full flex justify-center">
+              <div ref={buttonRef} className="w-full flex justify-center min-h-[48px]" />
+            </div>
+            {configLoading && (
+              <p className="text-sm text-center text-gray-400">正在讀取 Google 登入設定...</p>
             )}
-          </button>
+            {!configLoading && googleError && (
+              <p className="text-sm text-center text-rose-400">{googleError}</p>
+            )}
+            {!googleError && !configLoading && !googleReady && (
+              <p className="text-sm text-center text-gray-400">正在載入 Google 登入...</p>
+            )}
+            {status === 'loading' && (
+              <p className="text-xs text-center text-gray-400">處理中，請稍候...</p>
+            )}
+          </div>
+        </div>
 
-          {error && <p className="text-sm text-rose-400 text-center">{error}</p>}
-        </form>
+        <p className="text-xs text-gray-500 text-center">
+          點擊「使用 Google 登入」即表示你同意我們存取 Google 提供的公開檔案資訊，以協助建立倒數體驗。
+        </p>
+
+        {error && <p className="text-sm text-center text-rose-400">{error}</p>}
       </div>
     </section>
   );
 }
 
 export default AuthPage;
-

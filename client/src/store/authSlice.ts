@@ -34,6 +34,11 @@ interface LoginPayload {
   password: string;
 }
 
+interface GoogleLoginPayload {
+  credential: string;
+  role?: 'creator' | 'receiver';
+}
+
 export const registerAccount = createAsyncThunk(
   'auth/register',
   async (payload: RegisterPayload, { rejectWithValue }) => {
@@ -54,6 +59,18 @@ export const loginAccount = createAsyncThunk(
       return data;
     } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '登入失敗');
+    }
+  },
+);
+
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (payload: GoogleLoginPayload, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post('/auth/google', payload);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || 'Google 登入失敗');
     }
   },
 );
@@ -156,6 +173,20 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = (action.payload as string) || '登入失敗';
       })
+      .addCase(googleLogin.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        window.localStorage.setItem(TOKEN_KEY, action.payload.token);
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = (action.payload as string) || 'Google 登入失敗';
+      })
       .addCase(bootstrapSession.pending, (state) => {
         state.status = 'loading';
       })
@@ -190,4 +221,3 @@ const authSlice = createSlice({
 
 export const { logout, setUserOverview } = authSlice.actions;
 export default authSlice.reducer;
-
