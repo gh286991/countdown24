@@ -166,6 +166,15 @@ export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) 
     return res.status(400).json({ message: 'Invalid day in token' });
   }
 
+  const availableDay = countdownService.computeAvailableDay(countdown);
+  if (day > availableDay) {
+    return res.status(403).json({
+      success: false,
+      message: '解鎖時間尚未到，再等一下就能使用這張禮品卡',
+      availableDay,
+    });
+  }
+
   // 驗證 token
   if (!verifyDayQrToken(qrToken, countdown.id, day)) {
     return res.status(403).json({ message: 'Invalid QR token' });

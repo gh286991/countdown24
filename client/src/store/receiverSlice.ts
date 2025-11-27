@@ -74,7 +74,7 @@ export const unlockDayWithQr = createAsyncThunk(
       const { data } = await api.post('/receiver/unlock-day', { assignmentId, qrToken });
       return data;
     } catch (error: any) {
-      return rejectWithValue(error?.response?.data?.message || '解鎖失敗');
+      return rejectWithValue(error?.response?.data || { message: '解鎖失敗' });
     }
   },
 );
@@ -203,4 +203,3 @@ const receiverSlice = createSlice({
 
 export const { clearExperience, clearDayContent } = receiverSlice.actions;
 export default receiverSlice.reducer;
-

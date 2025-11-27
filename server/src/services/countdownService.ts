@@ -1,6 +1,6 @@
 import { CountdownDays, Assignments, Users } from '../db/connection.js';
 import { DEFAULT_TOTAL_DAYS } from '../config/index.js';
-import { generateId, hasRewardData, hasVoucherData } from '../utils/helpers.js';
+import { addDays, generateId, hasRewardData, hasVoucherData } from '../utils/helpers.js';
 import type { DayCard, QrReward, VoucherDetail } from '../types/index.js';
 
 export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [], countdown: any = null): DayCard[] {
@@ -141,6 +141,9 @@ export function withAvailableContent(countdown: any): any {
   snapshot.dayCards = snapshot.dayCards.map((card: DayCard) => ({
     ...card,
     unlocked: card.day <= availableDay,
+    nextUnlockAt: card.day > availableDay && countdown.startDate
+      ? addDays(countdown.startDate, card.day - 1)?.toISOString()
+      : undefined,
   }));
   return snapshot;
 }

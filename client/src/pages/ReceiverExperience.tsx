@@ -50,6 +50,8 @@ function ReceiverExperience() {
         return {
           ...card,
           locked,
+          lockReason: locked ? (!scheduleUnlocked ? 'time' : 'qr') : null,
+          nextUnlockAt: card.nextUnlockAt,
         };
       });
     },
@@ -66,6 +68,7 @@ function ReceiverExperience() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
+  const [lockedDialog, setLockedDialog] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!modalDay) {
@@ -126,7 +129,12 @@ function ReceiverExperience() {
       setScanMode('camera');
       showToast('解鎖成功！', 'success');
     } catch (error: any) {
-      showToast('解鎖失敗：' + (error?.message || '未知錯誤'), 'error');
+      const payload = error || {};
+      const msg = payload.message || payload?.data?.message || '解鎖失敗';
+      setLockedDialog({
+        title: '無法解鎖',
+        message: msg,
+      });
     } finally {
       setUnlocking(false);
     }
@@ -372,7 +380,21 @@ function ReceiverExperience() {
               card.locked ? 'cursor-not-allowed opacity-60' : 'hover:border-aurora/60 transition'
             }`}
             onClick={() => {
-              if (card.locked) return;
+              if (card.locked) {
+                if (card.lockReason === 'time') {
+                  const unlockTime = card.nextUnlockAt ? new Date(card.nextUnlockAt).toLocaleString() : '稍後';
+                  setLockedDialog({
+                    title: `Day ${card.day} 還沒開放`,
+                    message: `解鎖時間尚未到，預計在 ${unlockTime} 開放，再等一下就能享受這份即享禮物。`,
+                  });
+                } else {
+                  setLockedDialog({
+                    title: `Day ${card.day} 尚未解鎖`,
+                    message: '請先掃描禮品卡或輸入解鎖碼，就能打開此日的驚喜。',
+                  });
+                }
+                return;
+              }
               setModalDay(card.day);
             }}
           >
@@ -389,15 +411,31 @@ function ReceiverExperience() {
             {card.locked && (
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white">
                 <HiOutlineLockClosed className="w-12 h-12 mb-2 text-gray-400" />
-                <p className="text-sm font-semibold">尚未解鎖</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {card.type === 'qr' ? '請掃描禮品卡解鎖' : '時間未到，敬請期待'}
-                </p>
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
+              <p className="text-sm font-semibold">尚未解鎖</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {card.type === 'qr' ? '請掃描禮品卡解鎖' : '時間未到，敬請期待'}
+              </p>
+            </div>
+          )}
+        </button>
+      ))}
+    </div>
+
+      {lockedDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4">
+          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 text-center space-y-4">
+            <h3 className="text-xl font-semibold text-white">{lockedDialog.title}</h3>
+            <p className="text-sm text-gray-300">{lockedDialog.message}</p>
+            <button
+              type="button"
+              onClick={() => setLockedDialog(null)}
+              className="px-5 py-2 rounded-xl bg-aurora text-slate-900 font-semibold"
+            >
+              好的，我再等等
+            </button>
+          </div>
+        </div>
+      )}
       {modalDay && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 px-4 py-6">
           <div className="relative w-full max-w-4xl rounded-3xl bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
