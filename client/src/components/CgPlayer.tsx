@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Branch, Game, Label, Menu, Say, Scene, prepareBranches } from 'react-visual-novel';
+import { useEffect, useMemo, useState } from 'react';
+import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContext } from 'react-visual-novel';
 import { QueryParamProvider } from 'use-query-params';
 import { ReactRouter6Adapter } from 'use-query-params/adapters/react-router-6';
 import 'react-visual-novel/dist/index.css';
@@ -16,6 +16,19 @@ interface CgDialogue {
   expressionImage?: string;
 }
 
+interface CgHotspot {
+  id: string;
+  label?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  next?: string;
+  message?: string;
+  accent?: string;
+  image?: string;
+}
+
 interface CgScene {
   id: string;
   label?: string;
@@ -25,6 +38,7 @@ interface CgScene {
   choices?: Array<{ label: string; next: string }>;
   next?: string;
   accent?: string;
+  hotspots?: Array<CgHotspot>;
 }
 
 interface CgScript {
@@ -51,19 +65,14 @@ interface CgPlayerProps {
 }
 
 function CgPlayer({ script }: CgPlayerProps) {
-  const [resolvedScript, setResolvedScript] = useState<CgScript | null>(script);
+  const [resolvedScript, setResolvedScript] = useState<CgScript | null>(null);
   const [assetsReady, setAssetsReady] = useState(true);
-  const latestScriptRef = useRef<CgScript | null>(script);
   const scriptSignature = useMemo(() => (script ? JSON.stringify(script) : null), [script]);
-
-  useEffect(() => {
-    latestScriptRef.current = script;
-  }, [script]);
 
   useEffect(() => {
     let active = true;
     async function hydrate() {
-      const baseScript = latestScriptRef.current;
+      const baseScript = script;
       if (!baseScript) {
         setResolvedScript(null);
         setAssetsReady(true);
@@ -73,11 +82,12 @@ function CgPlayer({ script }: CgPlayerProps) {
       collectCgAssetUrls(baseScript, urls);
       const targets = Array.from(urls).filter((url) => isMinIOUrl(url));
       if (!targets.length) {
-        setResolvedScript((prev) => (prev === baseScript ? prev : baseScript));
+        setResolvedScript(baseScript);
         setAssetsReady(true);
         return;
       }
       setAssetsReady(false);
+      setResolvedScript(null);
       try {
         const map = await getPresignedUrls(targets);
         if (!active) return;
@@ -179,6 +189,82 @@ function rewriteCgAssets(value: any, map: Map<string, string>): any {
     return next;
   }
   return value;
+}
+
+function HotspotLayer({
+  hotspots,
+  fallbackNextId,
+  labelColor,
+  hasChoices,
+}: {
+  hotspots: CgHotspot[];
+  fallbackNextId?: string;
+  labelColor?: string;
+  hasChoices?: boolean;
+}) {
+  const { goToStatement } = useBranchContext();
+  const [activeSpot, setActiveSpot] = useState<CgHotspot | null>(null);
+  useEffect(() => {
+    if (!activeSpot?.message) return undefined;
+    const timer = setTimeout(() => setActiveSpot(null), 2400);
+    return () => clearTimeout(timer);
+  }, [activeSpot]);
+
+  const handleClick = (spot: CgHotspot) => {
+    setActiveSpot(spot);
+    if (spot.next) {
+      setTimeout(() => {
+        goToStatement(spot.next as string);
+      }, 350);
+    } else if (!spot.message && fallbackNextId && !hasChoices) {
+      setTimeout(() => {
+        goToStatement(fallbackNextId);
+      }, 400);
+    }
+  };
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20">
+      {hotspots.map((spot) => (
+        <button
+          key={spot.id}
+          type="button"
+          className="pointer-events-auto absolute rounded-2xl border-2 border-white/60 bg-white/5 transition hover:bg-white/20"
+          style={{
+            left: `${spot.x}%`,
+            top: `${spot.y}%`,
+            width: `${spot.width}%`,
+            height: `${spot.height}%`,
+            borderColor: spot.accent || labelColor || 'rgba(255,255,255,0.6)',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.45)',
+            backgroundImage: spot.image ? `url(${spot.image})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleClick(spot);
+          }}
+        >
+          {spot.label ? (
+            <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
+              {spot.label}
+            </span>
+          ) : null}
+        </button>
+      ))}
+      {activeSpot?.message && (
+        <div className="pointer-events-auto absolute inset-x-0 bottom-6 flex justify-center">
+          <div className="max-w-md rounded-2xl bg-slate-900/90 px-5 py-3 text-center text-sm text-white shadow-lg">
+            <p className="font-semibold" style={{ color: activeSpot.accent || labelColor || '#f97316' }}>
+              {activeSpot.label || '提示'}
+            </p>
+            <p className="text-xs text-gray-200 mt-1">{activeSpot.message}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function buildGameConfig(script: CgScript | null) {
@@ -303,6 +389,9 @@ function renderScene(
           </Say>
         );
       })}
+      {scene.hotspots && scene.hotspots.length > 0 && (
+        <HotspotLayer hotspots={scene.hotspots} labelColor={scene.accent} fallbackNextId={nextLabel} hasChoices={choices.length > 0} />
+      )}
       {choices.length > 0 && (
         <Menu
           key={`${scene.id}-menu`}

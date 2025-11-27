@@ -20,15 +20,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
 }
 
-function buildFileName(input: string, fallbackExtension: string): string {
+function buildFileName(input: string, fallbackExtension: string, forceExtension?: string): string {
   const trimmed = input.trim();
-  if (!trimmed) {
-    return `image.${fallbackExtension}`;
-  }
-  if (trimmed.includes('.')) {
-    return trimmed;
-  }
-  return `${trimmed}.${fallbackExtension}`;
+  const normalized = trimmed || `image.${fallbackExtension}`;
+  const extension = (forceExtension || normalized.split('.').pop() || fallbackExtension).replace(/^\./, '');
+  const base = normalized.replace(/\.[^/.]+$/, '') || 'image';
+  return `${base}.${extension}`;
 }
 
 function ImageCropModal({ file, isOpen, onCancel, onConfirm }: ImageCropModalProps) {
@@ -144,15 +141,18 @@ function ImageCropModal({ file, isOpen, onCancel, onConfirm }: ImageCropModalPro
     const ctx = output.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(imageEl, sx, sy, sw, sh, 0, 0, sw, sh);
-    const extension = file.type?.split('/')[1] || 'png';
+    const shouldForcePng =
+      file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif' || file.type === 'image/svg+xml';
+    const targetMime = shouldForcePng ? 'image/png' : file.type || 'image/png';
+    const extension = targetMime.split('/')[1] || 'png';
     output.toBlob(
       (blob) => {
         if (!blob) return;
-        const finalName = buildFileName(fileName, extension);
+        const finalName = buildFileName(fileName, extension, shouldForcePng ? 'png' : undefined);
         onConfirm({ blob, fileName: finalName });
       },
-      file.type || 'image/png',
-      0.95,
+      targetMime,
+      targetMime === 'image/jpeg' ? 0.95 : undefined,
     );
   }, [canvasSize.height, canvasSize.width, crop, file.type, fileName, imageEl, onConfirm]);
 

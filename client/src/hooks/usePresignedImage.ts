@@ -13,7 +13,9 @@ export function usePresignedImage(
   url: string | undefined | null,
   options?: { autoRefresh?: boolean; refreshInterval?: number },
 ): string | undefined {
-  const [presignedUrl, setPresignedUrl] = useState<string | undefined>(url);
+  const initialUrl =
+    url && (!isMinIOUrl(url) || isPresignedUrl(url)) ? url : undefined;
+  const [presignedUrl, setPresignedUrl] = useState<string | undefined>(initialUrl);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const urlRef = useRef<string | undefined | null>(url);
   const { autoRefresh = false, refreshInterval = 6 * 24 * 60 * 60 * 1000 } = options || {}; // 預設 6 天刷新一次
@@ -78,6 +80,7 @@ export function usePresignedImage(
       return;
     }
 
+    setPresignedUrl(undefined);
     // 獲取預簽名 URL
     fetchPresignedUrl(url);
 
@@ -104,4 +107,3 @@ export function usePresignedImage(
 
   return presignedUrl;
 }
-
