@@ -29,10 +29,11 @@ function PrintCardEditorModal({
     previewImage: '',
   });
   const [showPreview, setShowPreview] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(!card?.isConfigured);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(!card?.isConfigured);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(card?.canvasTemplateId || null);
 
   const allTemplates = [blankTemplate, ...printCardTemplates];
+  const activeTemplate = selectedTemplateId ? allTemplates.find((tpl) => tpl.id === selectedTemplateId) : null;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,15 +41,15 @@ function PrintCardEditorModal({
       canvasJson: card?.canvasJson || null,
       previewImage: card?.previewImage || '',
     });
-    setShowTemplates(!card?.isConfigured);
-    setSelectedTemplateId(null);
+    setIsTemplateModalOpen(!card?.isConfigured);
+    setSelectedTemplateId(card?.canvasTemplateId || null);
   }, [card, day, isOpen]);
 
   const handleSelectTemplate = (template: PrintCardTemplate) => {
     setSelectedTemplateId(template.id);
     // 透過 ref 載入模板
     canvasRef.current?.loadTemplate(template.canvasJson);
-    setShowTemplates(false);
+    setIsTemplateModalOpen(false);
   };
 
   const handleSave = () => {
@@ -58,6 +59,7 @@ function PrintCardEditorModal({
     }
     onSave({
       template: card?.template || 'imageLeft',
+      canvasTemplateId: selectedTemplateId || null,
       canvasJson: canvasState.canvasJson,
       previewImage: canvasState.previewImage,
       isConfigured: true,
@@ -90,47 +92,24 @@ function PrintCardEditorModal({
         <div className="space-y-6">
           {/* 模板選擇器 */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-300">
-                {showTemplates ? '選擇模板開始編輯' : '已選擇模板'}
-              </p>
-              {!showTemplates && (
-                <button
-                  type="button"
-                  onClick={() => setShowTemplates(true)}
-                  className="text-xs text-aurora hover:underline"
-                >
-                  更換模板
-                </button>
-              )}
-            </div>
-            
-            {showTemplates && (
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                {allTemplates.map((template) => (
-                  <button
-                    key={template.id}
-                    type="button"
-                    onClick={() => handleSelectTemplate(template)}
-                    className={`group relative rounded-xl overflow-hidden border-2 transition-all ${
-                      selectedTemplateId === template.id
-                        ? 'border-aurora ring-2 ring-aurora/30'
-                        : 'border-white/10 hover:border-white/30'
-                    }`}
-                  >
-                    <img
-                      src={template.thumbnail}
-                      alt={template.name}
-                      className="w-full aspect-[9/5] object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute bottom-0 left-0 right-0 p-2 text-center">
-                      <p className="text-[10px] text-white font-medium truncate">{template.name}</p>
-                    </div>
-                  </button>
-                ))}
+            <div className="rounded-2xl border border-white/10 p-4 flex items-center justify-between bg-white/5">
+              <div>
+                <p className="text-xs text-gray-400 uppercase tracking-[0.3em]">目前版型</p>
+                <p className="text-sm text-white font-medium">
+                  {activeTemplate?.name || '尚未選擇版型'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {activeTemplate?.description || '點選下方按鈕從素材模板中挑選一款。'}
+                </p>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setIsTemplateModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-aurora to-purple-500 text-sm text-slate-900 font-semibold"
+              >
+                選擇模板
+              </button>
+            </div>
           </div>
 
           <PrintCardCanvasEditor
@@ -184,6 +163,51 @@ function PrintCardEditorModal({
           </div>
         </div>
       </div>
+
+      {isTemplateModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 px-4 py-6">
+          <div className="relative w-full max-w-5xl bg-slate-900 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col gap-4">
+            <button
+              type="button"
+              onClick={() => setIsTemplateModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <HiOutlineXMark className="w-6 h-6" />
+            </button>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-[0.3em]">Template Library</p>
+              <h3 className="text-xl font-semibold text-white mt-1">選擇一款小卡版型</h3>
+              <p className="text-sm text-gray-400">
+                精選奢華聖誕、冬日雪景等多款樣式，套用後可以再自行調整內容。
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto pr-2">
+              {allTemplates.map((template) => {
+                const isActive = selectedTemplateId === template.id;
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleSelectTemplate(template)}
+                    className={`flex flex-col rounded-2xl border-2 bg-white/5 overflow-hidden text-left transition-all ${
+                      isActive ? 'border-aurora shadow-lg shadow-aurora/30' : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <img src={template.thumbnail} alt={template.name} className="w-full aspect-[9/5] object-cover" />
+                    <div className="p-3 space-y-1">
+                      <p className="text-xs font-semibold text-white truncate">{template.name}</p>
+                      <p className="text-[11px] text-gray-400 leading-relaxed min-h-[32px] overflow-hidden">
+                        {template.description}
+                      </p>
+                      <p className="text-[10px] text-aurora font-semibold">{isActive ? '已套用' : '套用這款'}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 預覽彈窗 */}
       {showPreview && canvasState.previewImage && (

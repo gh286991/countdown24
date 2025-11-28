@@ -6,6 +6,8 @@ import winterSnowJson from './templates/winter-snow.json';
 import cuteGiftBoxJson from './templates/cute-gift-box.json';
 import starryNightJson from './templates/starry-night.json';
 import minimalTreeJson from './templates/minimal-tree.json';
+import luxGoldenHollyJson from './templates/lux-golden-holly.json';
+import midnightVelvetJson from './templates/midnight-velvet.json';
 import blankJson from './templates/blank.json';
 
 export interface PrintCardTemplate {
@@ -23,6 +25,8 @@ export const printCardTemplates: PrintCardTemplate[] = [
   cuteGiftBoxJson as PrintCardTemplate,
   starryNightJson as PrintCardTemplate,
   minimalTreeJson as PrintCardTemplate,
+  luxGoldenHollyJson as PrintCardTemplate,
+  midnightVelvetJson as PrintCardTemplate,
 ];
 
 // 空白模板（用於「從空白開始」）

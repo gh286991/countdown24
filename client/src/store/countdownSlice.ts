@@ -8,6 +8,7 @@ export interface PrintCard {
   countdownId?: string;
   day: number;
   template: PrintCardTemplate;
+  canvasTemplateId?: string | null;
   imageUrl: string;
   qrCode: string;
   title: string;

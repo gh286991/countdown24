@@ -3,6 +3,8 @@ import { Canvas as FabricCanvas, Textbox, Image as FabricImage } from 'fabric';
 import * as QRCode from 'qrcode';
 import api from '../api/client';
 import type { VoucherDetail } from '../types/voucher';
+import AssetLibraryModal from './AssetLibraryModal';
+import type { UserAsset } from '../types/assets';
 
 interface PrintCardCanvasEditorProps {
   countdownId: string;
@@ -38,6 +40,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
   const [addingQr, setAddingQr] = useState(false);
   const [activeColor, setActiveColor] = useState('#1f2937');
   const [background, setBackground] = useState('#e2e8f0');
+  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
 
   // 保持 onChange 引用最新
   useEffect(() => {
@@ -451,6 +454,13 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         >
           🖼️ 插入圖片
         </button>
+        <button
+          type="button"
+          onClick={() => setShowAssetLibrary(true)}
+          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20"
+        >
+          📚 素材庫
+        </button>
         {allowQr && (
           <button
             type="button"
@@ -502,6 +512,14 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
       </div>
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      <AssetLibraryModal
+        isOpen={showAssetLibrary}
+        onClose={() => setShowAssetLibrary(false)}
+        onSelect={(asset: UserAsset) => {
+          addImageFromUrl(asset.url);
+          setShowAssetLibrary(false);
+        }}
+      />
     </div>
   );
 });
