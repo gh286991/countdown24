@@ -30,7 +30,7 @@ function App() {
   }, [dispatch, status, user]);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-[100dvh] min-w-full relative overflow-hidden bg-slate-950">
       {/* 下雪特效已暫時移除以測試閃動問題 */}
       {/* <div className="snow-layer"></div>
       <div className="snow-layer snow-layer-fast"></div>

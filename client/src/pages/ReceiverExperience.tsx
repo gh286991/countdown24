@@ -2,14 +2,23 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { HiOutlineXMark, HiOutlineLockClosed, HiOutlineQrCode, HiOutlineCamera, HiOutlineCheckCircle, HiOutlineClock, HiOutlineXCircle } from 'react-icons/hi2';
+import { createPortal } from 'react-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import DayTimeline from '../components/DayTimeline';
 import CgPlayer from '../components/CgPlayer';
+import { PresignedImage } from '../components/PresignedImage';
 import QrCardPreview from '../components/QrCardPreview';
 import PrintCardPreview from '../components/PrintCardPreview';
 import { useToast } from '../components/ToastProvider';
 import { clearDayContent, fetchReceiverDayContent, fetchReceiverExperience, unlockDayWithQr, fetchReceiverRedemptions, requestVoucherRedemption } from '../store/receiverSlice';
 import type { RootState, AppDispatch } from '../store';
+
+function OverlayPortal({ children }: { children: React.ReactNode }) {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  return createPortal(children, document.body);
+}
 
 function ReceiverExperience() {
   const { assignmentId } = useParams();
@@ -69,6 +78,19 @@ function ReceiverExperience() {
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
   const [lockedDialog, setLockedDialog] = useState<{ title: string; message: string } | null>(null);
+  const overlayVisible = Boolean(modalDay || showQrScanner || lockedDialog);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !overlayVisible) return undefined;
+
+    const body = document.body;
+    const originalOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+
+    return () => {
+      body.style.overflow = originalOverflow;
+    };
+  }, [overlayVisible]);
 
   useEffect(() => {
     if (!modalDay) {
@@ -213,7 +235,7 @@ function ReceiverExperience() {
   }
 
   return (
-    <section className="max-w-5xl mx-auto py-10 px-6 space-y-6">
+    <section className="full-screen-panel max-w-5xl mx-auto space-y-6">
       <div className="text-center space-y-2">
         <p className="text-xs uppercase tracking-[0.4em] text-gray-400">你收到的倒數</p>
         <h2 className="text-4xl font-semibold">{countdown.title}</h2>
@@ -223,7 +245,7 @@ function ReceiverExperience() {
         {creator && (
           <div className="flex items-center justify-center gap-2 pt-2">
             {creator.avatar ? (
-              <img src={creator.avatar} alt={creator.name} className="w-8 h-8 rounded-full object-cover" />
+              <PresignedImage src={creator.avatar} alt={creator.name} className="w-8 h-8 rounded-full object-cover" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-aurora/20 flex items-center justify-center text-sm text-aurora font-semibold">
                 {creator.name?.charAt(0).toUpperCase()}
@@ -252,7 +274,8 @@ function ReceiverExperience() {
 
       {/* 禮品卡掃描模態視窗 */}
       {showQrScanner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6">
+        <OverlayPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6">
           <div className="relative w-full max-w-md rounded-3xl bg-slate-900 p-6 shadow-2xl">
             <button
               type="button"
@@ -369,6 +392,7 @@ function ReceiverExperience() {
             )}
           </div>
         </div>
+        </OverlayPortal>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -422,23 +446,26 @@ function ReceiverExperience() {
     </div>
 
       {lockedDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4">
-          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 text-center space-y-4">
-            <h3 className="text-xl font-semibold text-white">{lockedDialog.title}</h3>
-            <p className="text-sm text-gray-300">{lockedDialog.message}</p>
-            <button
-              type="button"
-              onClick={() => setLockedDialog(null)}
-              className="px-5 py-2 rounded-xl bg-aurora text-slate-900 font-semibold"
-            >
-              好的，我再等等
-            </button>
+        <OverlayPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6 w-screen h-screen min-h-[100dvh]">
+            <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 text-center space-y-4">
+              <h3 className="text-xl font-semibold text-white">{lockedDialog.title}</h3>
+              <p className="text-sm text-gray-300">{lockedDialog.message}</p>
+              <button
+                type="button"
+                onClick={() => setLockedDialog(null)}
+                className="px-5 py-2 rounded-xl bg-aurora text-slate-900 font-semibold"
+              >
+                好的，我再等等
+              </button>
+            </div>
           </div>
-        </div>
+        </OverlayPortal>
       )}
       {modalDay && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 px-4 py-6">
-          <div className="relative w-full max-w-4xl rounded-3xl bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <OverlayPortal>
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 px-4 py-6 w-screen h-screen min-h-[100dvh]">
+            <div className="relative w-full max-w-4xl rounded-3xl bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white"
@@ -599,6 +626,7 @@ function ReceiverExperience() {
             )}
           </div>
         </div>
+      </OverlayPortal>
       )}
     </section>
   );

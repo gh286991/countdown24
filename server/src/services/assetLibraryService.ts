@@ -29,6 +29,12 @@ export async function findAssetByEtag(userId: string, etag: string): Promise<Use
   return asset as UserAsset | null;
 }
 
+export async function findAssetByKey(userId: string, key: string): Promise<UserAsset | null> {
+  if (!Assets) throw new Error('Database not initialized');
+  const asset = await Assets.findOne({ userId, key });
+  return asset as UserAsset | null;
+}
+
 export async function createAssetRecord(payload: CreateAssetPayload): Promise<UserAsset> {
   if (!Assets) throw new Error('Database not initialized');
   const now = new Date();

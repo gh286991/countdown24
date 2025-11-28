@@ -1,13 +1,26 @@
 import api from '../api/client';
 
+interface CachedEntry {
+  url: string;
+  expiresAt: number;
+  version?: string | null;
+}
+
+interface BatchQueueEntry {
+  resolvers: Array<(value: string) => void>;
+  rejecters: Array<(error: any) => void>;
+  options: PresignOptions;
+}
+
 // 預簽名 URL 緩存時間（毫秒）
 const PRESIGNED_CACHE_TTL = 45 * 60 * 1000; // 45 分鐘
-const presignedCache = new Map<string, { url: string; expiresAt: number }>();
+const DEFAULT_REFRESH_MARGIN_MS = 15 * 1000;
+const presignedCache = new Map<string, CachedEntry>();
 const pendingPresigned = new Map<string, Promise<string>>();
-const batchQueue = new Map<string, { resolvers: Array<(value: string) => void>; rejecters: Array<(error: any) => void> }>();
+const batchQueue = new Map<string, BatchQueueEntry>();
 const LOCAL_CACHE_KEY = 'countdown24::presignedCache_v1';
 const hasStorage = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-let persistentCacheStore: Record<string, { url: string; expiresAt: number }> = {};
+let persistentCacheStore: Record<string, { url: string; expiresAt: number; version?: string | null }> = {};
 let batchTimer: ReturnType<typeof setTimeout> | null = null;
 
 if (hasStorage) {
@@ -17,9 +30,13 @@ if (hasStorage) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
         Object.entries(parsed).forEach(([key, value]: [string, any]) => {
-          if (value && typeof value.url === 'string' && typeof value.expiresAt === 'number') {
-            persistentCacheStore[key] = { url: value.url, expiresAt: value.expiresAt };
-          }
+    if (value && typeof value.url === 'string' && typeof value.expiresAt === 'number') {
+      persistentCacheStore[key] = {
+        url: value.url,
+        expiresAt: value.expiresAt,
+        version: value.version ?? null,
+      };
+    }
         });
       }
     }
@@ -42,7 +59,8 @@ function now() {
 }
 
 function getCacheKey(urlOrKey: string) {
-  return urlOrKey;
+  const extracted = extractKeyFromUrl(urlOrKey);
+  return extracted || urlOrKey;
 }
 
 function getPersistentEntry(urlOrKey: string) {
@@ -56,15 +74,18 @@ function getPersistentEntry(urlOrKey: string) {
   return undefined;
 }
 
-function setPersistentEntry(urlOrKey: string, url: string, expiresAt: number) {
-  persistentCacheStore[urlOrKey] = { url, expiresAt };
+function setPersistentEntry(urlOrKey: string, url: string, expiresAt: number, version?: string | null) {
+  persistentCacheStore[urlOrKey] = { url, expiresAt, version: version ?? null };
   persistStore();
 }
 
-function getCachedPresignedUrlInternal(urlOrKey: string) {
+function getCachedPresignedUrlInternal(urlOrKey: string, version?: string | null, marginMs = DEFAULT_REFRESH_MARGIN_MS) {
   const cacheKey = getCacheKey(urlOrKey);
   const cached = presignedCache.get(cacheKey);
-  if (cached && cached.expiresAt > now()) {
+  if (cached && cached.expiresAt - marginMs > now()) {
+    if (version && cached.version && cached.version !== version) {
+      return undefined;
+    }
     return cached.url;
   }
   if (cached) {
@@ -73,16 +94,23 @@ function getCachedPresignedUrlInternal(urlOrKey: string) {
   const persistent = getPersistentEntry(cacheKey);
   if (persistent) {
     presignedCache.set(cacheKey, persistent);
-    return persistent.url;
+    if (persistent.expiresAt - marginMs > now()) {
+      if (version && persistent.version && persistent.version !== version) {
+        return undefined;
+      }
+      return persistent.url;
+    }
+    presignedCache.delete(cacheKey);
   }
   return undefined;
 }
 
-function setCachedPresignedUrl(urlOrKey: string, value: string, expiresAt?: number) {
+function setCachedPresignedUrl(urlOrKey: string, value: string, expiresAt?: number, version?: string | null) {
   const cacheKey = getCacheKey(urlOrKey);
   const expiry = typeof expiresAt === 'number' ? expiresAt : now() + PRESIGNED_CACHE_TTL;
-  presignedCache.set(cacheKey, { url: value, expiresAt: expiry });
-  setPersistentEntry(cacheKey, value, expiry);
+  const entry: CachedEntry = { url: value, expiresAt: expiry, version: version ?? null };
+  presignedCache.set(cacheKey, entry);
+  setPersistentEntry(cacheKey, value, expiry, entry.version);
 }
 
 export function clearPresignedCache() {
@@ -137,16 +165,30 @@ export function extractKeyFromUrl(url: string): string | null {
   return null;
 }
 
-export function getCachedPresignedUrl(urlOrKey: string): string | undefined {
-  return getCachedPresignedUrlInternal(urlOrKey);
+export function getCachedPresignedUrl(
+  urlOrKey: string,
+  version?: string | null,
+  marginMs?: number,
+): string | undefined {
+  return getCachedPresignedUrlInternal(urlOrKey, version, marginMs);
 }
 
 interface PresignOptions {
   forceRefresh?: boolean;
+  expiresIn?: number;
+  refreshMarginMs?: number;
 }
 
-function enqueueBatchRequest(urlOrKey: string): Promise<string> {
+// 批次處理的最大等待時間（毫秒）
+const BATCH_WAIT_TIME = 16; // 約一幀的時間，讓多個請求可以批次處理
+const MAX_BATCH_SIZE = 50; // 每批次最多處理的 URL 數量
+
+function enqueueBatchRequest(urlOrKey: string, options: PresignOptions = {}): Promise<string> {
   if (pendingPresigned.has(urlOrKey)) {
+    const existing = batchQueue.get(urlOrKey);
+    if (existing) {
+      existing.options = { ...existing.options, ...options };
+    }
     return pendingPresigned.get(urlOrKey)!;
   }
 
@@ -155,17 +197,27 @@ function enqueueBatchRequest(urlOrKey: string): Promise<string> {
     if (existing) {
       existing.resolvers.push(resolve);
       existing.rejecters.push(reject);
+      existing.options = { ...existing.options, ...options };
     } else {
-      batchQueue.set(urlOrKey, { resolvers: [resolve], rejecters: [reject] });
+      batchQueue.set(urlOrKey, { resolvers: [resolve], rejecters: [reject], options });
     }
   });
 
   pendingPresigned.set(urlOrKey, promise);
-  if (!batchTimer) {
+  
+  // 如果批次隊列已經達到最大大小，立即觸發處理
+  if (batchQueue.size >= MAX_BATCH_SIZE) {
+    if (batchTimer) {
+      clearTimeout(batchTimer);
+      batchTimer = null;
+    }
+    flushBatchQueue();
+  } else if (!batchTimer) {
+    // 否則等待一小段時間讓更多請求可以批次處理
     batchTimer = setTimeout(() => {
       batchTimer = null;
       flushBatchQueue();
-    }, 0);
+    }, BATCH_WAIT_TIME);
   }
 
   return promise;
@@ -173,30 +225,49 @@ function enqueueBatchRequest(urlOrKey: string): Promise<string> {
 
 async function flushBatchQueue() {
   if (!batchQueue.size) return;
+
   const entries = Array.from(batchQueue.entries());
   batchQueue.clear();
 
-  const urls = entries.map(([url]) => url);
+  const processChunk = async (chunk: Array<[string, BatchQueueEntry]>) => {
+    const urls = chunk.map(([url]) => url);
+    const expiresIn = chunk[0]?.[1].options?.expiresIn;
+    try {
+      const { data } = await api.post('/uploads/presigned/batch', { urls, expiresIn });
+      const responseMap: Record<
+        string,
+        { url: string; expiresAt?: string | null; etag?: string | null } | string
+      > = data?.urls || {};
+      chunk.forEach(([url, { resolvers, rejecters }]) => {
+        const record = responseMap[url];
+        const signed = typeof record === 'string' ? record || url : record?.url || url;
+        const expiresAt =
+          typeof record === 'object' && record?.expiresAt ? new Date(record?.expiresAt).getTime() : undefined;
+        const version = typeof record === 'object' ? record?.etag ?? null : null;
+        setCachedPresignedUrl(url, signed, expiresAt, version);
+        pendingPresigned.delete(url);
+        resolvers.forEach((resolve) => resolve(signed));
+        rejecters.length = 0;
+      });
+    } catch (error) {
+      console.error('Failed to get batch presigned URLs:', error);
+      chunk.forEach(([url, { rejecters }]) => {
+        pendingPresigned.delete(url);
+        rejecters.forEach((reject) => reject(error));
+      });
+    }
+  };
 
-  try {
-    const { data } = await api.post('/uploads/presigned/batch', { urls });
-    const responseMap: Record<string, { url: string; expiresAt?: string } | string> = data?.urls || {};
-    entries.forEach(([url, { resolvers, rejecters }]) => {
-      const record = responseMap[url];
-      const signed = typeof record === 'string' ? record || url : record?.url || url;
-      const expiresAt = typeof record === 'object' && record?.expiresAt ? new Date(record.expiresAt).getTime() : undefined;
-      setCachedPresignedUrl(url, signed, expiresAt);
-      pendingPresigned.delete(url);
-      resolvers.forEach((resolve) => resolve(signed));
-      rejecters.length = 0;
-    });
-  } catch (error) {
-    console.error('Failed to get batch presigned URLs:', error);
-    entries.forEach(([url, { rejecters }]) => {
-      pendingPresigned.delete(url);
-      rejecters.forEach((reject) => reject(error));
-    });
+  if (entries.length > MAX_BATCH_SIZE) {
+    const chunks: Array<Array<[string, BatchQueueEntry]>> = [];
+    for (let i = 0; i < entries.length; i += MAX_BATCH_SIZE) {
+      chunks.push(entries.slice(i, i + MAX_BATCH_SIZE));
+    }
+    await Promise.allSettled(chunks.map(processChunk));
+    return;
   }
+
+  await processChunk(entries);
 }
 
 /**
@@ -208,20 +279,26 @@ export async function getPresignedUrl(urlOrKey: string, options: PresignOptions 
   }
 
   if (!options.forceRefresh) {
-    const cached = getCachedPresignedUrlInternal(urlOrKey);
+    const cached = getCachedPresignedUrlInternal(
+      urlOrKey,
+      undefined,
+      options.refreshMarginMs ?? DEFAULT_REFRESH_MARGIN_MS,
+    );
     if (cached) {
       return cached;
     }
-    return enqueueBatchRequest(urlOrKey);
+    return enqueueBatchRequest(urlOrKey, options);
   }
 
   const key = extractKeyFromUrl(urlOrKey);
   if (!key) return urlOrKey;
+
   try {
-    const { data } = await api.post('/uploads/presigned', { key });
+    const { data } = await api.post('/uploads/presigned', { key, expiresIn: options.expiresIn });
     const signed = data?.url || urlOrKey;
     const expiresAt = data?.expiresAt ? new Date(data.expiresAt).getTime() : undefined;
-    setCachedPresignedUrl(urlOrKey, signed, expiresAt);
+    const version = data?.etag ?? null;
+    setCachedPresignedUrl(urlOrKey, signed, expiresAt, version);
     return signed;
   } catch (error) {
     console.error('Failed to refresh presigned URL:', error);
@@ -232,7 +309,7 @@ export async function getPresignedUrl(urlOrKey: string, options: PresignOptions 
 /**
  * 批量獲取預簽名 URL
  */
-export async function getPresignedUrls(urls: string[]): Promise<Map<string, string>> {
+export async function getPresignedUrls(urls: string[], options: PresignOptions = {}): Promise<Map<string, string>> {
   const urlMap = new Map<string, string>();
   const minioTargets = urls.filter(isMinIOUrl);
   const otherTargets = urls.filter((url) => !isMinIOUrl(url));
@@ -244,20 +321,44 @@ export async function getPresignedUrls(urls: string[]): Promise<Map<string, stri
     return urlMap;
   }
 
+  const targetsToFetch: string[] = [];
+  const refreshMargin = options.refreshMarginMs ?? DEFAULT_REFRESH_MARGIN_MS;
+  uniqueTargets.forEach((url) => {
+    if (!options.forceRefresh) {
+      const cached = getCachedPresignedUrlInternal(url, undefined, refreshMargin);
+      if (cached) {
+        urlMap.set(url, cached);
+        return;
+      }
+    }
+    targetsToFetch.push(url);
+  });
+
+  if (!targetsToFetch.length) {
+    return urlMap;
+  }
+
   try {
-    const { data } = await api.post('/uploads/presigned/batch', { urls: uniqueTargets });
-    const responseMap: Record<string, { url: string; expiresAt?: string } | string> = data?.urls || {};
-    uniqueTargets.forEach((url) => {
+    const { data } = await api.post('/uploads/presigned/batch', {
+      urls: targetsToFetch,
+      expiresIn: options.expiresIn,
+    });
+    const responseMap: Record<string, { url: string; expiresAt?: string | null; etag?: string | null } | string> =
+      data?.urls || {};
+    targetsToFetch.forEach((url) => {
       const record = responseMap[url];
       const signed = typeof record === 'string' ? record || url : record?.url || url;
       const expiresAt = typeof record === 'object' && record?.expiresAt ? new Date(record.expiresAt).getTime() : undefined;
-      setCachedPresignedUrl(url, signed, expiresAt);
+      const version = typeof record === 'object' ? record?.etag ?? null : null;
+      setCachedPresignedUrl(url, signed, expiresAt, version);
       urlMap.set(url, signed);
     });
   } catch (error) {
     console.error('Failed to batch fetch presigned URLs:', error);
     uniqueTargets.forEach((url) => {
-      urlMap.set(url, url);
+      if (!urlMap.has(url)) {
+        urlMap.set(url, url);
+      }
     });
   }
 

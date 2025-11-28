@@ -8,6 +8,9 @@ import { getPresignedUrls, isMinIOUrl } from '../utils/imageUtils';
 const COVER_LABEL = 'cover';
 const ENDING_LABEL = 'ending';
 const INITIAL_BRANCH_ID = 'Story';
+const BATCH_SIZE = 10;
+const BATCH_DELAY_MS = 400;
+const INITIAL_SCENE_COUNT = 3;
 interface CgDialogue {
   speaker?: string;
   text: string;
@@ -64,47 +67,114 @@ interface CgPlayerProps {
   script: CgScript | null;
 }
 
+function chunkArray<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 function CgPlayer({ script }: CgPlayerProps) {
-  const [resolvedScript, setResolvedScript] = useState<CgScript | null>(null);
   const [presignedUrlsReady, setPresignedUrlsReady] = useState(true);
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
+  const [presignedMap, setPresignedMap] = useState<Map<string, string>>(() => new Map());
   const scriptSignature = useMemo(() => (script ? JSON.stringify(script) : null), [script]);
+  const resolvedScript = useMemo(() => (script ? rewriteCgAssets(script, presignedMap) : null), [script, presignedMap]);
 
   useEffect(() => {
     let active = true;
-    async function hydrate() {
-      const baseScript = script;
-      if (!baseScript) {
-        setResolvedScript(null);
-        setPresignedUrlsReady(true);
-        setImagesPreloaded(false);
-        return;
-      }
-      const urls = new Set<string>();
-      collectCgAssetUrls(baseScript, urls);
-      const targets = Array.from(urls).filter((url) => isMinIOUrl(url));
-      if (!targets.length) {
-        setResolvedScript(baseScript);
-        setPresignedUrlsReady(true);
+    const baseScript = script;
+    setPresignedMap(new Map());
+    if (!baseScript) {
+      setPresignedUrlsReady(true);
+      setImagesPreloaded(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    const urls = new Set<string>();
+    collectCgAssetUrls(baseScript, urls);
+    const targets = Array.from(urls).filter((url) => isMinIOUrl(url));
+    if (!targets.length) {
+      setPresignedUrlsReady(true);
+      return () => {
+        active = false;
+      };
+    }
+
+    const scenes = Array.isArray(baseScript.scenes) ? baseScript.scenes.filter((scene) => scene?.id) : [];
+    const startLabel =
+      baseScript.startScene && scenes.some((scene) => scene.id === baseScript.startScene)
+        ? baseScript.startScene
+        : scenes[0]?.id;
+    const orderedScenes: CgScene[] = [];
+    if (startLabel) {
+      const startIndex = scenes.findIndex((scene) => scene.id === startLabel);
+      if (startIndex >= 0) {
+        for (let i = startIndex; i < scenes.length; i += 1) {
+          orderedScenes.push(scenes[i]);
+        }
+        for (let i = 0; i < startIndex; i += 1) {
+          orderedScenes.push(scenes[i]);
+        }
       } else {
-        setPresignedUrlsReady(false);
-        setResolvedScript(null);
-        try {
-          const map = await getPresignedUrls(targets);
+        orderedScenes.push(...scenes);
+      }
+    } else {
+      orderedScenes.push(...scenes);
+    }
+
+    const initialSceneIds = orderedScenes.slice(0, INITIAL_SCENE_COUNT);
+    const coverBucket = new Set<string>();
+    if (baseScript.cover) {
+      collectCgAssetUrls(baseScript.cover, coverBucket);
+    }
+    const sceneBucket = new Set<string>();
+    initialSceneIds.forEach((scene) => collectCgAssetUrls(scene, sceneBucket));
+    const initialTargets = Array.from(new Set([...coverBucket, ...sceneBucket])).filter((url) => isMinIOUrl(url));
+    const restTargets = targets.filter((url) => !initialTargets.includes(url));
+
+    const updateMap = (map: Map<string, string>) => {
+      setPresignedMap((prev) => {
+        const next = new Map(prev);
+        map.forEach((value, key) => next.set(key, value));
+        return next;
+      });
+    };
+
+    async function hydrate() {
+      setPresignedUrlsReady(false);
+      try {
+        if (initialTargets.length) {
+          const initialMap = await getPresignedUrls(initialTargets);
           if (!active) return;
-          setResolvedScript(rewriteCgAssets(baseScript, map));
-        } catch (error) {
-          console.error('Failed to resolve CG assets', error);
+          updateMap(initialMap);
+        }
+        setPresignedUrlsReady(true);
+        const batches = chunkArray(restTargets, BATCH_SIZE);
+        for (const batch of batches) {
           if (!active) return;
-          setResolvedScript(baseScript);
-        } finally {
-          if (active) {
-            setPresignedUrlsReady(true);
+          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+          try {
+            const batchMap = await getPresignedUrls(batch);
+            if (!active) return;
+            updateMap(batchMap);
+          } catch (innerError) {
+            console.error('Failed to resolve CG asset batch', innerError);
+            break;
           }
+        }
+      } catch (error) {
+        console.error('Failed to resolve CG assets', error);
+        if (active) {
+          setPresignedUrlsReady(true);
         }
       }
     }
+
     hydrate();
     return () => {
       active = false;

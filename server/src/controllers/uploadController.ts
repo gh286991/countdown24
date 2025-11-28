@@ -6,6 +6,7 @@ import { MINIO_PRESIGNED_EXPIRES } from '../config/index.js';
 import {
   createAssetRecord,
   findAssetByEtag,
+  findAssetByKey,
   listAssetsForUser,
   markAssetUsed,
   deleteAsset,
@@ -120,6 +121,11 @@ export async function getPresignedUrlForAsset(req: AuthenticatedRequest, res: Re
     return res.status(400).json({ message: '請提供 url 或 key' });
   }
 
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(400).json({ message: '無法識別使用者' });
+  }
+
   try {
     // 從 URL 中提取 key，或直接使用提供的 key
     const fileKey = key || extractKeyFromUrl(url);
@@ -128,12 +134,26 @@ export async function getPresignedUrlForAsset(req: AuthenticatedRequest, res: Re
     // 否則使用配置檔中的預設值
     const maxExpiration = MINIO_PRESIGNED_EXPIRES;
     const expiration = expiresIn ? Math.min(Number(expiresIn), maxExpiration) : undefined;
-    const presignedUrl = await getPresignedUrl(fileKey, expiration);
-    const expiresAt = computePresignedExpiresAt(expiration);
+    let asset = fileKey ? await findAssetByKey(userId, fileKey) : null;
+    let presignedUrl: string;
+    let expiresAtDate: Date | null = null;
+    if (asset && isPresignedValid(asset) && asset.presignedUrl) {
+      presignedUrl = asset.presignedUrl;
+      expiresAtDate = asset.presignedExpiresAt ? new Date(asset.presignedExpiresAt) : null;
+    } else {
+      presignedUrl = await getPresignedUrl(fileKey, expiration);
+      expiresAtDate = computePresignedExpiresAt(expiration);
+      if (asset) {
+        await updateAssetPresigned(asset.id, presignedUrl, expiresAtDate);
+      }
+    }
+
     return res.json({
       url: presignedUrl,
       expiresIn: expiration,
-      expiresAt: expiresAt.toISOString(),
+      expiresAt: expiresAtDate ? expiresAtDate.toISOString() : null,
+      key: fileKey,
+      etag: asset?.etag || null,
     });
   } catch (error) {
     console.error('Failed to generate presigned URL:', error);
@@ -154,11 +174,24 @@ export async function getBatchPresignedUrls(req: AuthenticatedRequest, res: Resp
     return res.status(400).json({ message: '請提供 urls 或 keys' });
   }
 
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(400).json({ message: '無法識別使用者' });
+  }
+
   const maxExpiration = MINIO_PRESIGNED_EXPIRES;
   const expiration = expiresIn ? Math.min(Number(expiresIn), maxExpiration) : undefined;
 
-  const responseMap: Record<string, { url: string; expiresAt: string | null }> = {};
-  const keyCache = new Map<string, string>();
+  type AssetResult = Awaited<ReturnType<typeof findAssetByKey>>;
+  const responseMap: Record<
+    string,
+    { url: string; expiresAt: string | null; etag?: string | null; key?: string }
+  > = {};
+  const keyCache = new Map<
+    string,
+    { url: string; expiresAt: string | null; etag?: string | null; key?: string }
+  >();
+  const assetCache = new Map<string, AssetResult | null>();
 
   const queue: Array<{ identifier: string; key: string | null }> = [];
   const seen = new Set<string>();
@@ -175,24 +208,60 @@ export async function getBatchPresignedUrls(req: AuthenticatedRequest, res: Resp
     queue.push({ identifier: key, key });
   });
 
+  const resolveAsset = async (key: string): Promise<AssetResult | null> => {
+    if (assetCache.has(key)) {
+      return assetCache.get(key) as AssetResult | null;
+    }
+    const asset = await findAssetByKey(userId, key);
+    assetCache.set(key, asset);
+    return asset;
+  };
+
   await Promise.all(
     queue.map(async ({ identifier, key }) => {
       if (!key) {
         responseMap[identifier] = { url: identifier, expiresAt: null };
         return;
       }
+
+      if (keyCache.has(key)) {
+        responseMap[identifier] = { ...(keyCache.get(key) as any), key };
+        return;
+      }
+
       try {
-        if (!keyCache.has(key)) {
-          const signed = await getPresignedUrl(key, expiration);
-          keyCache.set(key, signed);
+        const asset = await resolveAsset(key);
+        if (asset && asset.presignedUrl && isPresignedValid(asset)) {
+          const expiresAtStr = asset.presignedExpiresAt
+            ? new Date(asset.presignedExpiresAt).toISOString()
+            : null;
+          const entry = {
+            url: asset.presignedUrl,
+            expiresAt: expiresAtStr,
+            etag: asset.etag,
+            key,
+          };
+          keyCache.set(key, entry);
+          responseMap[identifier] = entry;
+          return;
         }
-        responseMap[identifier] = {
-          url: keyCache.get(key) as string,
-          expiresAt: computePresignedExpiresAt(expiration).toISOString(),
+
+        const signed = await getPresignedUrl(key, expiration);
+        const expiresAtStr = computePresignedExpiresAt(expiration).toISOString();
+        const entry = {
+          url: signed,
+          expiresAt: expiresAtStr,
+          etag: asset?.etag || null,
+          key,
         };
+        keyCache.set(key, entry);
+        responseMap[identifier] = entry;
+        if (asset) {
+          await updateAssetPresigned(asset.id, signed, new Date(expiresAtStr));
+        }
       } catch (error) {
         console.error('Failed to batch presign asset:', key, error);
-        responseMap[identifier] = { url: identifier, expiresAt: null };
+        responseMap[identifier] = { url: identifier, expiresAt: null, key };
       }
     }),
   );
