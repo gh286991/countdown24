@@ -16,6 +16,8 @@ interface Crop {
   height: number;
 }
 
+type HandleMode = 'move' | 'tl' | 'tr' | 'bl' | 'br';
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
 }
@@ -30,12 +32,21 @@ function buildFileName(input: string, fallbackExtension: string, forceExtension?
 
 function ImageCropModal({ file, isOpen, onCancel, onConfirm }: ImageCropModalProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const dragHandleRef = useRef<{
+    mode: HandleMode;
+    startX: number;
+    startY: number;
+    initialCrop: Crop;
+    canvasWidth: number;
+    canvasHeight: number;
+  } | null>(null);
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [crop, setCrop] = useState<Crop | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const [fileName, setFileName] = useState(file.name || 'image.png');
+  const [draggingHandle, setDraggingHandle] = useState<HandleMode | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -125,6 +136,104 @@ function ImageCropModal({ file, isOpen, onCancel, onConfirm }: ImageCropModalPro
     setStartPoint(null);
   }, [isDrawing]);
 
+  const startHandleDrag = useCallback(
+    (mode: HandleMode, event: React.PointerEvent) => {
+      if (!crop || canvasSize.width === 0 || canvasSize.height === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragHandleRef.current = {
+        mode,
+        startX: event.clientX,
+        startY: event.clientY,
+        initialCrop: { ...crop },
+        canvasWidth: canvasSize.width,
+        canvasHeight: canvasSize.height,
+      };
+      setDraggingHandle(mode);
+    },
+    [canvasSize.height, canvasSize.width, crop],
+  );
+
+  const handleHandleMove = useCallback((event: PointerEvent) => {
+    const info = dragHandleRef.current;
+    if (!info) return;
+    event.preventDefault();
+    const { startX, startY, initialCrop, canvasWidth, canvasHeight, mode } = info;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    const MIN_SIZE = 24;
+    let { x, y, width, height } = initialCrop;
+
+    if (mode === 'move') {
+      const newX = clamp(initialCrop.x + deltaX, 0, canvasWidth - initialCrop.width);
+      const newY = clamp(initialCrop.y + deltaY, 0, canvasHeight - initialCrop.height);
+      setCrop({ x: newX, y: newY, width, height });
+      return;
+    }
+
+    switch (mode) {
+      case 'tl': {
+        const newX = clamp(initialCrop.x + deltaX, 0, initialCrop.x + initialCrop.width - MIN_SIZE);
+        const newY = clamp(initialCrop.y + deltaY, 0, initialCrop.y + initialCrop.height - MIN_SIZE);
+        width = initialCrop.width + (initialCrop.x - newX);
+        height = initialCrop.height + (initialCrop.y - newY);
+        x = newX;
+        y = newY;
+        break;
+      }
+      case 'tr': {
+        const newRight = clamp(initialCrop.x + initialCrop.width + deltaX, initialCrop.x + MIN_SIZE, canvasWidth);
+        const newY = clamp(initialCrop.y + deltaY, 0, initialCrop.y + initialCrop.height - MIN_SIZE);
+        width = newRight - initialCrop.x;
+        height = initialCrop.height + (initialCrop.y - newY);
+        y = newY;
+        x = initialCrop.x;
+        break;
+      }
+      case 'bl': {
+        const newBottom = clamp(initialCrop.y + initialCrop.height + deltaY, initialCrop.y + MIN_SIZE, canvasHeight);
+        const newX = clamp(initialCrop.x + deltaX, 0, initialCrop.x + initialCrop.width - MIN_SIZE);
+        height = newBottom - initialCrop.y;
+        width = initialCrop.width + (initialCrop.x - newX);
+        x = newX;
+        y = initialCrop.y;
+        break;
+      }
+      case 'br': {
+        const newRight = clamp(initialCrop.x + initialCrop.width + deltaX, initialCrop.x + MIN_SIZE, canvasWidth);
+        const newBottom = clamp(initialCrop.y + initialCrop.height + deltaY, initialCrop.y + MIN_SIZE, canvasHeight);
+        width = newRight - initialCrop.x;
+        height = newBottom - initialCrop.y;
+        x = initialCrop.x;
+        y = initialCrop.y;
+        break;
+      }
+      default:
+        break;
+    }
+
+    width = clamp(width, MIN_SIZE, canvasWidth - x);
+    height = clamp(height, MIN_SIZE, canvasHeight - y);
+    setCrop({ x, y, width, height });
+  }, []);
+
+  useEffect(() => {
+    if (!draggingHandle) return;
+    const move = (event: PointerEvent) => handleHandleMove(event);
+    const up = () => {
+      dragHandleRef.current = null;
+      setDraggingHandle(null);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+  }, [draggingHandle, handleHandleMove]);
+
   const confirmCrop = useCallback(() => {
     if (!imageEl || !crop) return;
     const safeWidth = Math.max(10, crop.width);
@@ -197,16 +306,64 @@ function ImageCropModal({ file, isOpen, onCancel, onConfirm }: ImageCropModalPro
           <div className="md:col-span-2">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3 overflow-auto">
               {canvasSize.width > 0 && canvasSize.height > 0 ? (
-                <canvas
-                  ref={canvasRef}
-                  width={canvasSize.width}
-                  height={canvasSize.height}
-                  className="max-w-full cursor-crosshair"
-                  onMouseDown={handlePointerDown}
-                  onMouseMove={handlePointerMove}
-                  onMouseUp={handlePointerUp}
-                  onMouseLeave={handlePointerUp}
-                />
+                <div
+                  className="relative"
+                  style={{ width: canvasSize.width, height: canvasSize.height }}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    width={canvasSize.width}
+                    height={canvasSize.height}
+                    className="cursor-crosshair block"
+                    onMouseDown={handlePointerDown}
+                    onMouseMove={handlePointerMove}
+                    onMouseUp={handlePointerUp}
+                    onMouseLeave={handlePointerUp}
+                  />
+                  {crop && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: crop.x,
+                          top: crop.y,
+                          width: crop.width,
+                          height: crop.height,
+                        }}
+                      >
+                        <div className="absolute inset-0 border border-yellow-300 pointer-events-none" />
+                        <div
+                          className="absolute inset-0 cursor-move pointer-events-auto"
+                          onPointerDown={(event) => startHandleDrag('move', event)}
+                        />
+                        <button
+                          type="button"
+                          className="absolute -left-2 -top-2 w-4 h-4 rounded-full bg-yellow-300 border border-slate-900 shadow pointer-events-auto cursor-nwse-resize"
+                          onPointerDown={(event) => startHandleDrag('tl', event)}
+                          aria-label="調整左上角"
+                        />
+                        <button
+                          type="button"
+                          className="absolute -right-2 -top-2 w-4 h-4 rounded-full bg-yellow-300 border border-slate-900 shadow pointer-events-auto cursor-nesw-resize"
+                          onPointerDown={(event) => startHandleDrag('tr', event)}
+                          aria-label="調整右上角"
+                        />
+                        <button
+                          type="button"
+                          className="absolute -left-2 -bottom-2 w-4 h-4 rounded-full bg-yellow-300 border border-slate-900 shadow pointer-events-auto cursor-nesw-resize"
+                          onPointerDown={(event) => startHandleDrag('bl', event)}
+                          aria-label="調整左下角"
+                        />
+                        <button
+                          type="button"
+                          className="absolute -right-2 -bottom-2 w-4 h-4 rounded-full bg-yellow-300 border border-slate-900 shadow pointer-events-auto cursor-nwse-resize"
+                          onPointerDown={(event) => startHandleDrag('br', event)}
+                          aria-label="調整右下角"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="h-64 flex items-center justify-center text-gray-500 text-sm">載入圖片中...</div>
               )}
