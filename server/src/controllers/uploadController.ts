@@ -9,7 +9,22 @@ import {
   listAssetsForUser,
   markAssetUsed,
   deleteAsset,
+  updateAssetPresigned,
 } from '../services/assetLibraryService.js';
+
+const PRESIGNED_BUFFER_MS = 60 * 1000;
+
+function computePresignedExpiresAt(expiresInSeconds?: number) {
+  const seconds = typeof expiresInSeconds === 'number' ? expiresInSeconds : MINIO_PRESIGNED_EXPIRES;
+  return new Date(Date.now() + seconds * 1000);
+}
+
+function isPresignedValid(asset: any) {
+  if (!asset?.presignedUrl || !asset?.presignedExpiresAt) return false;
+  const expiresAt = new Date(asset.presignedExpiresAt).getTime();
+  if (Number.isNaN(expiresAt)) return false;
+  return expiresAt - PRESIGNED_BUFFER_MS > Date.now();
+}
 
 export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {
@@ -28,7 +43,6 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
 
   try {
     let folder = typeof req.body?.folder === 'string' ? req.body.folder : undefined;
-    const usePresigned = req.body?.usePresigned === 'true' || req.body?.usePresigned === true;
     const isAssetLibraryUpload = req.body?.assetLibrary === 'true' || req.body?.assetLibrary === true;
     if (!folder && isAssetLibraryUpload) {
       folder = `users/${userId}/library`;
@@ -38,35 +52,32 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
     const existingAsset = await findAssetByEtag(userId, computedEtag);
     if (existingAsset) {
       await markAssetUsed(existingAsset.id);
-      let reuseUrl = existingAsset.url;
-      if (usePresigned) {
+      let reuseUrl = existingAsset.presignedUrl || existingAsset.url;
+      if (!isPresignedValid(existingAsset)) {
         try {
           reuseUrl = await getPresignedUrl(existingAsset.key);
+          await updateAssetPresigned(existingAsset.id, reuseUrl, computePresignedExpiresAt());
         } catch (presignedError) {
-          console.warn('Failed to generate presigned URL for existing asset, using stored URL:', presignedError);
+          console.warn('Failed to refresh presigned URL for existing asset, using stored URL:', presignedError);
+          reuseUrl = existingAsset.url;
         }
       }
 
       return res.status(200).json({
         key: existingAsset.key,
         url: reuseUrl,
-        ...(usePresigned && { originalUrl: existingAsset.url }),
+        originalUrl: existingAsset.url,
         assetId: existingAsset.id,
         reused: true,
       });
     }
-    
+
     const result = await uploadImage(file.buffer, file.mimetype, folder);
-    
-    // 如果請求使用預簽名 URL，生成一個
-    let finalUrl = result.url;
-    if (usePresigned) {
-      try {
-        finalUrl = await getPresignedUrl(result.key);
-      } catch (presignedError) {
-        console.warn('Failed to generate presigned URL, using regular URL:', presignedError);
-        // 如果生成預簽名 URL 失敗，回退到原始 URL
-      }
+    let presignedUrl: string | null = null;
+    try {
+      presignedUrl = await getPresignedUrl(result.key);
+    } catch (error) {
+      console.warn('Failed to generate presigned URL, using regular URL:', error);
     }
     const folderFromKey = result.key.includes('/') ? result.key.split('/').slice(0, -1).join('/') : null;
     const asset = await createAssetRecord({
@@ -78,15 +89,16 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
       contentType: file.mimetype,
       size: (file as any).size,
       folder: folderFromKey || folder,
+      presignedUrl,
+      presignedExpiresAt: presignedUrl ? computePresignedExpiresAt() : null,
     });
-    
+
     return res.status(201).json({
       key: asset.key,
-      url: finalUrl,
+      url: asset.presignedUrl || asset.url,
       assetId: asset.id,
       reused: false,
-      // 如果使用預簽名 URL，也提供原始 URL 供參考
-      ...(usePresigned && { originalUrl: asset.url }),
+      originalUrl: asset.url,
     });
   } catch (error) {
     console.error('Upload failed:', error);
@@ -116,12 +128,12 @@ export async function getPresignedUrlForAsset(req: AuthenticatedRequest, res: Re
     // 否則使用配置檔中的預設值
     const maxExpiration = MINIO_PRESIGNED_EXPIRES;
     const expiration = expiresIn ? Math.min(Number(expiresIn), maxExpiration) : undefined;
-    
     const presignedUrl = await getPresignedUrl(fileKey, expiration);
-    
+    const expiresAt = computePresignedExpiresAt(expiration);
     return res.json({
       url: presignedUrl,
       expiresIn: expiration,
+      expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Failed to generate presigned URL:', error);
@@ -145,7 +157,7 @@ export async function getBatchPresignedUrls(req: AuthenticatedRequest, res: Resp
   const maxExpiration = MINIO_PRESIGNED_EXPIRES;
   const expiration = expiresIn ? Math.min(Number(expiresIn), maxExpiration) : undefined;
 
-  const responseMap: Record<string, string> = {};
+  const responseMap: Record<string, { url: string; expiresAt: string | null }> = {};
   const keyCache = new Map<string, string>();
 
   const queue: Array<{ identifier: string; key: string | null }> = [];
@@ -166,7 +178,7 @@ export async function getBatchPresignedUrls(req: AuthenticatedRequest, res: Resp
   await Promise.all(
     queue.map(async ({ identifier, key }) => {
       if (!key) {
-        responseMap[identifier] = identifier;
+        responseMap[identifier] = { url: identifier, expiresAt: null };
         return;
       }
       try {
@@ -174,10 +186,13 @@ export async function getBatchPresignedUrls(req: AuthenticatedRequest, res: Resp
           const signed = await getPresignedUrl(key, expiration);
           keyCache.set(key, signed);
         }
-        responseMap[identifier] = keyCache.get(key) as string;
+        responseMap[identifier] = {
+          url: keyCache.get(key) as string,
+          expiresAt: computePresignedExpiresAt(expiration).toISOString(),
+        };
       } catch (error) {
         console.error('Failed to batch presign asset:', key, error);
-        responseMap[identifier] = identifier;
+        responseMap[identifier] = { url: identifier, expiresAt: null };
       }
     }),
   );
@@ -210,7 +225,13 @@ export async function getAssetLibrary(req: AuthenticatedRequest, res: Response) 
     const normalized = items.map((asset) => ({
       id: asset.id,
       key: asset.key,
-      url: asset.url,
+      url: asset.presignedUrl || asset.url,
+      originalUrl: asset.url,
+      presignedUrl: asset.presignedUrl || null,
+      presignedExpiresAt:
+        asset.presignedExpiresAt instanceof Date
+          ? asset.presignedExpiresAt.toISOString()
+          : asset.presignedExpiresAt || null,
       etag: asset.etag,
       fileName: asset.fileName,
       folder: asset.folder,

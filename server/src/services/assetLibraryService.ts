@@ -12,6 +12,8 @@ interface CreateAssetPayload {
   contentType?: string;
   folder?: string;
   size?: number;
+  presignedUrl?: string | null;
+  presignedExpiresAt?: Date | null;
 }
 
 interface ListOptions {
@@ -44,6 +46,8 @@ export async function createAssetRecord(payload: CreateAssetPayload): Promise<Us
     updatedAt: now,
     lastUsedAt: now,
     usageCount: 1,
+    presignedUrl: payload.presignedUrl || null,
+    presignedExpiresAt: payload.presignedExpiresAt || null,
   };
   await Assets.insertOne(asset);
   return asset;
@@ -114,4 +118,18 @@ export async function deleteAsset(userId: string, assetId: string): Promise<User
   await deleteObject(asset.key);
   await Assets.deleteOne({ userId, id: assetId });
   return asset;
+}
+
+export async function updateAssetPresigned(assetId: string, presignedUrl: string, expiresAt: Date): Promise<void> {
+  if (!Assets) throw new Error('Database not initialized');
+  await Assets.updateOne(
+    { id: assetId },
+    {
+      $set: {
+        presignedUrl,
+        presignedExpiresAt: expiresAt,
+        updatedAt: new Date(),
+      },
+    },
+  );
 }

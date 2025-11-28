@@ -5,7 +5,37 @@ const PRESIGNED_CACHE_TTL = 45 * 60 * 1000; // 45 分鐘
 const presignedCache = new Map<string, { url: string; expiresAt: number }>();
 const pendingPresigned = new Map<string, Promise<string>>();
 const batchQueue = new Map<string, { resolvers: Array<(value: string) => void>; rejecters: Array<(error: any) => void> }>();
+const LOCAL_CACHE_KEY = 'countdown24::presignedCache_v1';
+const hasStorage = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+let persistentCacheStore: Record<string, { url: string; expiresAt: number }> = {};
 let batchTimer: ReturnType<typeof setTimeout> | null = null;
+
+if (hasStorage) {
+  try {
+    const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        Object.entries(parsed).forEach(([key, value]: [string, any]) => {
+          if (value && typeof value.url === 'string' && typeof value.expiresAt === 'number') {
+            persistentCacheStore[key] = { url: value.url, expiresAt: value.expiresAt };
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse persisted presigned cache', error);
+  }
+}
+
+function persistStore() {
+  if (!hasStorage) return;
+  try {
+    window.localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(persistentCacheStore));
+  } catch (error) {
+    console.warn('Failed to persist presigned cache', error);
+  }
+}
 
 function now() {
   return Date.now();
@@ -13,6 +43,22 @@ function now() {
 
 function getCacheKey(urlOrKey: string) {
   return urlOrKey;
+}
+
+function getPersistentEntry(urlOrKey: string) {
+  const entry = persistentCacheStore[urlOrKey];
+  if (!entry) return undefined;
+  if (entry.expiresAt > now()) {
+    return entry;
+  }
+  delete persistentCacheStore[urlOrKey];
+  persistStore();
+  return undefined;
+}
+
+function setPersistentEntry(urlOrKey: string, url: string, expiresAt: number) {
+  persistentCacheStore[urlOrKey] = { url, expiresAt };
+  persistStore();
 }
 
 function getCachedPresignedUrlInternal(urlOrKey: string) {
@@ -24,12 +70,19 @@ function getCachedPresignedUrlInternal(urlOrKey: string) {
   if (cached) {
     presignedCache.delete(cacheKey);
   }
+  const persistent = getPersistentEntry(cacheKey);
+  if (persistent) {
+    presignedCache.set(cacheKey, persistent);
+    return persistent.url;
+  }
   return undefined;
 }
 
-function setCachedPresignedUrl(urlOrKey: string, value: string) {
+function setCachedPresignedUrl(urlOrKey: string, value: string, expiresAt?: number) {
   const cacheKey = getCacheKey(urlOrKey);
-  presignedCache.set(cacheKey, { url: value, expiresAt: now() + PRESIGNED_CACHE_TTL });
+  const expiry = typeof expiresAt === 'number' ? expiresAt : now() + PRESIGNED_CACHE_TTL;
+  presignedCache.set(cacheKey, { url: value, expiresAt: expiry });
+  setPersistentEntry(cacheKey, value, expiry);
 }
 
 export function clearPresignedCache() {
@@ -39,6 +92,10 @@ export function clearPresignedCache() {
   if (batchTimer) {
     clearTimeout(batchTimer);
     batchTimer = null;
+  }
+  persistentCacheStore = {};
+  if (hasStorage) {
+    window.localStorage.removeItem(LOCAL_CACHE_KEY);
   }
 }
 
@@ -123,12 +180,15 @@ async function flushBatchQueue() {
 
   try {
     const { data } = await api.post('/uploads/presigned/batch', { urls });
-    const responseMap: Record<string, string> = data?.urls || {};
-    entries.forEach(([url, { resolvers }]) => {
-      const signed = responseMap[url] || url;
-      setCachedPresignedUrl(url, signed);
+    const responseMap: Record<string, { url: string; expiresAt?: string } | string> = data?.urls || {};
+    entries.forEach(([url, { resolvers, rejecters }]) => {
+      const record = responseMap[url];
+      const signed = typeof record === 'string' ? record || url : record?.url || url;
+      const expiresAt = typeof record === 'object' && record?.expiresAt ? new Date(record.expiresAt).getTime() : undefined;
+      setCachedPresignedUrl(url, signed, expiresAt);
       pendingPresigned.delete(url);
       resolvers.forEach((resolve) => resolve(signed));
+      rejecters.length = 0;
     });
   } catch (error) {
     console.error('Failed to get batch presigned URLs:', error);
@@ -160,7 +220,8 @@ export async function getPresignedUrl(urlOrKey: string, options: PresignOptions 
   try {
     const { data } = await api.post('/uploads/presigned', { key });
     const signed = data?.url || urlOrKey;
-    setCachedPresignedUrl(urlOrKey, signed);
+    const expiresAt = data?.expiresAt ? new Date(data.expiresAt).getTime() : undefined;
+    setCachedPresignedUrl(urlOrKey, signed, expiresAt);
     return signed;
   } catch (error) {
     console.error('Failed to refresh presigned URL:', error);
@@ -185,10 +246,12 @@ export async function getPresignedUrls(urls: string[]): Promise<Map<string, stri
 
   try {
     const { data } = await api.post('/uploads/presigned/batch', { urls: uniqueTargets });
-    const responseMap: Record<string, string> = data?.urls || {};
+    const responseMap: Record<string, { url: string; expiresAt?: string } | string> = data?.urls || {};
     uniqueTargets.forEach((url) => {
-      const signed = responseMap[url] || url;
-      setCachedPresignedUrl(url, signed);
+      const record = responseMap[url];
+      const signed = typeof record === 'string' ? record || url : record?.url || url;
+      const expiresAt = typeof record === 'object' && record?.expiresAt ? new Date(record.expiresAt).getTime() : undefined;
+      setCachedPresignedUrl(url, signed, expiresAt);
       urlMap.set(url, signed);
     });
   } catch (error) {

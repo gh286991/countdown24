@@ -66,7 +66,9 @@ interface CgPlayerProps {
 
 function CgPlayer({ script }: CgPlayerProps) {
   const [resolvedScript, setResolvedScript] = useState<CgScript | null>(null);
-  const [assetsReady, setAssetsReady] = useState(true);
+  const [presignedUrlsReady, setPresignedUrlsReady] = useState(true);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
   const scriptSignature = useMemo(() => (script ? JSON.stringify(script) : null), [script]);
 
   useEffect(() => {
@@ -75,7 +77,8 @@ function CgPlayer({ script }: CgPlayerProps) {
       const baseScript = script;
       if (!baseScript) {
         setResolvedScript(null);
-        setAssetsReady(true);
+        setPresignedUrlsReady(true);
+        setImagesPreloaded(false);
         return;
       }
       const urls = new Set<string>();
@@ -83,22 +86,22 @@ function CgPlayer({ script }: CgPlayerProps) {
       const targets = Array.from(urls).filter((url) => isMinIOUrl(url));
       if (!targets.length) {
         setResolvedScript(baseScript);
-        setAssetsReady(true);
-        return;
-      }
-      setAssetsReady(false);
-      setResolvedScript(null);
-      try {
-        const map = await getPresignedUrls(targets);
-        if (!active) return;
-        setResolvedScript(rewriteCgAssets(baseScript, map));
-      } catch (error) {
-        console.error('Failed to resolve CG assets', error);
-        if (!active) return;
-        setResolvedScript(baseScript);
-      } finally {
-        if (active) {
-          setAssetsReady(true);
+        setPresignedUrlsReady(true);
+      } else {
+        setPresignedUrlsReady(false);
+        setResolvedScript(null);
+        try {
+          const map = await getPresignedUrls(targets);
+          if (!active) return;
+          setResolvedScript(rewriteCgAssets(baseScript, map));
+        } catch (error) {
+          console.error('Failed to resolve CG assets', error);
+          if (!active) return;
+          setResolvedScript(baseScript);
+        } finally {
+          if (active) {
+            setPresignedUrlsReady(true);
+          }
         }
       }
     }
@@ -109,15 +112,91 @@ function CgPlayer({ script }: CgPlayerProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptSignature]);
 
+  // 手動預載所有圖片
+  useEffect(() => {
+    if (!resolvedScript || !presignedUrlsReady) {
+      setImagesPreloaded(false);
+      setPreloadProgress(0);
+      return;
+    }
+
+    let active = true;
+    const urls = new Set<string>();
+    collectCgAssetUrls(resolvedScript, urls);
+    const imageUrls = Array.from(urls);
+
+    if (imageUrls.length === 0) {
+      setImagesPreloaded(true);
+      setPreloadProgress(100);
+      return;
+    }
+
+    setImagesPreloaded(false);
+    setPreloadProgress(0);
+
+    let loadedCount = 0;
+    const total = imageUrls.length;
+
+    const loadImage = (url: string): Promise<void> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          if (active) {
+            loadedCount++;
+            setPreloadProgress(loadedCount / total);
+            resolve();
+          }
+        };
+        img.onerror = () => {
+          console.warn(`Failed to load image: ${url}`);
+          if (active) {
+            loadedCount++;
+            setPreloadProgress(loadedCount / total);
+            resolve(); // 即使失敗也繼續
+          }
+        };
+        img.src = url;
+      });
+    };
+
+    Promise.all(imageUrls.map(loadImage))
+      .then(() => {
+        if (active) {
+          setImagesPreloaded(true);
+          setPreloadProgress(100);
+        }
+      })
+      .catch((error) => {
+        console.error('Error preloading images:', error);
+        if (active) {
+          setImagesPreloaded(true); // 即使有錯誤也繼續
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [resolvedScript, presignedUrlsReady]);
+
   const config = useMemo(() => buildGameConfig(resolvedScript), [resolvedScript]);
 
   if (!config) {
     return <p className="text-gray-400">尚未設定 CG JSON 或內容解析失敗。</p>;
   }
-  if (!assetsReady) {
+  
+  if (!presignedUrlsReady || !resolvedScript) {
+    return (
+      <div className="flex h-[520px] w-full flex-col items-center justify-center text-sm text-gray-300">
+        <p>準備 CG 圖片連結中...</p>
+      </div>
+    );
+  }
+
+  if (!imagesPreloaded) {
     return (
       <div className="flex h-[520px] w-full flex-col items-center justify-center text-sm text-gray-300">
         <p>載入 CG 圖片中...</p>
+        <p className="text-xs text-gray-400">完成度 {Math.round(preloadProgress * 100)}%</p>
       </div>
     );
   }
@@ -126,24 +205,7 @@ function CgPlayer({ script }: CgPlayerProps) {
     <div className="relative overflow-hidden rounded-3xl bg-slate-900/80">
       <QueryParamProvider adapter={ReactRouter6Adapter}>
         <Game assets={{}} branches={config.branches} initialBranchId={INITIAL_BRANCH_ID}>
-          {(render, preloadRes, progress) => {
-            if (preloadRes.status === 'loading') {
-              return (
-                <div className="flex h-[520px] w-full flex-col items-center justify-center text-sm text-gray-300">
-                  <p>載入 CG 場景...</p>
-                  <p className="text-xs text-gray-400">完成度 {Math.round(progress * 100)}%</p>
-                </div>
-              );
-            }
-
-            if (preloadRes.status === 'failure') {
-              return (
-                <div className="flex h-[520px] w-full items-center justify-center text-sm text-red-300">
-                  無法載入圖片資源，請檢查 JSON 內的圖片連結。
-                </div>
-              );
-            }
-
+          {(render) => {
             return <div className="h-[520px] w-full">{render()}</div>;
           }}
         </Game>

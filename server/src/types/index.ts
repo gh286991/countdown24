@@ -143,4 +143,6 @@ export interface UserAsset {
   updatedAt: Date | string;
   lastUsedAt?: Date | string;
   usageCount?: number;
+  presignedUrl?: string | null;
+  presignedExpiresAt?: Date | string | null;
 }
