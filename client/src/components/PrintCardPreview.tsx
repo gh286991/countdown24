@@ -1,6 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { PresignedImage } from './PresignedImage';
 import type { PrintCard, PrintCardTemplate } from '../store/countdownSlice';
+import type { ReactElement } from 'react';
 
 interface PrintCardPreviewProps {
   card: Partial<PrintCard> & { day: number };
@@ -131,7 +132,7 @@ function PrintCardPreview({ card, variant = 'preview' }: PrintCardPreviewProps) 
     </div>
   );
 
-  const templates: Record<PrintCardTemplate, JSX.Element> = {
+  const templates: Record<PrintCardTemplate, ReactElement> = {
     imageLeft: (
       <div className="flex flex-col flex-1">
         <div className="grid grid-cols-[3fr_2fr] gap-3 flex-1 overflow-hidden">

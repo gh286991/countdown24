@@ -32,7 +32,7 @@ export async function compressImage(file: File, options: CompressOptions = {}): 
     return file;
   }
 
-  const { maxWidth, maxHeight, quality, mimeType } = { ...defaultOptions, ...options };
+  const { maxWidth, maxHeight, quality } = { ...defaultOptions, ...options };
   let image: HTMLImageElement | null = null;
   try {
     image = await loadImage(file);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Canvas as FabricCanvas, Textbox, Image as FabricImage } from 'fabric';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 import api from '../api/client';
 import type { VoucherDetail } from '../types/voucher';
 
@@ -48,7 +48,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     const canvas = fabricRef.current;
     if (!canvas) return;
     try {
-      const json = canvas.toJSON(['selectable', 'name']);
+      const json = (canvas.toJSON as (propertiesToInclude?: string[]) => any)(['selectable', 'name']);
       const preview = canvas.toDataURL({ format: 'png', multiplier: 2 });
       onChangeRef.current({ canvasJson: json, previewImage: preview });
     } catch (error) {
@@ -107,7 +107,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
       const rewrite = (node: any) => {
         if (!node) return;
         if (typeof node.text === 'string') {
-          node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_, label: string, digits: string) => {
+        node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_match: string, label: string, digits: string) => {
             const usePad = digits.length === 2;
             return `${label} ${usePad ? pad : plain}`;
           });
@@ -407,7 +407,6 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
       setBackground(color);
       return;
     }
-    // @ts-expect-error fabric typings
     if (typeof active.set === 'function') {
       active.set({ fill: color });
       canvas.requestRenderAll();

@@ -2,7 +2,6 @@ import { jsPDF } from 'jspdf';
 import type { PrintCard } from '../store/countdownSlice';
 
 const A4_WIDTH = 210;
-const A4_HEIGHT = 297;
 const A4_MARGIN = 8;
 const CARD_GAP = 4;
 const COLS = 2;

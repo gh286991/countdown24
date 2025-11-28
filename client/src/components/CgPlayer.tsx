@@ -204,6 +204,7 @@ function CgPlayer({ script }: CgPlayerProps) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-slate-900/80">
       <QueryParamProvider adapter={ReactRouter6Adapter}>
+        {/* @ts-expect-error - react-visual-novel types are too strict */}
         <Game assets={{}} branches={config.branches} initialBranchId={INITIAL_BRANCH_ID}>
           {(render) => {
             return <div className="h-[520px] w-full">{render()}</div>;
@@ -412,11 +413,11 @@ function buildGameConfig(script: CgScript | null) {
 
   const BranchStory = () => (
     <Branch>
-      {renderCover(script.cover, startLabel, Boolean(script.ending))}
+      {renderCover(script.cover, startLabel, Boolean(script.ending)) as any}
       {scenes.map((scene, index) =>
         renderScene(scene, sceneMap, scenes[index + 1]?.id, Boolean(script.ending)),
-      )}
-      {renderEnding(script.ending)}
+      ) as any}
+      {renderEnding(script.ending) as any}
     </Branch>
   );
   const branches = prepareBranches({ BranchStory });

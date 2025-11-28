@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { HiOutlineLockClosed, HiOutlineCheckCircle, HiOutlineXCircle } from 'react-icons/hi2';
+import { HiOutlineCheckCircle, HiOutlineXCircle } from 'react-icons/hi2';
 import { unlockDayWithQr, fetchReceiverInbox } from '../store/receiverSlice';
 import type { RootState, AppDispatch } from '../store';
 

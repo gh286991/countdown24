@@ -15,11 +15,11 @@ import ReceiverLibrary from './pages/ReceiverLibrary';
 import ScanPage from './pages/ScanPage';
 import PrintCardsPage from './pages/PrintCardsPage';
 import VoucherRedemptionsPage from './pages/VoucherRedemptionsPage';
-import { bootstrapSession, logout } from './store/authSlice';
-import type { RootState } from './store';
+import { bootstrapSession } from './store/authSlice';
+import type { AppDispatch, RootState } from './store';
 
 function App() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user, status } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {

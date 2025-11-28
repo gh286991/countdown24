@@ -8,6 +8,8 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "tsc:check": "tsc --noEmit",
+    "predev": "pnpm tsc:check",
     "dev": "NODE_ENV=development nodemon --exec tsx src/server.ts",
     "start": "NODE_ENV=production node dist/server.js",
     "build": "tsc"

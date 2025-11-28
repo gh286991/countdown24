@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import PrintCardPreview from '../components/PrintCardPreview';
-import { fetchCountdownDetail, fetchPrintCards, type PrintCard } from '../store/countdownSlice';
+import { fetchCountdownDetail, fetchPrintCards } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 import { generatePrintCardsPDF, printCardsWithBrowser } from '../utils/pdfGenerator';
 

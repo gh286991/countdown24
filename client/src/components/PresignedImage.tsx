@@ -1,10 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { usePresignedImage } from '../hooks/usePresignedImage';
 import { getPresignedUrl, isMinIOUrl } from '../utils/imageUtils';
 
-interface PresignedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  src: string | undefined | null;
-}
+type PresignedImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
+  src?: string | null;
+};
 
 /**
  * 自動處理預簽名 URL 的圖片組件
