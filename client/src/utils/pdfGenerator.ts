@@ -4,6 +4,7 @@ import type { PrintCard } from '../store/countdownSlice';
 const A4_WIDTH = 210;
 const A4_MARGIN = 8;
 const CARD_GAP = 4;
+const TOP_OFFSET = 20;
 const COLS = 2;
 const ROWS_PER_PAGE = 4;
 const CARDS_PER_PAGE = COLS * ROWS_PER_PAGE; // 8 張/頁
@@ -64,7 +65,7 @@ export async function generatePrintCardsPDF(cards: PrintCard[], title: string = 
       }
 
       const x = A4_MARGIN + col * (CARD_WIDTH + CARD_GAP);
-      const y = A4_MARGIN + row * (cardHeight + CARD_GAP);
+      const y = A4_MARGIN + TOP_OFFSET + row * (cardHeight + CARD_GAP);
 
       pdf.addImage(preview, 'PNG', x, y, CARD_WIDTH, cardHeight, undefined, 'FAST');
     } catch (error) {
