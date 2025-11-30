@@ -8,6 +8,7 @@ import starryNightJson from './templates/starry-night.json';
 import minimalTreeJson from './templates/minimal-tree.json';
 import luxGoldenHollyJson from './templates/lux-golden-holly.json';
 import midnightVelvetJson from './templates/midnight-velvet.json';
+import unlockRoyalPassJson from './templates/unlock-royal-pass.json';
 import blankJson from './templates/blank.json';
 
 export interface PrintCardTemplate {
@@ -27,6 +28,7 @@ export const printCardTemplates: PrintCardTemplate[] = [
   minimalTreeJson as PrintCardTemplate,
   luxGoldenHollyJson as PrintCardTemplate,
   midnightVelvetJson as PrintCardTemplate,
+  unlockRoyalPassJson as PrintCardTemplate,
 ];
 
 // 空白模板（用於「從空白開始」）

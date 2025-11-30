@@ -9,9 +9,10 @@ interface PrintCardEditorModalProps {
   day: number;
   isOpen: boolean;
   card?: PrintCard;
-  onSave: (card: Partial<PrintCard>) => void;
+  onSave: (card: Partial<PrintCard>) => Promise<void> | void;
   onDelete: () => void;
   onClose: () => void;
+  isSaving?: boolean;
 }
 
 function PrintCardEditorModal({
@@ -22,6 +23,7 @@ function PrintCardEditorModal({
   onSave,
   onDelete,
   onClose,
+  isSaving = false,
 }: PrintCardEditorModalProps) {
   const canvasRef = useRef<PrintCardCanvasEditorRef>(null);
   const [canvasState, setCanvasState] = useState<{ canvasJson: any; previewImage: string }>({
@@ -53,6 +55,7 @@ function PrintCardEditorModal({
   };
 
   const handleSave = () => {
+    if (isSaving) return;
     if (!canvasState.previewImage) {
       alert('請先在畫布中設定內容');
       return;
@@ -67,6 +70,7 @@ function PrintCardEditorModal({
   };
 
   const handleDelete = () => {
+    if (isSaving) return;
     onDelete();
   };
 
@@ -78,7 +82,8 @@ function PrintCardEditorModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+          disabled={isSaving}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <HiOutlineXMark className="w-6 h-6" />
         </button>
@@ -130,7 +135,8 @@ function PrintCardEditorModal({
             <button
               type="button"
               onClick={handleDelete}
-              className="inline-flex items-center gap-2 text-sm text-red-300 hover:text-red-200"
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 text-sm text-red-300 hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <HiOutlineTrash className="w-4 h-4" />
               清除這天的小卡設定
@@ -149,16 +155,18 @@ function PrintCardEditorModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-aurora to-purple-500 text-slate-900 font-semibold text-sm"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-aurora to-purple-500 text-slate-900 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              💾 儲存列印小卡
+              {isSaving ? '儲存中…' : '💾 儲存列印小卡'}
             </button>
           </div>
         </div>

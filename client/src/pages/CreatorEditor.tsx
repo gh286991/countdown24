@@ -9,6 +9,7 @@ import DayQrCodeGenerator from '../components/DayQrCodeGenerator';
 import ReceiversModal from '../components/ReceiversModal';
 import PrintCardPanel from '../components/PrintCardPanel';
 import PrintCardEditorModal from '../components/PrintCardEditorModal';
+import CuteLoadingSpinner from '../components/CuteLoadingSpinner';
 import { useToast } from '../components/ToastProvider';
 import sampleCgScript from '../data/sampleCgScript';
 import {
@@ -46,6 +47,7 @@ function CreatorEditor() {
   const [dayCardDraft, setDayCardDraft] = useState({ ...emptyCard, day: Number(searchParams.get('day')) || 1 });
   const [showReceiversModal, setShowReceiversModal] = useState(false);
   const [showPrintCardModal, setShowPrintCardModal] = useState(false);
+  const [isSavingPrintCard, setIsSavingPrintCard] = useState(false);
   const dayFromUrl = Number(searchParams.get('day')) || 1;
   const { showToast } = useToast();
 
@@ -120,7 +122,7 @@ function CreatorEditor() {
   }, [selected?.voucherCards, activeDay]);
 
   if (detailStatus === 'loading' || !selected) {
-    return <p className="text-center text-gray-400 py-10">載入倒數內容...</p>;
+    return <CuteLoadingSpinner label="載入倒數內容..." />;
   }
 
   const handleDaySelect = (value: number) => {
@@ -192,10 +194,19 @@ function CreatorEditor() {
     setDayCardDraft((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePrintCardSave = (data: any) => {
-    if (!id) return;
-    dispatch(savePrintCard({ countdownId: id, day: activeDay, card: data }));
-    setShowPrintCardModal(false);
+  const handlePrintCardSave = async (data: any) => {
+    if (!id || isSavingPrintCard) return;
+    try {
+      setIsSavingPrintCard(true);
+      await dispatch(savePrintCard({ countdownId: id, day: activeDay, card: data })).unwrap();
+      showToast('列印小卡已儲存', 'success');
+      setShowPrintCardModal(false);
+    } catch (error: any) {
+      console.error('Failed to save print card', error);
+      showToast(error?.message || '儲存列印小卡失敗，請稍後再試', 'error');
+    } finally {
+      setIsSavingPrintCard(false);
+    }
   };
 
   const handlePrintCardDelete = () => {
@@ -313,7 +324,12 @@ function CreatorEditor() {
         card={currentPrintCard}
         onSave={handlePrintCardSave}
         onDelete={handlePrintCardDelete}
-        onClose={() => setShowPrintCardModal(false)}
+        onClose={() => {
+          if (!isSavingPrintCard) {
+            setShowPrintCardModal(false);
+          }
+        }}
+        isSaving={isSavingPrintCard}
       />
     </>
   );
