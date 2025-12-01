@@ -20,8 +20,16 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    // SPA fallback - 所有路由都返回 index.html
-    historyApiFallback: true,
+    // 確保 transformers 可以從外部載入模型
+    cors: true,
+    // 確保 transformers 的資源請求不被攔截
+    fs: {
+      allow: ['..'],
+    },
+  },
+  // 配置 optimizeDeps 來預構建 transformers
+  optimizeDeps: {
+    include: ['@xenova/transformers'],
   },
   // 確保生產環境打包後也能正確處理路由
   build: {

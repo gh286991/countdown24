@@ -143,11 +143,21 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
         formData.append('file', uploadFile);
         formData.append('usePresigned', 'true');
         formData.append('assetLibrary', 'true');
+        // 後端會自動進行圖片分類，不需要前端處理
 
-        await api.post('/uploads', formData, {
+        const { data } = await api.post<{
+          key: string;
+          url: string;
+          assetId: string;
+          reused: boolean;
+          originalUrl: string;
+          tags: string[];
+        }>('/uploads', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        showToast('素材已加入素材庫', 'success');
+        
+        const tags = data.tags || [];
+        showToast(tags.length ? `素材已加入素材庫（自動標記：${tags.join(', ')}）` : '素材已加入素材庫', 'success');
         setNextCursor(null);
         await fetchAssets(true, search);
       } catch (error: any) {
@@ -208,7 +218,7 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
               type="text"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="搜尋檔名或資料夾"
+              placeholder="搜尋檔名、資料夾或標籤"
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-aurora focus:outline-none"
             />
             <button
@@ -289,6 +299,23 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
                       <p className="text-[10px] text-gray-500 mt-1">
                         {new Date(asset.createdAt).toLocaleString()}
                       </p>
+                      {asset.tags?.length ? (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {asset.tags.slice(0, 4).map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full bg-aurora/15 text-[10px] font-medium text-aurora border border-aurora/20"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {asset.tags.length > 4 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-400 border border-white/10">
+                              +{asset.tags.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
                   </button>
                   <div className="px-3 pb-3 text-xs flex items-center justify-between gap-2">
@@ -377,6 +404,18 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
                   <p className="text-xs text-gray-400 mt-1">資料夾：{lightboxAsset.folder || 'uploads'}</p>
                   {typeof lightboxAsset.size === 'number' && (
                     <p className="text-xs text-gray-400 mt-1">大小：{formatBytes(lightboxAsset.size)}</p>
+                  )}
+                  {lightboxAsset.tags && lightboxAsset.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {lightboxAsset.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full bg-aurora/20 text-[11px] font-medium text-aurora border border-aurora/30"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
                     更新時間：{new Date(lightboxAsset.updatedAt || lightboxAsset.createdAt).toLocaleString()}

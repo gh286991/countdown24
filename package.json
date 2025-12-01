@@ -10,5 +10,21 @@
     "start": "pnpm --filter countdown24-server start"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "pnpm": {
+    "allowed-build-scripts": [
+      "sharp"
+    ],
+    "overrides": {
+      "sharp": "^0.34.5"
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "canvas",
+      "core-js",
+      "esbuild",
+      "protobufjs",
+      "sharp"
+    ]
+  }
 }

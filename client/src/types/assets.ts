@@ -3,6 +3,7 @@ export interface UserAsset {
   key: string;
   url: string;
   etag: string;
+  tags?: string[] | null;
   fileName?: string | null;
   folder?: string | null;
   contentType?: string | null;

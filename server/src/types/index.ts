@@ -135,6 +135,7 @@ export interface UserAsset {
   key: string;
   url: string;
   etag: string;
+  tags?: string[] | null;
   fileName?: string | null;
   contentType?: string | null;
   folder?: string | null;

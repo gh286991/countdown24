@@ -11,7 +11,9 @@ import {
   markAssetUsed,
   deleteAsset,
   updateAssetPresigned,
+  updateAssetTags,
 } from '../services/assetLibraryService.js';
+import { classifyImage as classifyImageService } from '../services/imageClassificationService.js';
 
 const PRESIGNED_BUFFER_MS = 60 * 1000;
 
@@ -25,6 +27,31 @@ function isPresignedValid(asset: any) {
   const expiresAt = new Date(asset.presignedExpiresAt).getTime();
   if (Number.isNaN(expiresAt)) return false;
   return expiresAt - PRESIGNED_BUFFER_MS > Date.now();
+}
+
+function parseAutoTags(rawBody: Record<string, any> | undefined): string[] {
+  if (!rawBody) return [];
+  const source = rawBody.autoTags ?? rawBody.tags ?? null;
+  if (!source) return [];
+  let list: any = source;
+  if (typeof list === 'string') {
+    try {
+      list = JSON.parse(list);
+    } catch {
+      list = list.split(',').map((part: string) => part.trim());
+    }
+  }
+  if (!Array.isArray(list)) return [];
+  const normalized: string[] = [];
+  for (const candidate of list) {
+    if (typeof candidate !== 'string') continue;
+    const cleaned = candidate.trim().toLowerCase();
+    if (!cleaned) continue;
+    if (!normalized.includes(cleaned)) {
+      normalized.push(cleaned);
+    }
+  }
+  return normalized.slice(0, 10);
 }
 
 export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
@@ -43,16 +70,22 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
   }
 
   try {
+    let autoTags = parseAutoTags(req.body);
     let folder = typeof req.body?.folder === 'string' ? req.body.folder : undefined;
     const isAssetLibraryUpload = req.body?.assetLibrary === 'true' || req.body?.assetLibrary === true;
     if (!folder && isAssetLibraryUpload) {
       folder = `users/${userId}/library`;
     }
+    
     const computedEtag = crypto.createHash('md5').update(file.buffer).digest('hex');
 
     const existingAsset = await findAssetByEtag(userId, computedEtag);
     if (existingAsset) {
       await markAssetUsed(existingAsset.id);
+      if (!existingAsset.tags?.length && autoTags.length) {
+        await updateAssetTags(existingAsset.id, autoTags);
+        existingAsset.tags = autoTags;
+      }
       let reuseUrl = existingAsset.presignedUrl || existingAsset.url;
       if (!isPresignedValid(existingAsset)) {
         try {
@@ -70,6 +103,7 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
         originalUrl: existingAsset.url,
         assetId: existingAsset.id,
         reused: true,
+        tags: existingAsset.tags || [],
       });
     }
 
@@ -80,6 +114,19 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
     } catch (error) {
       console.warn('Failed to generate presigned URL, using regular URL:', error);
     }
+    
+    // 如果是素材庫上傳且沒有提供標籤，使用 presigned URL 進行自動分類
+    if (isAssetLibraryUpload && autoTags.length === 0 && presignedUrl) {
+      try {
+        console.log('開始自動分類圖片...');
+        autoTags = await classifyImageService(presignedUrl, 5);
+        console.log('自動分類結果:', autoTags);
+      } catch (classificationError) {
+        console.warn('自動分類失敗，繼續上傳:', classificationError);
+        // 分類失敗不影響上傳
+      }
+    }
+    
     const folderFromKey = result.key.includes('/') ? result.key.split('/').slice(0, -1).join('/') : null;
     const asset = await createAssetRecord({
       userId,
@@ -92,6 +139,7 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
       folder: folderFromKey || folder,
       presignedUrl,
       presignedExpiresAt: presignedUrl ? computePresignedExpiresAt() : null,
+      tags: autoTags.length ? autoTags : null,
     });
 
     return res.status(201).json({
@@ -100,6 +148,7 @@ export async function uploadAsset(req: AuthenticatedRequest, res: Response) {
       assetId: asset.id,
       reused: false,
       originalUrl: asset.url,
+      tags: asset.tags || [],
     });
   } catch (error) {
     console.error('Upload failed:', error);
@@ -306,6 +355,7 @@ export async function getAssetLibrary(req: AuthenticatedRequest, res: Response) 
       folder: asset.folder,
       contentType: asset.contentType,
       size: asset.size,
+      tags: asset.tags && Array.isArray(asset.tags) ? asset.tags : null,
       createdAt: asset.createdAt instanceof Date ? asset.createdAt.toISOString() : asset.createdAt,
       updatedAt: asset.updatedAt instanceof Date ? asset.updatedAt.toISOString() : asset.updatedAt,
       lastUsedAt: asset.lastUsedAt instanceof Date ? asset.lastUsedAt.toISOString() : asset.lastUsedAt,
@@ -345,5 +395,52 @@ export async function removeAssetFromLibrary(req: AuthenticatedRequest, res: Res
   } catch (error) {
     console.error('Failed to delete asset:', error);
     return res.status(500).json({ message: '刪除素材失敗' });
+  }
+}
+
+export async function classifyImage(req: AuthenticatedRequest, res: Response): Promise<Response> {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const file = (req as AuthenticatedRequest & { file?: Express.Multer.File }).file;
+  if (!file) {
+    return res.status(400).json({ message: '請選擇要分類的圖片' });
+  }
+
+  try {
+    const topk = req.body?.topk ? Number(req.body.topk) : 5;
+    
+    // 先上傳圖片獲取 presigned URL
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: '無法識別使用者' });
+    }
+    
+    const folder = 'temp/classification';
+    const uploadResult = await uploadImage(file.buffer, file.mimetype, folder);
+    let presignedUrl: string;
+    try {
+      presignedUrl = await getPresignedUrl(uploadResult.key);
+    } catch (error) {
+      console.warn('Failed to generate presigned URL for classification, using regular URL:', error);
+      presignedUrl = uploadResult.url;
+    }
+    
+    // 使用 presigned URL 進行分類
+    const tags: string[] = await classifyImageService(presignedUrl, topk);
+    
+    // 分類完成後刪除臨時文件
+    try {
+      const { deleteObject } = await import('../services/storageService.js');
+      await deleteObject(uploadResult.key);
+    } catch (deleteError) {
+      console.warn('Failed to delete temporary classification file:', deleteError);
+    }
+    
+    return res.json({ tags });
+  } catch (error) {
+    console.error('圖片分類失敗:', error);
+    return res.status(500).json({ message: '圖片分類失敗，請稍後再試' });
   }
 }

@@ -14,6 +14,7 @@ interface CreateAssetPayload {
   size?: number;
   presignedUrl?: string | null;
   presignedExpiresAt?: Date | null;
+  tags?: string[] | null;
 }
 
 interface ListOptions {
@@ -44,6 +45,7 @@ export async function createAssetRecord(payload: CreateAssetPayload): Promise<Us
     key: payload.key,
     url: payload.url,
     etag: payload.etag,
+    tags: payload.tags && payload.tags.length ? payload.tags : null,
     fileName: payload.fileName || null,
     contentType: payload.contentType || null,
     folder: payload.folder || null,
@@ -79,7 +81,11 @@ export async function listAssetsForUser(options: ListOptions): Promise<{ items: 
 
   if (search && search.trim()) {
     const regex = new RegExp(search.trim(), 'i');
-    query.$or = [{ fileName: regex }, { folder: regex }];
+    query.$or = [
+      { fileName: regex },
+      { folder: regex },
+      { tags: { $elemMatch: { $regex: search.trim(), $options: 'i' } } },
+    ];
   }
 
   if (options.cursor) {
@@ -124,6 +130,19 @@ export async function deleteAsset(userId: string, assetId: string): Promise<User
   await deleteObject(asset.key);
   await Assets.deleteOne({ userId, id: assetId });
   return asset;
+}
+
+export async function updateAssetTags(assetId: string, tags: string[]): Promise<void> {
+  if (!Assets) throw new Error('Database not initialized');
+  await Assets.updateOne(
+    { id: assetId },
+    {
+      $set: {
+        tags,
+        updatedAt: new Date(),
+      },
+    },
+  );
 }
 
 export async function updateAssetPresigned(assetId: string, presignedUrl: string, expiresAt: Date): Promise<void> {
