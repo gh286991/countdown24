@@ -502,7 +502,7 @@ function renderCover(cover: CgScript['cover'], startLabel: string | null, hasEnd
   if (!cover && !startLabel) return null;
   const subtitle = cover?.subtitle || '24-DAY COUNTDOWN';
   const title = cover?.title || 'CG PLAYBACK';
-  const description = cover?.description || '點擊開始播放這段 CG 劇情。';
+  const description = cover?.description || '';
   const cta = cover?.cta || '開始播放';
   const targetLabel = startLabel || (hasEnding ? ENDING_LABEL : null);
 

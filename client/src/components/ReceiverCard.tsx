@@ -1,3 +1,5 @@
+import { PresignedImage } from './PresignedImage';
+
 interface ReceiverCardProps {
   assignment: any;
   onOpen?: (assignment: any) => void;
@@ -13,7 +15,17 @@ function ReceiverCard({ assignment, onOpen }: ReceiverCardProps) {
       className="w-full block glass-panel text-left hover:border-aurora/70 transition p-4"
     >
       <div className="flex items-start gap-4">
-        <img src={countdown.coverImage} alt={countdown.title} className="w-20 h-20 rounded-2xl object-cover flex-shrink-0" />
+        {countdown.coverImage ? (
+          <PresignedImage
+            src={countdown.coverImage}
+            alt={countdown.title}
+            className="w-20 h-20 rounded-2xl object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-2xl bg-white/10 flex-shrink-0 flex items-center justify-center text-xs text-gray-400">
+            尚未設定封面
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-400 uppercase tracking-[0.3em]">
             {countdown.type === 'qr' ? '禮品體驗' : countdown.type === 'voucher' ? '兌換卷體驗' : '劇情倒數'}
@@ -25,7 +37,11 @@ function ReceiverCard({ assignment, onOpen }: ReceiverCardProps) {
           {creator && (
             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
               {creator.avatar ? (
-                <img src={creator.avatar} alt={creator.name} className="w-6 h-6 rounded-full object-cover" />
+                <PresignedImage
+                  src={creator.avatar}
+                  alt={creator.name}
+                  className="w-6 h-6 rounded-full object-cover"
+                />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-aurora/20 flex items-center justify-center text-xs text-aurora">
                   {creator.name?.charAt(0).toUpperCase()}

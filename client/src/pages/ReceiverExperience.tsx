@@ -257,7 +257,17 @@ function ReceiverExperience() {
           </div>
         )}
       </div>
-      <img src={countdown.coverImage} alt={countdown.title} className="w-full h-80 object-cover rounded-3xl" />
+      {countdown.coverImage ? (
+        <PresignedImage
+          src={countdown.coverImage}
+          alt={countdown.title}
+          className="w-full h-80 object-cover rounded-3xl"
+        />
+      ) : (
+        <div className="w-full h-80 rounded-3xl bg-white/10 flex items-center justify-center text-sm text-gray-400">
+          尚未設定封面
+        </div>
+      )}
       <DayTimeline total={countdown.totalDays} current={countdown.availableDay} />
       
       {/* 禮品卡掃描按鈕 */}
@@ -423,9 +433,15 @@ function ReceiverExperience() {
             }}
           >
             {card.coverImage ? (
-              <img src={card.coverImage} alt={`Day ${card.day}`} className="h-32 w-full object-cover" />
+              <PresignedImage
+                src={card.coverImage}
+                alt={`Day ${card.day}`}
+                className="h-32 w-full object-cover"
+              />
             ) : (
-              <div className="h-32 flex items-center justify-center text-xs text-gray-500 bg-white/10">尚未設定封面</div>
+              <div className="h-32 flex items-center justify-center text-xs text-gray-500 bg-white/10">
+                尚未設定封面
+              </div>
             )}
             <div className="p-3 space-y-1">
               <p className="text-[10px] text-gray-400 uppercase tracking-[0.4em]">Day {card.day}</p>
