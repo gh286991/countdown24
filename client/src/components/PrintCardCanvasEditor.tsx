@@ -516,7 +516,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         isOpen={showAssetLibrary}
         onClose={() => setShowAssetLibrary(false)}
         onSelect={(asset: UserAsset) => {
-          addImageFromUrl(asset.url);
+          addImageFromUrl(asset.url || asset.originalUrl || '');
           setShowAssetLibrary(false);
         }}
       />

@@ -314,7 +314,7 @@ function DayCardEditor({
           try {
             const canUseClipboard = typeof navigator !== 'undefined' && navigator.clipboard?.writeText;
             if (canUseClipboard) {
-              await navigator.clipboard.writeText(asset.url);
+              await navigator.clipboard.writeText(asset.originalUrl || asset.url);
               showToast('已複製素材連結，可貼到任一圖片欄位', 'success');
             } else {
               throw new Error('Clipboard not supported');

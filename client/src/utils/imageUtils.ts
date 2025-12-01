@@ -132,7 +132,23 @@ export function clearPresignedCache() {
  */
 export function isMinIOUrl(url: string): boolean {
   if (!url) return false;
-  return url.includes('tomminio-api.zeabur.app') || url.includes('/countdown24/');
+  if (url.includes('tomminio-api.zeabur.app') || url.includes('/countdown24/')) {
+    return true;
+  }
+  try {
+    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    const parsed = new URL(url, base);
+    return parsed.hostname.includes('tomminio-api.zeabur.app');
+  } catch {
+    return false;
+  }
+}
+
+export function normalizeMinioUrl(url: string): string {
+  if (!isMinIOUrl(url)) return url;
+  const withoutHash = url.split('#')[0];
+  const [base] = withoutHash.split('?');
+  return base;
 }
 
 /**

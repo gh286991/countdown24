@@ -3,7 +3,7 @@ import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContex
 import { QueryParamProvider } from 'use-query-params';
 import { ReactRouter6Adapter } from 'use-query-params/adapters/react-router-6';
 import 'react-visual-novel/dist/index.css';
-import { getPresignedUrls, isMinIOUrl } from '../utils/imageUtils';
+import { getPresignedUrls, isMinIOUrl, normalizeMinioUrl } from '../utils/imageUtils';
 
 const COVER_LABEL = 'cover';
 const ENDING_LABEL = 'ending';
@@ -293,7 +293,7 @@ function collectCgAssetUrls(value: any, bucket: Set<string>) {
   if (!value) return;
   if (typeof value === 'string') {
     if (isLikelyUrl(value)) {
-      bucket.add(value);
+      bucket.add(isMinIOUrl(value) ? normalizeMinioUrl(value) : value);
     }
     return;
   }
@@ -309,6 +309,10 @@ function collectCgAssetUrls(value: any, bucket: Set<string>) {
 function rewriteCgAssets(value: any, map: Map<string, string>): any {
   if (!value) return value;
   if (typeof value === 'string') {
+    if (isMinIOUrl(value)) {
+      const normalized = normalizeMinioUrl(value);
+      return map.get(normalized) || map.get(value) || value;
+    }
     return map.get(value) || value;
   }
   if (Array.isArray(value)) {

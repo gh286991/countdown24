@@ -89,7 +89,8 @@ function ImageUploadField({
       const { data } = await api.post('/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      onChange(data.url);
+      const nextValue = data.originalUrl || data.url;
+      onChange(nextValue);
       showToast('圖片上傳成功', 'success');
     } catch (error: any) {
       console.error('Upload failed', error);
@@ -157,7 +158,7 @@ function ImageUploadField({
         isOpen={showLibraryModal}
         onClose={() => setShowLibraryModal(false)}
         onSelect={(asset: UserAsset) => {
-          onChange(asset.url);
+          onChange(asset.originalUrl || asset.url);
           showToast('已套用素材庫圖片', 'success');
           setShowLibraryModal(false);
         }}
