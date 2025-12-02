@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+
   html,
   body,
   #root {
@@ -98,7 +99,7 @@
     min-height: 297mm;
     background: #ffffff;
     border-radius: 4px;
-    box-shadow: 
+    box-shadow:
       0 0 0 1px rgba(15, 23, 42, 0.1),
       0 20px 60px rgba(15, 23, 42, 0.15);
     position: relative;
@@ -135,7 +136,7 @@
     page-break-inside: avoid;
   }
 
-  .print-card-slot > * {
+  .print-card-slot>* {
     width: 100%;
   }
 
@@ -214,6 +215,7 @@
 }
 
 @media print {
+
   /* 隱藏頁首頁尾 */
   @page {
     margin: 8mm;
@@ -282,6 +284,42 @@
     height: auto !important;
     border-radius: 8px !important;
     page-break-inside: avoid;
-    break-inside: avoid;
   }
+}
+
+/* CG Player Mobile Layout Fixes */
+
+/* Bottom Controls Container (Volume, Playback) */
+/* Target: .absolute.bottom-4.right-4.z-[120] */
+.cg-player-root .absolute.bottom-4.right-4.z-\[120\] {
+  bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+  right: calc(1rem + env(safe-area-inset-right)) !important;
+}
+
+/* Increase size of buttons inside bottom container */
+.cg-player-root .absolute.bottom-4.right-4.z-\[120\] button {
+  padding: 12px !important;
+}
+
+.cg-player-root .absolute.bottom-4.right-4.z-\[120\] button svg {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* Top Controls Container (Reset, History) */
+/* Target: .absolute.z-[120].flex.w-full.p-4 */
+.cg-player-root .absolute.z-\[120\].flex.w-full.p-4 {
+  padding-top: calc(1rem + env(safe-area-inset-top)) !important;
+  padding-left: calc(1rem + env(safe-area-inset-left)) !important;
+  padding-right: calc(1rem + env(safe-area-inset-right)) !important;
+}
+
+/* Increase size of buttons inside top container */
+.cg-player-root .absolute.z-\[120\].flex.w-full.p-4 button {
+  padding: 12px !important;
+}
+
+.cg-player-root .absolute.z-\[120\].flex.w-full.p-4 button svg {
+  width: 24px !important;
+  height: 24px !important;
 }

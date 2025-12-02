@@ -181,7 +181,7 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
     return () => {
       active = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptSignature]);
 
   // 手動預載所有圖片
@@ -255,7 +255,7 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
   if (!config) {
     return <p className="text-gray-400">尚未設定 CG JSON 或內容解析失敗。</p>;
   }
-  
+
   if (!presignedUrlsReady || !resolvedScript) {
     return (
       <div className="flex h-[520px] w-full flex-col items-center justify-center text-sm text-gray-300">
@@ -274,7 +274,7 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
   }
 
   return (
-    <div className={className || 'relative overflow-hidden rounded-3xl bg-slate-900/80'}>
+    <div className={`${className || 'relative overflow-hidden rounded-3xl bg-slate-900/80'} cg-player-root`}>
       <QueryParamProvider adapter={ReactRouter6Adapter}>
         {/* @ts-expect-error - react-visual-novel types are too strict */}
         <Game assets={{}} branches={config.branches} initialBranchId={INITIAL_BRANCH_ID}>
@@ -354,7 +354,7 @@ function SceneHotspotWrapper({
     return null;
   }
   return (
-    <div 
+    <div
       className={`absolute inset-0 z-50 ${scene.hotspotMode === 'manual' && !armed ? 'pointer-events-auto' : 'pointer-events-none'}`}
       onClick={(e) => {
         // 攔截所有點擊，阻止背景跳轉
@@ -581,12 +581,12 @@ function renderScene(
         const tag =
           tagText.length > 0
             ? {
-                text: tagText,
-                style: {
-                  letterSpacing: '0.2em',
-                  ...(scene.accent ? { color: scene.accent } : {}),
-                },
-              }
+              text: tagText,
+              style: {
+                letterSpacing: '0.2em',
+                ...(scene.accent ? { color: scene.accent } : {}),
+              },
+            }
             : undefined;
 
         return (
@@ -598,9 +598,9 @@ function renderScene(
             image={
               portrait
                 ? {
-                    uri: portrait,
-                    style: characterImageStyle,
-                  }
+                  uri: portrait,
+                  style: characterImageStyle,
+                }
                 : undefined
             }
             tag={tag}

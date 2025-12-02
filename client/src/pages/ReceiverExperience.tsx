@@ -42,10 +42,10 @@ function ReceiverExperience() {
   // 所有 Hooks 必須在條件返回之前調用
   const countdown = selected?.countdown || null;
   const creator = selected?.creator || null;
-  
+
   const assignment = selected?.assignment || null;
   const unlockedDays = assignment?.unlockedDays || [];
-  
+
   const cards = useMemo(
     () => {
       if (!countdown) return [];
@@ -68,7 +68,7 @@ function ReceiverExperience() {
   );
   const voucherCards = countdown?.voucherCards || [];
   const voucherCardMap = useMemo(() => new Map<number, any>((voucherCards || []).map((card: any) => [card.day, card])), [voucherCards]);
-  
+
   const [modalDay, setModalDay] = useState<number | null>(null);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [qrInput, setQrInput] = useState('');
@@ -126,7 +126,7 @@ function ReceiverExperience() {
 
   const handleUnlockDay = async (qrData: string) => {
     if (!assignmentId || !qrData || unlocking) return;
-    
+
     // 如果掃描到的是完整 URL，提取 token
     let qrToken = qrData.trim();
     if (qrToken.includes('/scan/')) {
@@ -135,10 +135,10 @@ function ReceiverExperience() {
         qrToken = urlParts[1].split('?')[0]; // 移除可能的查詢參數
       }
     }
-    
+
     // 先停止相機
     await stopCamera();
-    
+
     setUnlocking(true);
     try {
       await dispatch(unlockDayWithQr({ assignmentId, qrToken })).unwrap();
@@ -240,7 +240,7 @@ function ReceiverExperience() {
         <p className="text-xs uppercase tracking-[0.4em] text-gray-400">你收到的倒數</p>
         <h2 className="text-4xl font-semibold">{countdown.title}</h2>
         <p className="text-gray-300">{countdown.description}</p>
-        
+
         {/* 創建者資訊 */}
         {creator && (
           <div className="flex items-center justify-center gap-2 pt-2">
@@ -269,7 +269,7 @@ function ReceiverExperience() {
         </div>
       )}
       <DayTimeline total={countdown.totalDays} current={countdown.availableDay} />
-      
+
       {/* 禮品卡掃描按鈕 */}
       <div className="flex justify-center">
         <button
@@ -286,122 +286,120 @@ function ReceiverExperience() {
       {showQrScanner && (
         <OverlayPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 p-6 shadow-2xl">
-            <button
-              type="button"
-              className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white z-10"
-              onClick={async () => {
-                await stopCamera();
-                setShowQrScanner(false);
-                setQrInput('');
-                setScanMode('camera');
-                setCameraError(null);
-              }}
-            >
-              <HiOutlineXMark className="w-5 h-5" />
-            </button>
-            
-            <h3 className="text-2xl font-semibold mb-4">掃描禮品卡</h3>
-
-            {/* 模式切換 */}
-            <div className="flex gap-2 mb-4">
+            <div className="relative w-full max-w-md rounded-3xl bg-slate-900 p-6 shadow-2xl">
               <button
                 type="button"
+                className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white z-10"
                 onClick={async () => {
                   await stopCamera();
-                  setScanMode('camera');
+                  setShowQrScanner(false);
                   setQrInput('');
+                  setScanMode('camera');
+                  setCameraError(null);
                 }}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  scanMode === 'camera'
-                    ? 'bg-christmas-red/90 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
               >
-                <span className="flex items-center justify-center gap-2">
-                  <HiOutlineCamera className="w-4 h-4" />
-                  相機掃描
-                </span>
+                <HiOutlineXMark className="w-5 h-5" />
               </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await stopCamera();
-                  setScanMode('manual');
-                }}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  scanMode === 'manual'
-                    ? 'bg-christmas-red/90 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <HiOutlineQrCode className="w-4 h-4" />
-                  手動輸入
-                </span>
-              </button>
-            </div>
 
-            {/* 相機掃描模式 */}
-            {scanMode === 'camera' && (
-              <div className="space-y-4">
-                {cameraError && (
-                  <div className="bg-christmas-red/20 border border-christmas-red/50 rounded-lg p-3 text-sm text-christmas-red">
-                    {cameraError}
-                  </div>
-                )}
-                <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ minHeight: '300px', position: 'relative' }}>
-                  <div
-                    id="qr-reader"
-                    ref={scannerContainerRef}
-                    className="w-full"
-                    style={{ 
-                      minHeight: '300px',
-                      width: '100%',
-                      position: 'relative'
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-400 text-center">
-                  將禮品卡對準相機框內即可自動掃描
-                </p>
-              </div>
-            )}
+              <h3 className="text-2xl font-semibold mb-4">掃描禮品卡</h3>
 
-            {/* 手動輸入模式 */}
-            {scanMode === 'manual' && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-400">
-                  請輸入或貼上禮品卡代碼來解鎖對應的日期
-                </p>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-2">禮品卡代碼</label>
-                  <input
-                    type="text"
-                    value={qrInput}
-                    onChange={(e) => setQrInput(e.target.value)}
-                    placeholder="day1-xxxxxxxxxxxxxxxx"
-                    className="w-full bg-white/5 rounded-lg px-4 py-3 text-sm border border-white/10 focus:border-christmas-red focus:outline-none"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleQrInputSubmit();
-                      }
-                    }}
-                  />
-                </div>
-                
+              {/* 模式切換 */}
+              <div className="flex gap-2 mb-4">
                 <button
                   type="button"
-                  onClick={handleQrInputSubmit}
-                  disabled={!qrInput.trim() || unlocking}
-                  className="w-full py-3 bg-christmas-red/90 hover:bg-christmas-red rounded-xl text-white font-semibold transition-colors disabled:opacity-50"
+                  onClick={async () => {
+                    await stopCamera();
+                    setScanMode('camera');
+                    setQrInput('');
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${scanMode === 'camera'
+                    ? 'bg-christmas-red/90 text-white'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
                 >
-                  {unlocking ? '解鎖中...' : '解鎖'}
+                  <span className="flex items-center justify-center gap-2">
+                    <HiOutlineCamera className="w-4 h-4" />
+                    相機掃描
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await stopCamera();
+                    setScanMode('manual');
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${scanMode === 'manual'
+                    ? 'bg-christmas-red/90 text-white'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <HiOutlineQrCode className="w-4 h-4" />
+                    手動輸入
+                  </span>
                 </button>
               </div>
-            )}
+
+              {/* 相機掃描模式 */}
+              {scanMode === 'camera' && (
+                <div className="space-y-4">
+                  {cameraError && (
+                    <div className="bg-christmas-red/20 border border-christmas-red/50 rounded-lg p-3 text-sm text-christmas-red">
+                      {cameraError}
+                    </div>
+                  )}
+                  <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ minHeight: '300px', position: 'relative' }}>
+                    <div
+                      id="qr-reader"
+                      ref={scannerContainerRef}
+                      className="w-full"
+                      style={{
+                        minHeight: '300px',
+                        width: '100%',
+                        position: 'relative'
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center">
+                    將禮品卡對準相機框內即可自動掃描
+                  </p>
+                </div>
+              )}
+
+              {/* 手動輸入模式 */}
+              {scanMode === 'manual' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-400">
+                    請輸入或貼上禮品卡代碼來解鎖對應的日期
+                  </p>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-2">禮品卡代碼</label>
+                    <input
+                      type="text"
+                      value={qrInput}
+                      onChange={(e) => setQrInput(e.target.value)}
+                      placeholder="day1-xxxxxxxxxxxxxxxx"
+                      className="w-full bg-white/5 rounded-lg px-4 py-3 text-sm border border-white/10 focus:border-christmas-red focus:outline-none"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleQrInputSubmit();
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleQrInputSubmit}
+                    disabled={!qrInput.trim() || unlocking}
+                    className="w-full py-3 bg-christmas-red/90 hover:bg-christmas-red rounded-xl text-white font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {unlocking ? '解鎖中...' : '解鎖'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </OverlayPortal>
       )}
 
@@ -410,9 +408,8 @@ function ReceiverExperience() {
           <button
             key={`receiver-card-${card.day}`}
             type="button"
-            className={`relative rounded-2xl border border-white/10 bg-white/5 overflow-hidden text-left ${
-              card.locked ? 'cursor-not-allowed opacity-60' : 'hover:border-aurora/60 transition'
-            }`}
+            className={`relative rounded-2xl border border-white/10 bg-white/5 overflow-hidden text-left ${card.locked ? 'cursor-not-allowed opacity-60' : 'hover:border-aurora/60 transition'
+              }`}
             onClick={() => {
               if (card.locked) {
                 if (card.lockReason === 'time') {
@@ -451,15 +448,15 @@ function ReceiverExperience() {
             {card.locked && (
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white">
                 <HiOutlineLockClosed className="w-12 h-12 mb-2 text-gray-400" />
-              <p className="text-sm font-semibold">尚未解鎖</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {card.type === 'qr' ? '請掃描禮品卡解鎖' : '時間未到，敬請期待'}
-              </p>
-            </div>
-          )}
-        </button>
-      ))}
-    </div>
+                <p className="text-sm font-semibold">尚未解鎖</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {card.type === 'qr' ? '請掃描禮品卡解鎖' : '時間未到，敬請期待'}
+                </p>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
 
       {lockedDialog && (
         <OverlayPortal>
@@ -481,16 +478,14 @@ function ReceiverExperience() {
       {modalDay && (
         <OverlayPortal>
           <div
-            className={`fixed inset-0 z-40 flex items-center justify-center bg-black/80 w-screen h-screen min-h-[100dvh] ${
-              currentDayContent?.type !== 'story' ? 'px-4 py-6' : ''
-            }`}
+            className={`fixed inset-0 z-40 flex items-center justify-center bg-black/80 w-screen h-[100dvh] ${currentDayContent?.type !== 'story' ? 'px-4 py-6' : ''
+              }`}
           >
             <div
-              className={`relative shadow-2xl ${
-                currentDayContent?.type === 'story' && currentDayContent.cgScript
-                  ? 'w-full h-full bg-black'
-                  : 'w-full max-w-4xl rounded-3xl bg-slate-900 p-6 max-h-[90vh] overflow-y-auto'
-              }`}
+              className={`relative shadow-2xl ${currentDayContent?.type === 'story' && currentDayContent.cgScript
+                ? 'w-full h-full bg-black'
+                : 'w-full max-w-4xl rounded-3xl bg-slate-900 p-6 max-h-[90vh] overflow-y-auto'
+                }`}
             >
               {currentDayContent?.type !== 'story' && (
                 <>
@@ -656,7 +651,7 @@ function ReceiverExperience() {
                     />
                     <button
                       type="button"
-                      className="absolute top-4 right-4 z-[60] rounded-full bg-black/50 p-3 text-white backdrop-blur-sm transition-transform active:scale-95"
+                      className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-[130] rounded-full bg-black/50 p-3 text-white backdrop-blur-sm transition-transform active:scale-95"
                       onClick={() => {
                         setModalDay(null);
                         dispatch(clearDayContent());
