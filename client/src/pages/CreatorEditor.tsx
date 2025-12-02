@@ -54,8 +54,10 @@ function CreatorEditor() {
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchCountdownDetail(id));
+      // Pass activeDay (from URL or default 1) to fetch initial content
+      dispatch(fetchCountdownDetail({ id, day: dayFromUrl }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, dispatch]);
 
   useEffect(() => {

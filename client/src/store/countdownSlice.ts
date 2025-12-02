@@ -108,9 +108,12 @@ export const fetchCreatorCountdowns = createAsyncThunk(
 
 export const fetchCountdownDetail = createAsyncThunk(
   'countdowns/fetchDetail',
-  async (id: string, { rejectWithValue }) => {
+  async (arg: string | { id: string; day?: number }, { rejectWithValue }) => {
     try {
-      const { data } = await api.get(`/countdowns/${id}`);
+      const id = typeof arg === 'string' ? arg : arg.id;
+      const day = typeof arg === 'string' ? undefined : arg.day;
+      const url = day ? `/countdowns/${id}?day=${day}` : `/countdowns/${id}`;
+      const { data } = await api.get(url);
       return data;
     } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || '找不到倒數內容');
@@ -407,7 +410,15 @@ const countdownSlice = createSlice({
       })
       .addCase(fetchCountdownDetail.fulfilled, (state, action) => {
         state.detailStatus = 'succeeded';
-        state.selected = action.payload.countdown || action.payload;
+        const countdown = action.payload.countdown || action.payload;
+        // Mark days with content as loaded
+        if (countdown.dayCards) {
+          countdown.dayCards = countdown.dayCards.map((card: any) => ({
+            ...card,
+            _loaded: !!card.cgScript,
+          }));
+        }
+        state.selected = countdown;
         state.assignments = action.payload.assignments || [];
       })
       .addCase(fetchCountdownDetail.rejected, (state, action) => {

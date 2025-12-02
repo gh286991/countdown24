@@ -73,7 +73,8 @@ export async function getCountdownById(req: AuthenticatedRequest, res: Response)
     voucherCards,
   };
 
-  const payload: any = { countdown: countdownService.withAvailableContent(countdownPayload) };
+  const dayParam = req.query.day ? Number(req.query.day) : undefined;
+  const payload: any = { countdown: countdownService.withAvailableContent(countdownPayload, false, dayParam) };
   if (isOwner) {
     payload.assignments = await Assignments.find({ countdownId: countdown.id }).toArray();
   }

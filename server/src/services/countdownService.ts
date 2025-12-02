@@ -128,14 +128,14 @@ export function computeAvailableDay(countdown: any): number {
   return Math.min(countdown.totalDays || DEFAULT_TOTAL_DAYS, diff);
 }
 
-export function withAvailableContent(countdown: any): any {
+export function withAvailableContent(countdown: any, includeContent = true, focusDay?: number): any {
   const snapshot = JSON.parse(JSON.stringify(countdown));
   const availableDay = computeAvailableDay(countdown);
   snapshot.availableDay = availableDay;
   snapshot.storyMoments = countdown.storyMoments || [];
   snapshot.qrRewards = countdown.qrRewards || [];
   snapshot.voucherCards = countdown.voucherCards || [];
-  snapshot.cgScript = countdown.cgScript || null;
+  snapshot.cgScript = includeContent ? (countdown.cgScript || null) : null;
   snapshot.printCards = countdown.printCards || [];
   snapshot.dayCards = buildDayCards(countdown.totalDays || DEFAULT_TOTAL_DAYS, countdown.dayCards, countdown);
   snapshot.dayCards = snapshot.dayCards.map((card: DayCard) => ({
@@ -144,6 +144,7 @@ export function withAvailableContent(countdown: any): any {
     nextUnlockAt: card.day > availableDay && countdown.startDate
       ? addDays(countdown.startDate, card.day - 1)?.toISOString()
       : undefined,
+    cgScript: (includeContent || (focusDay !== undefined && card.day === focusDay)) ? card.cgScript : null,
   }));
   return snapshot;
 }
