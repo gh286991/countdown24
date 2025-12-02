@@ -11,6 +11,7 @@ router.get('/invite/check/:token', asyncHandler(countdownController.checkInvitat
 // 需要認證的路由
 router.get('/', requireAuth, asyncHandler(countdownController.getCountdowns));
 router.get('/:id', requireAuth, asyncHandler(countdownController.getCountdownById));
+router.get('/:id/days/:day', requireAuth, asyncHandler(countdownController.getCountdownDay));
 router.post('/', requireAuth, requireRole('creator'), asyncHandler(countdownController.createCountdown));
 router.put('/:id', requireAuth, requireRole('creator'), asyncHandler(countdownController.updateCountdown));
 router.delete('/:id', requireAuth, requireRole('creator'), asyncHandler(countdownController.deleteCountdown));

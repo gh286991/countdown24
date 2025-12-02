@@ -18,6 +18,7 @@ import {
   deleteVoucherCard,
   deletePrintCard,
   fetchCountdownDetail,
+  fetchCountdownDay,
   savePrintCard,
   saveVoucherCard,
   updateCountdown,
@@ -60,6 +61,17 @@ function CreatorEditor() {
   useEffect(() => {
     setActiveDay(dayFromUrl);
   }, [dayFromUrl]);
+
+  // Lazy load day content
+  useEffect(() => {
+    if (id && selected) {
+      const card = (selected.dayCards || []).find((c) => c.day === activeDay);
+      // 如果沒有 _loaded 標記，表示還沒載入過詳細內容（包含 cgScript）
+      if (card && !card._loaded) {
+        dispatch(fetchCountdownDay({ id, day: activeDay }));
+      }
+    }
+  }, [id, activeDay, selected, dispatch]);
 
   const handleAssign = () => {
     if (!id) return;

@@ -118,6 +118,18 @@ export const fetchCountdownDetail = createAsyncThunk(
   },
 );
 
+export const fetchCountdownDay = createAsyncThunk(
+  'countdowns/fetchDay',
+  async ({ id, day }: { id: string; day: number }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${id}/days/${day}`);
+      return { id, day, dayCard: data.dayCard };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得該日內容');
+    }
+  },
+);
+
 export const createCountdown = createAsyncThunk(
   'countdowns/create',
   async (payload: any, { rejectWithValue }) => {
@@ -401,6 +413,19 @@ const countdownSlice = createSlice({
       .addCase(fetchCountdownDetail.rejected, (state, action) => {
         state.detailStatus = 'failed';
         state.detailError = (action.payload as string) || null;
+      })
+      .addCase(fetchCountdownDay.fulfilled, (state, action) => {
+        if (state.selected && state.selected.id === action.payload.id) {
+          const { day, dayCard } = action.payload;
+          const existing = state.selected.dayCards || [];
+          const index = existing.findIndex((c) => c.day === day);
+          if (index >= 0) {
+            state.selected.dayCards![index] = { ...existing[index], ...dayCard, _loaded: true };
+          } else {
+            // 如果原本沒有（理論上不應該發生，因為有 buildDayCards），就加進去
+            state.selected.dayCards = [...existing, { ...dayCard, _loaded: true }];
+          }
+        }
       })
       .addCase(createCountdown.fulfilled, (state, action: PayloadAction<Countdown>) => {
         state.items.unshift(action.payload);

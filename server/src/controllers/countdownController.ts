@@ -50,7 +50,7 @@ export async function getCountdownById(req: AuthenticatedRequest, res: Response)
   if (!countdown) {
     return res.status(404).json({ message: 'Countdown not found' });
   }
-  
+
   const countdownWithCards = await countdownService.attachDayCards(countdown);
 
   if (req.user.role === 'creator' && countdown.ownerId !== req.user.id) {
@@ -93,7 +93,7 @@ export async function createCountdown(req: AuthenticatedRequest, res: Response) 
   const recipientIds = await countdownService.resolveReceiverIds(payload.recipientIds, payload.recipientEmails);
   const normalizedStartDate = normalizeDate(payload.startDate, new Date().toISOString());
   const totalDays = normalizeTotalDays(payload.totalDays);
-  const normalizedEndDate = normalizedStartDate 
+  const normalizedEndDate = normalizedStartDate
     ? (addDays(normalizedStartDate, totalDays - 1)?.toISOString() || normalizedStartDate)
     : normalizedStartDate;
 
@@ -111,7 +111,7 @@ export async function createCountdown(req: AuthenticatedRequest, res: Response) 
     storyMoments: (payload.storyMoments || [])
       .map((moment: any) => ({
         ...moment,
-        availableOn: normalizedStartDate 
+        availableOn: normalizedStartDate
           ? normalizeDate(moment.availableOn, addDays(normalizedStartDate, (moment.day || 1) - 1)?.toISOString() || undefined)
           : normalizeDate(moment.availableOn),
       }))
@@ -145,7 +145,7 @@ export async function updateCountdown(req: AuthenticatedRequest, res: Response) 
   if (!countdown) {
     return res.status(404).json({ message: 'Countdown not found' });
   }
-  
+
   const countdownWithCards = await countdownService.attachDayCards(countdown);
   const updates = req.body || {};
   const updatedRecipients = await countdownService.resolveReceiverIds(
@@ -236,11 +236,11 @@ export async function assignReceivers(req: AuthenticatedRequest, res: Response) 
   if (!countdown) {
     return res.status(404).json({ message: 'Countdown not found' });
   }
-  
+
   const countdownWithCards = await countdownService.attachDayCards(countdown);
   const { receiverIds = [], receiverEmails = [] } = req.body || {};
   const validReceivers = await countdownService.resolveReceiverIds(receiverIds, receiverEmails);
-  
+
   if (!validReceivers.length) {
     return res.status(400).json({ message: 'No valid receivers found' });
   }
@@ -268,7 +268,7 @@ export async function getReceivers(req: AuthenticatedRequest, res: Response) {
   }
 
   const assignments = await Assignments.find({ countdownId: countdown.id }).toArray();
-  
+
   // 獲取接收者的完整用戶資訊
   const receiverIds = assignments.map((assignment) => assignment.receiverId);
   const users = await Users.find({ id: { $in: receiverIds } }).toArray();
@@ -307,7 +307,7 @@ export async function removeReceiver(req: AuthenticatedRequest, res: Response) {
   // 從 recipientIds 中移除
   const updatedRecipients = (countdown.recipientIds || []).filter((rid: string) => rid !== receiverId);
   await Countdowns.updateOne({ id }, { $set: { recipientIds: updatedRecipients } });
-  
+
   // 刪除對應的 assignment
   await Assignments.deleteOne({ countdownId: id, receiverId });
 
@@ -341,7 +341,7 @@ export async function createInvitation(req: AuthenticatedRequest, res: Response)
 
   await Invitations.insertOne(invitation);
 
-  return res.json({ 
+  return res.json({
     invitation: {
       id: invitation.id,
       token: invitation.token,
@@ -358,16 +358,16 @@ export async function checkInvitation(req: Request, res: Response) {
 
   const { token } = req.params;
   const invitation = await Invitations.findOne({ token });
-  
+
   if (!invitation) {
     return res.status(404).json({ message: 'Invitation not found', valid: false });
   }
 
   if (invitation.status !== 'active') {
-    return res.json({ 
-      message: 'Invitation already used or expired', 
+    return res.json({
+      message: 'Invitation already used or expired',
       valid: false,
-      status: invitation.status 
+      status: invitation.status
     });
   }
 
@@ -377,7 +377,7 @@ export async function checkInvitation(req: Request, res: Response) {
     return res.status(404).json({ message: 'Countdown not found', valid: false });
   }
 
-  return res.json({ 
+  return res.json({
     valid: true,
     countdown: {
       id: countdown.id,
@@ -395,7 +395,7 @@ export async function acceptInvitation(req: AuthenticatedRequest, res: Response)
 
   const { token } = req.params;
   const invitation = await Invitations.findOne({ token, status: 'active' });
-  
+
   if (!invitation) {
     return res.status(404).json({ message: 'Invitation not found or already used' });
   }
@@ -407,9 +407,9 @@ export async function acceptInvitation(req: AuthenticatedRequest, res: Response)
   }
 
   // 檢查是否已經綁定
-  const existingAssignment = await Assignments.findOne({ 
-    countdownId: invitation.countdownId, 
-    receiverId: req.user.id 
+  const existingAssignment = await Assignments.findOne({
+    countdownId: invitation.countdownId,
+    receiverId: req.user.id
   });
 
   if (existingAssignment) {
@@ -418,9 +418,9 @@ export async function acceptInvitation(req: AuthenticatedRequest, res: Response)
       { token },
       { $set: { status: 'used', usedBy: req.user.id, usedAt: new Date().toISOString() } }
     );
-    return res.json({ 
+    return res.json({
       message: 'Already assigned',
-      assignment: existingAssignment 
+      assignment: existingAssignment
     });
   }
 
@@ -451,9 +451,9 @@ export async function acceptInvitation(req: AuthenticatedRequest, res: Response)
     { $set: { status: 'used', usedBy: req.user.id, usedAt: new Date().toISOString() } }
   );
 
-  return res.json({ 
+  return res.json({
     message: 'Invitation accepted',
-    assignment 
+    assignment
   });
 }
 
@@ -465,7 +465,7 @@ export async function generateDayQrCode(req: AuthenticatedRequest, res: Response
 
   const { id } = req.params; // countdownId
   const { day } = req.body;
-  
+
   if (!day || !Number.isFinite(Number(day)) || Number(day) < 1) {
     return res.status(400).json({ message: 'Invalid day parameter' });
   }
@@ -623,7 +623,7 @@ export async function getVoucherRedemptions(req: AuthenticatedRequest, res: Resp
   }
 
   const redemptions = await voucherRedemptionService.getRedemptionsByCountdown(id);
-  
+
   // 獲取接收者資訊
   const receiverIds = [...new Set(redemptions.map((r) => r.receiverId))];
   const receivers = await Users.find({ id: { $in: receiverIds } }).toArray();
@@ -636,7 +636,7 @@ export async function getVoucherRedemptions(req: AuthenticatedRequest, res: Resp
 
   const pendingCount = redemptions.filter((r) => r.status === 'pending').length;
 
-  return res.json({ 
+  return res.json({
     redemptions: redemptionsWithUser,
     pendingCount,
   });
@@ -704,4 +704,43 @@ export async function rejectVoucherRedemption(req: AuthenticatedRequest, res: Re
     message: 'Redemption rejected',
     redemption: updated,
   });
+}
+
+export async function getCountdownDay(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns || !CountdownDays) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, day } = req.params;
+  const countdown = await Countdowns.findOne({ id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  // Check permissions (similar to getCountdownById)
+  if (req.user.role === 'creator' && countdown.ownerId !== req.user.id) {
+    return res.status(403).json({ message: 'Not allowed to view this countdown' });
+  }
+  // Receivers can also access this if needed, but primarily for editor optimization now
+  if (req.user.role === 'receiver') {
+    const assignment = await Assignments?.findOne({ countdownId: id, receiverId: req.user.id });
+    if (!assignment) {
+      return res.status(403).json({ message: 'Countdown not shared with this receiver' });
+    }
+  }
+
+  const dayNum = Number(day);
+  if (!Number.isFinite(dayNum)) {
+    return res.status(400).json({ message: 'Invalid day' });
+  }
+
+  const dayCard = await CountdownDays.findOne({ countdownId: id, day: dayNum });
+  if (!dayCard) {
+    // If no specific card exists, return a default structure or 404
+    // For editor, we might want to return a default empty card structure if it doesn't exist yet
+    // But usually persistDayCards ensures they exist.
+    return res.status(404).json({ message: 'Day content not found' });
+  }
+
+  return res.json({ dayCard });
 }
