@@ -1,6 +1,7 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { HiOutlineFilm, HiOutlineXMark } from 'react-icons/hi2';
 import ImageUploadField from './ImageUploadField';
+import AudioUploadField from './AudioUploadField';
 
 interface CgDialogue {
   speaker?: string;
@@ -33,6 +34,7 @@ interface CgScript {
     image?: string;
     background?: string;
     cta?: string;
+    music?: string;
   };
   startScene?: string;
   scenes?: CgScene[];
@@ -157,11 +159,10 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
           <button
             type="button"
             onClick={() => setMode('visual')}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-              mode === 'visual'
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${mode === 'visual'
                 ? 'bg-aurora text-slate-900 font-semibold'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
-            }`}
+              }`}
           >
             <span className="flex items-center gap-2">
               <HiOutlineFilm className="w-4 h-4" />
@@ -171,13 +172,12 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
           <button
             type="button"
             onClick={() => setMode('json')}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-              mode === 'json'
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${mode === 'json'
                 ? 'bg-aurora text-slate-900 font-semibold'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
-            }`}
+              }`}
           >
-            {} JSON
+            { } JSON
           </button>
         </div>
       </div>
@@ -231,6 +231,12 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
                 value={script.cover?.image || ''}
                 onChange={(url) => updateScript({ ...script, cover: { ...script.cover, image: url } })}
                 folder={countdownId ? `countdowns/${countdownId}/cg/cover` : undefined}
+              />
+              <AudioUploadField
+                placeholder="🎵 背景音樂網址 (MP3)"
+                value={script.cover?.music || ''}
+                onChange={(url) => updateScript({ ...script, cover: { ...script.cover, music: url } })}
+                folder={countdownId ? `countdowns/${countdownId}/cg/music` : undefined}
               />
             </div>
           </div>
@@ -462,7 +468,7 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
         <span>💡</span>
         <p>
           <strong>提示：</strong>
-          {mode === 'visual' 
+          {mode === 'visual'
             ? '使用場景卡片快速建立故事流程。場景 ID 用於選項跳轉，例如「前往屋頂」選項可跳到 ID 為 roofScene 的場景。'
             : '進階用戶可直接編輯 JSON。修改後切換回場景編輯查看結果。'
           }

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContext } from 'react-visual-novel';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContext, useGameContext } from 'react-visual-novel';
 import { QueryParamProvider } from 'use-query-params';
 import 'react-visual-novel/dist/index.css';
 import { getPresignedUrls, isMinIOUrl, normalizeMinioUrl } from '../utils/imageUtils';
@@ -57,6 +57,7 @@ interface CgScript {
     image?: string;
     background?: string;
     cta?: string;
+    music?: string;
   };
   startScene?: string;
   scenes?: Array<CgScene>;
@@ -232,12 +233,51 @@ function CgPlayer({ script, className, playerClassName, onEnd, endCta }: CgPlaye
         {/* @ts-expect-error - react-visual-novel types are too strict */}
         <Game assets={{}} branches={config.branches} initialBranchId={INITIAL_BRANCH_ID}>
           {(render) => {
-            return <div className={playerClassName || 'h-[520px] w-full'}>{render()}</div>;
+            return (
+              <div className={playerClassName || 'h-[520px] w-full'}>
+                {render()}
+                {resolvedScript?.cover?.music && <BackgroundMusicManager src={resolvedScript.cover.music} />}
+              </div>
+            );
           }}
         </Game>
       </QueryParamProvider>
     </div>
   );
+}
+
+function BackgroundMusicManager({ src }: { src: string }) {
+  const { muted } = useGameContext();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!src) return;
+    const audio = new Audio(src);
+    audio.loop = true;
+    audio.volume = 0.5;
+    audio.muted = muted;
+    audioRef.current = audio;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn('Autoplay prevented:', error);
+      });
+    }
+
+    return () => {
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, [src]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = muted;
+    }
+  }, [muted]);
+
+  return null;
 }
 
 function isLikelyUrl(value: string) {

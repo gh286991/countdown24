@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { HiOutlineXMark, HiOutlinePhoto, HiOutlineArrowPath, HiOutlineCloudArrowUp, HiOutlineEye } from 'react-icons/hi2';
+import { HiOutlineXMark, HiOutlinePhoto, HiOutlineArrowPath, HiOutlineCloudArrowUp, HiOutlineEye, HiOutlineMusicalNote } from 'react-icons/hi2';
 import api from '../api/client';
 import { PresignedImage } from './PresignedImage';
 import { useToast } from './ToastProvider';
@@ -12,6 +12,7 @@ interface AssetLibraryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (asset: UserAsset) => void;
+  allowedTypes?: ('image' | 'audio')[];
 }
 
 interface LibraryResponse {
@@ -19,7 +20,7 @@ interface LibraryResponse {
   nextCursor: string | null;
 }
 
-function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps) {
+function AssetLibraryModal({ isOpen, onClose, onSelect, allowedTypes = ['image'] }: AssetLibraryModalProps) {
   const [assets, setAssets] = useState<UserAsset[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +62,27 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
         if (keyword?.trim()) {
           params.q = keyword.trim();
         }
+        if (allowedTypes && allowedTypes.length > 0) {
+          // 簡單過濾：如果是 audio，我們假設後端支援 type 參數或者我們在前端過濾
+          // 這裡假設後端還沒支援 type 過濾，我們先在前端過濾，或者後端 API 已經支援
+          // 根據之前的經驗，後端可能還沒支援 type 參數，我們暫時先不傳 type，在前端過濾
+          // 但為了效能，最好是後端支援。
+          // 暫時先不傳 type，因為不確定後端 API。
+          // 修正：如果需要過濾，我們可以在前端做，或者假設後端會返回所有類型
+        }
         const { data } = await api.get<LibraryResponse>('/uploads/library', { params });
-        setAssets((prev) => (reset ? data.items : [...prev, ...data.items]));
+
+        // 前端過濾類型
+        const filteredItems = data.items.filter(item => {
+          const isImage = !item.contentType || item.contentType.startsWith('image/');
+          const isAudio = item.contentType && item.contentType.startsWith('audio/');
+
+          if (allowedTypes.includes('image') && isImage) return true;
+          if (allowedTypes.includes('audio') && isAudio) return true;
+          return false;
+        });
+
+        setAssets((prev) => (reset ? filteredItems : [...prev, ...filteredItems]));
         setNextCursor(data.nextCursor);
         setHasMore(Boolean(data.nextCursor));
         setError(null);
@@ -77,7 +97,7 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
         setLoading(false);
       }
     },
-    [nextCursor, search],
+    [nextCursor, search, allowedTypes],
   );
 
   useEffect(() => {
@@ -116,12 +136,41 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
     fileInputRef.current?.click();
   };
 
+  const handleUploadDirectly = useCallback(async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('usePresigned', 'true');
+      formData.append('assetLibrary', 'true');
+
+      await api.post('/uploads', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      showToast('素材已加入素材庫', 'success');
+      setNextCursor(null);
+      await fetchAssets(true, search);
+    } catch (error: any) {
+      console.error('Failed to upload asset from library modal', error);
+      showToast(error?.response?.data?.message || '素材上傳失敗', 'error');
+    } finally {
+      setUploading(false);
+      resetPendingFile();
+    }
+  }, [fetchAssets, search, showToast]);
+
   const handleUploadFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setPendingFile(file);
-    setShowCropModal(true);
-  }, []);
+
+    if (file.type.startsWith('image/')) {
+      setPendingFile(file);
+      setShowCropModal(true);
+    } else {
+      // Audio or other types, skip crop
+      handleUploadDirectly(file);
+    }
+  }, [handleUploadDirectly]);
 
   const handleCropCancel = useCallback(() => {
     setShowCropModal(false);
@@ -164,18 +213,18 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
   const confirmDeleteAsset = useCallback(async () => {
     if (!assetToDelete) return;
     setDeleting(true);
-      try {
-        await api.delete(`/uploads/library/${assetToDelete.id}`);
-        setAssets((prev) => prev.filter((item) => item.id !== assetToDelete.id));
-        if (lightboxAsset?.id === assetToDelete.id) setLightboxAsset(null);
-        showToast('素材已刪除', 'success');
-      } catch (error: any) {
-        console.error('Failed to delete asset', error);
-        showToast(error?.response?.data?.message || '刪除失敗', 'error');
-      } finally {
-        setDeleting(false);
-        setAssetToDelete(null);
-      }
+    try {
+      await api.delete(`/uploads/library/${assetToDelete.id}`);
+      setAssets((prev) => prev.filter((item) => item.id !== assetToDelete.id));
+      if (lightboxAsset?.id === assetToDelete.id) setLightboxAsset(null);
+      showToast('素材已刪除', 'success');
+    } catch (error: any) {
+      console.error('Failed to delete asset', error);
+      showToast(error?.response?.data?.message || '刪除失敗', 'error');
+    } finally {
+      setDeleting(false);
+      setAssetToDelete(null);
+    }
   }, [assetToDelete, lightboxAsset?.id, showToast]);
 
   const emptyStateMessage = useMemo(() => {
@@ -240,7 +289,7 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={allowedTypes.map(t => t === 'image' ? 'image/*' : 'audio/*').join(',')}
               className="hidden"
               onChange={handleUploadFileChange}
             />
@@ -271,12 +320,19 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
                     onClick={() => onSelect(asset)}
                     className="text-left"
                   >
-                    <div className="relative aspect-video bg-black/20 rounded-t-2xl overflow-hidden">
-                      <PresignedImage
-                        src={asset.url}
-                        alt={asset.fileName || '素材圖片'}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="relative aspect-video bg-black/20 rounded-t-2xl overflow-hidden flex items-center justify-center">
+                      {asset.contentType?.startsWith('audio/') ? (
+                        <div className="flex flex-col items-center justify-center text-gray-400">
+                          <HiOutlineMusicalNote className="w-12 h-12 mb-2" />
+                          <span className="text-xs">AUDIO</span>
+                        </div>
+                      ) : (
+                        <PresignedImage
+                          src={asset.url}
+                          alt={asset.fileName || '素材圖片'}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                     <div className="p-3 text-left text-xs">
                       <p className="font-semibold text-white truncate">{asset.fileName || '未命名檔案'}</p>
@@ -301,13 +357,13 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
                         <HiOutlineEye className="w-3.5 h-3.5" />
                         預覽
                       </button>
-                    <button
-                      type="button"
-                      onClick={() => setAssetToDelete(asset)}
-                      className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-red-200 text-[11px] hover:bg-red-500/30"
-                    >
-                      刪除
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setAssetToDelete(asset)}
+                        className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-red-200 text-[11px] hover:bg-red-500/30"
+                      >
+                        刪除
+                      </button>
                     </div>
                     <button
                       type="button"
@@ -364,12 +420,16 @@ function AssetLibraryModal({ isOpen, onClose, onSelect }: AssetLibraryModalProps
               <HiOutlineXMark className="w-7 h-7" />
             </button>
             <div className="max-w-4xl w-full bg-slate-900 rounded-3xl p-6 space-y-4">
-              <div className="w-full bg-black/30 rounded-2xl overflow-hidden max-h-[70vh] flex items-center justify-center">
-                <PresignedImage
-                  src={lightboxAsset.url}
-                  alt={lightboxAsset.fileName || '素材預覽'}
-                  className="max-h-[70vh] w-full object-contain"
-                />
+              <div className="w-full bg-black/30 rounded-2xl overflow-hidden max-h-[70vh] flex items-center justify-center p-8">
+                {lightboxAsset.contentType?.startsWith('audio/') ? (
+                  <audio controls src={lightboxAsset.url} className="w-full" />
+                ) : (
+                  <PresignedImage
+                    src={lightboxAsset.url}
+                    alt={lightboxAsset.fileName || '素材預覽'}
+                    className="max-h-[70vh] w-full object-contain"
+                  />
+                )}
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="text-sm text-gray-200">
