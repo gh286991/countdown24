@@ -480,25 +480,40 @@ function ReceiverExperience() {
       )}
       {modalDay && (
         <OverlayPortal>
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 px-4 py-6 w-screen h-screen min-h-[100dvh]">
-            <div className="relative w-full max-w-4xl rounded-3xl bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button
-              type="button"
-              className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white"
-              onClick={() => {
-                setModalDay(null);
-                dispatch(clearDayContent());
-              }}
+          <div
+            className={`fixed inset-0 z-40 flex items-center justify-center bg-black/80 w-screen h-screen min-h-[100dvh] ${
+              currentDayContent?.type !== 'story' ? 'px-4 py-6' : ''
+            }`}
+          >
+            <div
+              className={`relative shadow-2xl ${
+                currentDayContent?.type === 'story' && currentDayContent.cgScript
+                  ? 'w-full h-full bg-black'
+                  : 'w-full max-w-4xl rounded-3xl bg-slate-900 p-6 max-h-[90vh] overflow-y-auto'
+              }`}
             >
-              <HiOutlineXMark className="w-5 h-5" />
-            </button>
-            <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
-            {modalLoading && <p className="text-gray-300">載入內容中...</p>}
-            {!modalLoading && !currentDayContent && modalMeta?.locked && (
+              {currentDayContent?.type !== 'story' && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute top-3 right-3 text-sm text-gray-400 hover:text-white"
+                    onClick={() => {
+                      setModalDay(null);
+                      dispatch(clearDayContent());
+                    }}
+                  >
+                    <HiOutlineXMark className="w-5 h-5" />
+                  </button>
+                  <h3 className="text-2xl font-semibold mb-4">Day {modalDay}</h3>
+                </>
+              )}
+
+              {modalLoading && <p className="text-gray-300">載入內容中...</p>}
+              {!modalLoading && !currentDayContent && modalMeta?.locked && (
                 <div className="text-center py-8">
                   <HiOutlineLockClosed className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                   <p className="text-lg font-semibold mb-2">此日尚未解鎖</p>
-                <p className="text-sm text-gray-400 mb-4">請掃描對應的解鎖碼來解鎖此日內容</p>
+                  <p className="text-sm text-gray-400 mb-4">請掃描對應的解鎖碼來解鎖此日內容</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -507,142 +522,159 @@ function ReceiverExperience() {
                     }}
                     className="px-4 py-2 bg-christmas-red/90 hover:bg-christmas-red rounded-lg text-white text-sm font-semibold transition-colors"
                   >
-                  掃描解鎖碼
+                    掃描解鎖碼
                   </button>
                 </div>
-            )}
-            {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
-              <QrCardPreview
-                day={modalDay}
-                qrReward={currentDayContent.qrReward}
-                variant="modal"
-              />
-            ) : null}
-            {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
-              <p className="text-sm text-gray-300">此日尚未設定禮品內容。</p>
-            )}
-            {!modalLoading && currentDayContent && currentDayContent.type === 'voucher' ? (
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
-                  <p className="text-lg font-semibold">{currentDayContent.voucherDetail?.title || currentDayContent.title || '兌換卷'}</p>
-                  <p className="text-sm text-gray-300">{currentDayContent.voucherDetail?.message || currentDayContent.description || '尚未填寫描述'}</p>
-                  <div className="grid gap-2 text-xs text-gray-400">
-                    {currentDayContent.voucherDetail?.location && (
-                      <p>
-                        主題 / 地點：<span className="text-white">{currentDayContent.voucherDetail.location}</span>
-                      </p>
-                    )}
-                    {currentDayContent.voucherDetail?.validUntil && (
-                      <p>
-                        使用期限：<span className="text-white">{currentDayContent.voucherDetail.validUntil}</span>
-                      </p>
-                    )}
-                    {currentDayContent.voucherDetail?.terms && (
-                      <p>
-                        注意事項：<span className="text-white">{currentDayContent.voucherDetail.terms}</span>
-                      </p>
-                    )}
+              )}
+              {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
+                <QrCardPreview day={modalDay} qrReward={currentDayContent.qrReward} variant="modal" />
+              ) : null}
+              {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
+                <p className="text-sm text-gray-300">此日尚未設定禮品內容。</p>
+              )}
+              {!modalLoading && currentDayContent && currentDayContent.type === 'voucher' ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
+                    <p className="text-lg font-semibold">
+                      {currentDayContent.voucherDetail?.title || currentDayContent.title || '兌換卷'}
+                    </p>
+                    <p className="text-sm text-gray-300">
+                      {currentDayContent.voucherDetail?.message || currentDayContent.description || '尚未填寫描述'}
+                    </p>
+                    <div className="grid gap-2 text-xs text-gray-400">
+                      {currentDayContent.voucherDetail?.location && (
+                        <p>
+                          主題 / 地點：<span className="text-white">{currentDayContent.voucherDetail.location}</span>
+                        </p>
+                      )}
+                      {currentDayContent.voucherDetail?.validUntil && (
+                        <p>
+                          使用期限：<span className="text-white">{currentDayContent.voucherDetail.validUntil}</span>
+                        </p>
+                      )}
+                      {currentDayContent.voucherDetail?.terms && (
+                        <p>
+                          注意事項：<span className="text-white">{currentDayContent.voucherDetail.terms}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {activeVoucherCard ? (
-                  activeVoucherCard.previewImage ? (
-                    <img
-                      src={activeVoucherCard.previewImage}
-                      alt={`Day ${modalDay} Voucher`}
-                      className="w-full rounded-[28px] border border-white/10 shadow-lg"
-                    />
-                  ) : (
-                    <PrintCardPreview
-                      variant="voucher"
-                      card={{
-                        day: modalDay,
-                        template: activeVoucherCard.template,
-                        imageUrl: activeVoucherCard.imageUrl,
-                        qrCode: '',
-                        title: activeVoucherCard.title,
-                        subtitle: activeVoucherCard.subtitle,
-                        note: activeVoucherCard.note,
-                        accentColor: activeVoucherCard.accentColor,
-                      }}
-                    />
-                  )
-                ) : (
-                  <p className="text-sm text-gray-400">創作者尚未上傳兌換卷設計。</p>
-                )}
-                
-                {/* 兌換按鈕和狀態 */}
-                {(() => {
-                  const redemption = getRedemptionForDay(modalDay);
-                  if (!redemption) {
-                    return (
-                      <button
-                        type="button"
-                        disabled={redeeming}
-                        onClick={async () => {
-                          if (!assignmentId) return;
-                          setRedeeming(true);
-                          try {
-                            await dispatch(requestVoucherRedemption({ assignmentId, day: modalDay })).unwrap();
-                            showToast('已送出兌換請求，等待確認中', 'success');
-                          } catch (error: any) {
-                            showToast(error || '兌換請求失敗', 'error');
-                          } finally {
-                            setRedeeming(false);
-                          }
+                  {activeVoucherCard ? (
+                    activeVoucherCard.previewImage ? (
+                      <img
+                        src={activeVoucherCard.previewImage}
+                        alt={`Day ${modalDay} Voucher`}
+                        className="w-full rounded-[28px] border border-white/10 shadow-lg"
+                      />
+                    ) : (
+                      <PrintCardPreview
+                        variant="voucher"
+                        card={{
+                          day: modalDay,
+                          template: activeVoucherCard.template,
+                          imageUrl: activeVoucherCard.imageUrl,
+                          qrCode: '',
+                          title: activeVoucherCard.title,
+                          subtitle: activeVoucherCard.subtitle,
+                          note: activeVoucherCard.note,
+                          accentColor: activeVoucherCard.accentColor,
                         }}
-                        className="w-full py-3 bg-christmas-green hover:bg-christmas-green-light rounded-xl text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {redeeming ? '送出中...' : '🎁 我要兌換'}
-                      </button>
-                    );
-                  }
-                  if (redemption.status === 'pending') {
-                    return (
-                      <div className="w-full py-3 bg-yellow-600/20 border border-yellow-500/50 rounded-xl text-yellow-300 font-semibold flex items-center justify-center gap-2">
-                        <HiOutlineClock className="w-5 h-5" />
-                        已送出兌換請求，等待確認中
-                      </div>
-                    );
-                  }
-                  if (redemption.status === 'confirmed') {
-                    return (
-                      <div className="w-full py-3 bg-green-600/20 border border-green-500/50 rounded-xl text-green-300 font-semibold flex items-center justify-center gap-2">
-                        <HiOutlineCheckCircle className="w-5 h-5" />
-                        已兌換完成
-                        {redemption.creatorNote && (
-                          <span className="text-xs font-normal ml-2">備註：{redemption.creatorNote}</span>
-                        )}
-                      </div>
-                    );
-                  }
-                  if (redemption.status === 'rejected') {
-                    return (
-                      <div className="w-full py-3 bg-red-600/20 border border-red-500/50 rounded-xl text-red-300 font-semibold flex items-center justify-center gap-2">
-                        <HiOutlineXCircle className="w-5 h-5" />
-                        兌換被拒絕
-                        {redemption.creatorNote && (
-                          <span className="text-xs font-normal ml-2">原因：{redemption.creatorNote}</span>
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            ) : null}
-            {!modalLoading && currentDayContent && currentDayContent.type === 'story' ? (
-              currentDayContent.cgScript ? (
-                <CgPlayer key={`receiver-player-${modalDay}`} script={currentDayContent.cgScript} />
-              ) : (
-                <p className="text-sm text-gray-300">此日尚未設定 CG 劇情。</p>
-              )
-            ) : null}
-            {!modalLoading && !currentDayContent && (
-              <p className="text-sm text-gray-300">此日尚未設定內容。</p>
-            )}
+                      />
+                    )
+                  ) : (
+                    <p className="text-sm text-gray-400">創作者尚未上傳兌換卷設計。</p>
+                  )}
+
+                  {/* 兌換按鈕和狀態 */}
+                  {(() => {
+                    const redemption = getRedemptionForDay(modalDay);
+                    if (!redemption) {
+                      return (
+                        <button
+                          type="button"
+                          disabled={redeeming}
+                          onClick={async () => {
+                            if (!assignmentId) return;
+                            setRedeeming(true);
+                            try {
+                              await dispatch(requestVoucherRedemption({ assignmentId, day: modalDay })).unwrap();
+                              showToast('已送出兌換請求，等待確認中', 'success');
+                            } catch (error: any) {
+                              showToast(error || '兌換請求失敗', 'error');
+                            } finally {
+                              setRedeeming(false);
+                            }
+                          }}
+                          className="w-full py-3 bg-christmas-green hover:bg-christmas-green-light rounded-xl text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {redeeming ? '送出中...' : '🎁 我要兌換'}
+                        </button>
+                      );
+                    }
+                    if (redemption.status === 'pending') {
+                      return (
+                        <div className="w-full py-3 bg-yellow-600/20 border border-yellow-500/50 rounded-xl text-yellow-300 font-semibold flex items-center justify-center gap-2">
+                          <HiOutlineClock className="w-5 h-5" />
+                          已送出兌換請求，等待確認中
+                        </div>
+                      );
+                    }
+                    if (redemption.status === 'confirmed') {
+                      return (
+                        <div className="w-full py-3 bg-green-600/20 border border-green-500/50 rounded-xl text-green-300 font-semibold flex items-center justify-center gap-2">
+                          <HiOutlineCheckCircle className="w-5 h-5" />
+                          已兌換完成
+                          {redemption.creatorNote && (
+                            <span className="text-xs font-normal ml-2">備註：{redemption.creatorNote}</span>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (redemption.status === 'rejected') {
+                      return (
+                        <div className="w-full py-3 bg-red-600/20 border border-red-500/50 rounded-xl text-red-300 font-semibold flex items-center justify-center gap-2">
+                          <HiOutlineXCircle className="w-5 h-5" />
+                          兌換被拒絕
+                          {redemption.creatorNote && (
+                            <span className="text-xs font-normal ml-2">原因：{redemption.creatorNote}</span>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              ) : null}
+              {!modalLoading && currentDayContent && currentDayContent.type === 'story' ? (
+                currentDayContent.cgScript ? (
+                  <>
+                    <CgPlayer
+                      key={`receiver-player-${modalDay}`}
+                      script={currentDayContent.cgScript}
+                      className="w-full h-full"
+                      playerClassName="w-full h-full"
+                    />
+                    <button
+                      type="button"
+                      className="absolute top-4 right-4 z-[60] rounded-full bg-black/50 p-3 text-white backdrop-blur-sm transition-transform active:scale-95"
+                      onClick={() => {
+                        setModalDay(null);
+                        dispatch(clearDayContent());
+                      }}
+                    >
+                      <HiOutlineXMark className="h-6 w-6" />
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-300">此日尚未設定 CG 劇情。</p>
+                )
+              ) : null}
+              {!modalLoading && !currentDayContent && (
+                <p className="text-sm text-gray-300">此日尚未設定內容。</p>
+              )}
+            </div>
           </div>
-        </div>
-      </OverlayPortal>
+        </OverlayPortal>
       )}
     </section>
   );

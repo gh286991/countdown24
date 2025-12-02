@@ -11,6 +11,12 @@ const INITIAL_BRANCH_ID = 'Story';
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 400;
 const INITIAL_SCENE_COUNT = 3;
+interface CgPlayerProps {
+  script: CgScript | null;
+  className?: string;
+  playerClassName?: string;
+}
+
 interface CgDialogue {
   speaker?: string;
   text: string;
@@ -63,10 +69,6 @@ interface CgScript {
   };
 }
 
-interface CgPlayerProps {
-  script: CgScript | null;
-}
-
 function chunkArray<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
@@ -75,7 +77,7 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-function CgPlayer({ script }: CgPlayerProps) {
+function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
   const [presignedUrlsReady, setPresignedUrlsReady] = useState(true);
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
@@ -272,12 +274,12 @@ function CgPlayer({ script }: CgPlayerProps) {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-slate-900/80">
+    <div className={className || 'relative overflow-hidden rounded-3xl bg-slate-900/80'}>
       <QueryParamProvider adapter={ReactRouter6Adapter}>
         {/* @ts-expect-error - react-visual-novel types are too strict */}
         <Game assets={{}} branches={config.branches} initialBranchId={INITIAL_BRANCH_ID}>
           {(render) => {
-            return <div className="h-[520px] w-full">{render()}</div>;
+            return <div className={playerClassName || 'h-[520px] w-full'}>{render()}</div>;
           }}
         </Game>
       </QueryParamProvider>
@@ -400,8 +402,13 @@ function HotspotLayer({
   labelColor?: string;
   hasChoices?: boolean;
 }) {
-  const { goToStatement } = useBranchContext();
+  const { goToStatement, focusedStatementIndex } = useBranchContext();
   const [activeSpot, setActiveSpot] = useState<CgHotspot | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    setIsTransitioning(false);
+  }, [focusedStatementIndex]);
 
   useEffect(() => {
     if (!activeSpot?.message) return undefined;
@@ -410,12 +417,15 @@ function HotspotLayer({
   }, [activeSpot]);
 
   const handleClick = (spot: CgHotspot) => {
+    if (isTransitioning) return;
     setActiveSpot(spot);
     if (spot.next) {
+      setIsTransitioning(true);
       setTimeout(() => {
         goToStatement(spot.next as string);
       }, 350);
     } else if (!spot.message && fallbackNextId && !hasChoices) {
+      setIsTransitioning(true);
       setTimeout(() => {
         goToStatement(fallbackNextId);
       }, 400);
