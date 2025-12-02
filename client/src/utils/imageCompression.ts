@@ -50,15 +50,17 @@ export async function compressImage(file: File, options: CompressOptions = {}): 
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
     const targetMimeType = options.mimeType || (file.type || '').toLowerCase() || defaultOptions.mimeType;
-    const effectiveMime = targetMimeType === 'image/png' || targetMimeType === 'image/webp' || targetMimeType === 'image/gif'
-      ? 'image/png'
-      : targetMimeType;
+    // 如果指定 WebP 或原圖是 WebP，就用 WebP
+    // 如果是 PNG 或 GIF，為了透明度通常維持 PNG (除非明確指定 WebP)
+    const effectiveMime = targetMimeType === 'image/webp'
+      ? 'image/webp'
+      : (targetMimeType === 'image/png' || targetMimeType === 'image/gif' ? 'image/png' : targetMimeType);
 
     const blob: Blob | null = await new Promise((resolve) => {
       canvas.toBlob(
         (result) => resolve(result),
         effectiveMime,
-        effectiveMime === 'image/jpeg' ? quality : undefined,
+        (effectiveMime === 'image/jpeg' || effectiveMime === 'image/webp') ? quality : undefined,
       );
     });
 

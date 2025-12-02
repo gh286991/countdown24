@@ -139,8 +139,21 @@ function AssetLibraryModal({ isOpen, onClose, onSelect, allowedTypes = ['image']
   const handleUploadDirectly = useCallback(async (file: File) => {
     setUploading(true);
     try {
+      let uploadFile = file;
+      if (file.type.startsWith('image/')) {
+        try {
+          // 統一轉為 WebP，因為 WebP 支援透明度且壓縮率更好
+          // 解決 PNG 無法透過 canvas 壓縮的問題
+          uploadFile = await compressImage(file, {
+            mimeType: 'image/webp',
+          });
+        } catch (compressionError) {
+          console.warn('Skip compression for asset library upload:', compressionError);
+        }
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile);
       formData.append('usePresigned', 'true');
       formData.append('assetLibrary', 'true');
 
@@ -184,7 +197,10 @@ function AssetLibraryModal({ isOpen, onClose, onSelect, allowedTypes = ['image']
       try {
         let uploadFile = new File([blob], fileName, { type: blob.type || pendingFile?.type || 'image/png' });
         try {
-          uploadFile = await compressImage(uploadFile);
+          // 統一轉為 WebP，因為 WebP 支援透明度且壓縮率更好
+          uploadFile = await compressImage(uploadFile, {
+            mimeType: 'image/webp',
+          });
         } catch (compressionError) {
           console.warn('Skip compression for asset library upload:', compressionError);
         }
