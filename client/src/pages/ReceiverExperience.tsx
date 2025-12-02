@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { HiOutlineXMark, HiOutlineLockClosed, HiOutlineQrCode, HiOutlineCamera, HiOutlineCheckCircle, HiOutlineClock, HiOutlineXCircle } from 'react-icons/hi2';
@@ -70,6 +70,7 @@ function ReceiverExperience() {
   const voucherCardMap = useMemo(() => new Map<number, any>((voucherCards || []).map((card: any) => [card.day, card])), [voucherCards]);
 
   const [modalDay, setModalDay] = useState<number | null>(null);
+  const [showGift, setShowGift] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [qrInput, setQrInput] = useState('');
   const [unlocking, setUnlocking] = useState(false);
@@ -95,9 +96,11 @@ function ReceiverExperience() {
   useEffect(() => {
     if (!modalDay) {
       dispatch(clearDayContent());
+      setShowGift(false);
       return;
     }
     if (assignmentId) {
+      setShowGift(false);
       dispatch(fetchReceiverDayContent({ assignmentId, day: modalDay }));
     }
   }, [modalDay, assignmentId, dispatch]);
@@ -230,6 +233,10 @@ function ReceiverExperience() {
   }, [showQrScanner]);
 
   // 載入中或沒有資料時顯示載入訊息（在所有 Hooks 之後）
+  const handleCgEnd = useCallback(() => {
+    setShowGift(true);
+  }, []);
+
   if (experienceStatus === 'loading' || !countdown) {
     return <p className="text-gray-400 text-center py-12">載入禮物內容中...</p>;
   }
@@ -478,16 +485,16 @@ function ReceiverExperience() {
       {modalDay && (
         <OverlayPortal>
           <div
-            className={`fixed inset-0 z-40 flex items-center justify-center bg-black/80 w-screen h-[100dvh] ${currentDayContent?.type !== 'story' ? 'px-4 py-6' : ''
+            className={`fixed inset-0 z-40 flex items-center justify-center bg-black/80 w-screen h-[100dvh] ${currentDayContent?.cgScript && !showGift ? '' : 'px-4 py-6'
               }`}
           >
             <div
-              className={`relative shadow-2xl ${currentDayContent?.type === 'story' && currentDayContent.cgScript
+              className={`relative shadow-2xl ${currentDayContent?.cgScript && !showGift
                 ? 'w-full h-full bg-black'
                 : 'w-full max-w-4xl rounded-3xl bg-slate-900 p-6 max-h-[90vh] overflow-y-auto'
                 }`}
             >
-              {currentDayContent?.type !== 'story' && (
+              {(!currentDayContent?.cgScript || showGift) && (
                 <>
                   <button
                     type="button"
@@ -521,13 +528,13 @@ function ReceiverExperience() {
                   </button>
                 </div>
               )}
-              {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
+              {!modalLoading && currentDayContent && (currentDayContent.type === 'qr' || currentDayContent.type === 'voucher') && (!currentDayContent.cgScript || showGift) && currentDayContent.type === 'qr' && currentDayContent.qrReward ? (
                 <QrCardPreview day={modalDay} qrReward={currentDayContent.qrReward} variant="modal" />
               ) : null}
-              {!modalLoading && currentDayContent && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
+              {!modalLoading && currentDayContent && (currentDayContent.type === 'qr' || currentDayContent.type === 'voucher') && (!currentDayContent.cgScript || showGift) && currentDayContent.type === 'qr' && !currentDayContent.qrReward && (
                 <p className="text-sm text-gray-300">此日尚未設定禮品內容。</p>
               )}
-              {!modalLoading && currentDayContent && currentDayContent.type === 'voucher' ? (
+              {!modalLoading && currentDayContent && (currentDayContent.type === 'qr' || currentDayContent.type === 'voucher') && (!currentDayContent.cgScript || showGift) && currentDayContent.type === 'voucher' ? (
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
                     <p className="text-lg font-semibold">
@@ -640,29 +647,41 @@ function ReceiverExperience() {
                   })()}
                 </div>
               ) : null}
-              {!modalLoading && currentDayContent && currentDayContent.type === 'story' ? (
-                currentDayContent.cgScript ? (
-                  <>
-                    <CgPlayer
-                      key={`receiver-player-${modalDay}`}
-                      script={currentDayContent.cgScript}
-                      className="w-full h-full"
-                      playerClassName="w-full h-full"
-                    />
-                    <button
-                      type="button"
-                      className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-[130] rounded-full bg-black/50 p-3 text-white backdrop-blur-sm transition-transform active:scale-95"
-                      onClick={() => {
-                        setModalDay(null);
-                        dispatch(clearDayContent());
-                      }}
-                    >
-                      <HiOutlineXMark className="h-6 w-6" />
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-300">此日尚未設定 CG 劇情。</p>
-                )
+              {!modalLoading && currentDayContent && currentDayContent.cgScript && !showGift ? (
+                <>
+                  <CgPlayer
+                    key={`receiver-player-${modalDay}`}
+                    script={currentDayContent.cgScript}
+                    className="w-full h-full"
+                    playerClassName="w-full h-full"
+                    onEnd={currentDayContent.type !== 'story' ? handleCgEnd : undefined}
+                    endCta={currentDayContent.type !== 'story' ? '領取禮物' : undefined}
+                  />
+                  <button
+                    type="button"
+                    className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-[calc(1rem+env(safe-area-inset-left))] z-[130] rounded-full bg-black/50 p-3 text-white backdrop-blur-sm transition-transform active:scale-95"
+                    onClick={() => {
+                      setModalDay(null);
+                      dispatch(clearDayContent());
+                    }}
+                  >
+                    <HiOutlineXMark className="h-6 w-6" />
+                  </button>
+                </>
+              ) : null}
+              {!modalLoading && currentDayContent && currentDayContent.type === 'story' && showGift ? (
+                // 如果是純故事模式且已經播完（showGift=true），這裡可以選擇顯示什麼，或者直接讓 CgPlayer 處理重播
+                // 但目前的邏輯是 CgPlayer 在 story 模式下自己處理結束菜單
+                // 所以這裡可能不需要做什麼，或者我們可以重置 showGift 讓它重播
+                <div className="text-center py-12 space-y-4">
+                  <p className="text-gray-300">劇情已結束</p>
+                  <button
+                    onClick={() => setShowGift(false)}
+                    className="px-6 py-2 bg-aurora text-slate-900 rounded-xl font-semibold"
+                  >
+                    重播劇情
+                  </button>
+                </div>
               ) : null}
               {!modalLoading && !currentDayContent && (
                 <p className="text-sm text-gray-300">此日尚未設定內容。</p>

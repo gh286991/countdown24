@@ -57,6 +57,16 @@ function DayCardEditor({
 }: DayCardEditorProps) {
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [showGlobalAssetModal, setShowGlobalAssetModal] = useState(false);
+  // 判斷是否顯示 CG 編輯器：如果是 story 類型，或者 cgScriptDraft 有內容（且不是預設空值）
+  // 這裡我們簡單用一個本地狀態來控制顯示，初始化時檢查是否有內容
+  const hasContent = Boolean(cgScriptDraft && cgScriptDraft.length > 50 && !cgScriptDraft.includes('"text": "..."'));
+  const [showCgEditor, setShowCgEditor] = useState(dayCardDraft.type === 'story' || hasContent);
+
+  // 當類型切換為 story 時，自動顯示編輯器
+  if (dayCardDraft.type === 'story' && !showCgEditor) {
+    setShowCgEditor(true);
+  }
+
   const { showToast } = useToast();
   return (
     <div className="glass-panel p-6 space-y-4">
@@ -85,11 +95,10 @@ function DayCardEditor({
             type="button"
             key={mode}
             onClick={() => onTypeChange(mode as 'story' | 'qr' | 'voucher')}
-            className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
-              dayCardDraft.type === mode
-                ? 'border-aurora bg-aurora text-slate-900'
-                : 'border-white/20 text-gray-300 hover:border-white/40'
-            }`}
+            className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${dayCardDraft.type === mode
+              ? 'border-aurora bg-aurora text-slate-900'
+              : 'border-white/20 text-gray-300 hover:border-white/40'
+              }`}
           >
             {mode === 'story' ? (
               <span className="flex items-center gap-2">
@@ -147,15 +156,35 @@ function DayCardEditor({
       </div>
 
       {/* CG 劇本編輯 */}
-      {dayCardDraft.type === 'story' && (
-        <div className="pt-2 border-t border-white/10">
+      <div className="pt-2 border-t border-white/10 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="enable-cg"
+              checked={showCgEditor}
+              onChange={(e) => setShowCgEditor(e.target.checked)}
+              className="rounded border-gray-600 bg-gray-700 text-aurora focus:ring-aurora"
+            />
+            <label htmlFor="enable-cg" className="text-sm font-semibold text-gray-300 cursor-pointer select-none">
+              啟用 CG 開場劇情
+            </label>
+          </div>
+          {showCgEditor && (
+            <span className="text-xs text-gray-500">
+              {dayCardDraft.type === 'story' ? 'Story 模式必填' : '將在禮物顯示前播放'}
+            </span>
+          )}
+        </div>
+
+        {showCgEditor && (
           <CgScriptEditor
             value={cgScriptDraft}
             onChange={onCgScriptChange}
             countdownId={countdownId}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 禮品卡編輯 */}
       {dayCardDraft.type === 'qr' && (

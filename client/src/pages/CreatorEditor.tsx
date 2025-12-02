@@ -96,7 +96,7 @@ function CreatorEditor() {
     };
     setDayCardDraft(normalized);
     setCgScriptDraft(
-      normalized.type === 'story' && normalized.cgScript
+      normalized.cgScript
         ? JSON.stringify(normalized.cgScript, null, 2)
         : JSON.stringify(sampleCgScript, null, 2),
     );
@@ -133,17 +133,22 @@ function CreatorEditor() {
   const handleDayCardSave = async () => {
     if (!id) return;
     let parsedScript = null;
-    if (dayCardDraft.type === 'story') {
-      if (!cgScriptDraft.trim()) {
-        showToast('請輸入 CG JSON', 'warning');
-        return;
-      }
+    // 嘗試解析 CG Script，無論類型為何
+    if (cgScriptDraft.trim()) {
       try {
         parsedScript = JSON.parse(cgScriptDraft);
       } catch (error) {
-        showToast('CG JSON 格式錯誤，請檢查括號或逗號。', 'error');
-        return;
+        // 如果是 story 類型，則必須解析成功；如果是其他類型但有內容，也提示錯誤
+        if (dayCardDraft.type === 'story' || cgScriptDraft.length > 10) {
+          showToast('CG JSON 格式錯誤，請檢查括號或逗號。', 'error');
+          return;
+        }
       }
+    }
+
+    if (dayCardDraft.type === 'story' && !parsedScript) {
+      showToast('請輸入 CG JSON', 'warning');
+      return;
     }
 
     const nextType = dayCardDraft.type === 'qr' ? 'qr' : dayCardDraft.type === 'voucher' ? 'voucher' : 'story';
@@ -151,7 +156,7 @@ function CreatorEditor() {
       ...dayCardDraft,
       day: activeDay,
       type: nextType,
-      cgScript: nextType === 'story' ? parsedScript : null,
+      cgScript: parsedScript,
       qrReward:
         nextType === 'qr'
           ? { ...defaultQrReward, ...(dayCardDraft.qrReward || {}) }
@@ -171,7 +176,10 @@ function CreatorEditor() {
     });
     try {
       await dispatch(updateCountdown({ id, data: { dayCards: nextCards } })).unwrap();
-      if (dayCardDraft.type === 'story') {
+      // 如果有 parsedScript，也更新它（雖然上面已經包含在 dayCards 裡了，但為了保險起見或者特定邏輯）
+      // 注意：這裡原本的邏輯似乎是分開更新的？其實 updateCountdown 應該一次處理完
+      // 我們保留原本的行為，但擴展到所有類型
+      if (parsedScript) {
         await dispatch(updateCountdown({ id, data: { cgScript: parsedScript } })).unwrap();
       }
       showToast(`已儲存 Day ${activeDay} 設定`, 'success');
@@ -228,94 +236,94 @@ function CreatorEditor() {
   return (
     <>
       <section className="max-w-[1800px] mx-auto py-6 px-6 relative z-10">
-      {/* 頂部：專案資訊 + 分享設定 */}
-      <ProjectHeader
-        title={selected.title}
-        description={selected.description}
-        coverImage={selected.coverImage}
-        totalDays={selected.totalDays || 24}
-        availableDay={selected.availableDay || 0}
-        startDate={selected.startDate}
-        recipientCount={(selected.recipientIds || []).length}
-        receiverEmails={receiverEmails}
-        onReceiverEmailsChange={setReceiverEmails}
-        onAssign={handleAssign}
-        onViewReceivers={() => setShowReceiversModal(true)}
-        onGenerateInvite={handleGenerateInvite}
-        onUpdateProject={(data) => {
-          if (id) {
-            dispatch(updateCountdown({ id, data }));
+        {/* 頂部：專案資訊 + 分享設定 */}
+        <ProjectHeader
+          title={selected.title}
+          description={selected.description}
+          coverImage={selected.coverImage}
+          totalDays={selected.totalDays || 24}
+          availableDay={selected.availableDay || 0}
+          startDate={selected.startDate}
+          recipientCount={(selected.recipientIds || []).length}
+          receiverEmails={receiverEmails}
+          onReceiverEmailsChange={setReceiverEmails}
+          onAssign={handleAssign}
+          onViewReceivers={() => setShowReceiversModal(true)}
+          onGenerateInvite={handleGenerateInvite}
+          onUpdateProject={(data) => {
+            if (id) {
+              dispatch(updateCountdown({ id, data }));
+            }
+          }}
+          countdownId={id || ''}
+          extraPanel={
+            <DayQrCodeGenerator
+              activeDay={activeDay}
+              countdownId={id || ''}
+            />
           }
-        }}
-        countdownId={id || ''}
-        extraPanel={
-          <DayQrCodeGenerator
-            activeDay={activeDay}
-            countdownId={id || ''}
-          />
-        }
-      />
-
-      {/* 接收者管理 Modal */}
-      {id && (
-        <ReceiversModal
-          countdownId={id}
-          isOpen={showReceiversModal}
-          onClose={() => setShowReceiversModal(false)}
         />
-      )}
 
-      <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
-        {/* 左側：Day 列表 + 封面圖 + 禮品卡 */}
-        <div className="space-y-4">
-          <DayListSidebar
-            totalDays={totalDays}
-            activeDay={activeDay}
-            dayCards={selected.dayCards || []}
-            onDaySelect={handleDaySelect}
+        {/* 接收者管理 Modal */}
+        {id && (
+          <ReceiversModal
+            countdownId={id}
+            isOpen={showReceiversModal}
+            onClose={() => setShowReceiversModal(false)}
           />
-        </div>
+        )}
 
-        {/* 中間：編輯區 */}
-        <div className="space-y-4 relative z-10">
-          <DayCardEditor
-            activeDay={activeDay}
-            startDate={selected.startDate}
-            dayCardDraft={dayCardDraft}
-            cgScriptDraft={cgScriptDraft}
-            countdownId={id || ''}
-            onTypeChange={handleTypeChange}
-            onFieldChange={handleFieldChange}
-            onCgScriptChange={setCgScriptDraft}
-            onSave={handleDayCardSave}
-            voucherCard={currentVoucherCard}
-            onVoucherSave={handleVoucherCardSave}
-            onVoucherDelete={handleVoucherCardDelete}
-          />
-        </div>
+        <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
+          {/* 左側：Day 列表 + 封面圖 + 禮品卡 */}
+          <div className="space-y-4">
+            <DayListSidebar
+              totalDays={totalDays}
+              activeDay={activeDay}
+              dayCards={selected.dayCards || []}
+              onDaySelect={handleDaySelect}
+            />
+          </div>
 
-        {/* 右側：預覽 + 列印小卡 */}
-        <div className="space-y-4">
-          <DayCardPreviewPanel
-            activeDay={activeDay}
-            type={dayCardDraft.type as 'story' | 'qr' | 'voucher'}
-            title={dayCardDraft.title}
-            description={dayCardDraft.description}
-            coverImage={dayCardDraft.coverImage}
-            qrReward={dayCardDraft.qrReward}
-            cgPreview={cgPreview}
-            voucherDetail={dayCardDraft.voucherDetail}
-            voucherCard={currentVoucherCard}
-          />
-          <PrintCardPanel
-            day={activeDay}
-            countdownId={id || ''}
-            card={currentPrintCard}
-            onEdit={() => setShowPrintCardModal(true)}
-          />
+          {/* 中間：編輯區 */}
+          <div className="space-y-4 relative z-10">
+            <DayCardEditor
+              activeDay={activeDay}
+              startDate={selected.startDate}
+              dayCardDraft={dayCardDraft}
+              cgScriptDraft={cgScriptDraft}
+              countdownId={id || ''}
+              onTypeChange={handleTypeChange}
+              onFieldChange={handleFieldChange}
+              onCgScriptChange={setCgScriptDraft}
+              onSave={handleDayCardSave}
+              voucherCard={currentVoucherCard}
+              onVoucherSave={handleVoucherCardSave}
+              onVoucherDelete={handleVoucherCardDelete}
+            />
+          </div>
+
+          {/* 右側：預覽 + 列印小卡 */}
+          <div className="space-y-4">
+            <DayCardPreviewPanel
+              activeDay={activeDay}
+              type={dayCardDraft.type as 'story' | 'qr' | 'voucher'}
+              title={dayCardDraft.title}
+              description={dayCardDraft.description}
+              coverImage={dayCardDraft.coverImage}
+              qrReward={dayCardDraft.qrReward}
+              cgPreview={cgPreview}
+              voucherDetail={dayCardDraft.voucherDetail}
+              voucherCard={currentVoucherCard}
+            />
+            <PrintCardPanel
+              day={activeDay}
+              countdownId={id || ''}
+              card={currentPrintCard}
+              onEdit={() => setShowPrintCardModal(true)}
+            />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
       <PrintCardEditorModal
         countdownId={id || ''}

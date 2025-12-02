@@ -8,13 +8,13 @@ import { getPresignedUrls, isMinIOUrl, normalizeMinioUrl } from '../utils/imageU
 const COVER_LABEL = 'cover';
 const ENDING_LABEL = 'ending';
 const INITIAL_BRANCH_ID = 'Story';
-const BATCH_SIZE = 10;
-const BATCH_DELAY_MS = 400;
-const INITIAL_SCENE_COUNT = 3;
+
 interface CgPlayerProps {
   script: CgScript | null;
   className?: string;
   playerClassName?: string;
+  onEnd?: () => void;
+  endCta?: string;
 }
 
 interface CgDialogue {
@@ -69,15 +69,9 @@ interface CgScript {
   };
 }
 
-function chunkArray<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
 
-function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
+
+function CgPlayer({ script, className, playerClassName, onEnd, endCta }: CgPlayerProps) {
   const [presignedUrlsReady, setPresignedUrlsReady] = useState(true);
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
@@ -100,6 +94,7 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
     const urls = new Set<string>();
     collectCgAssetUrls(baseScript, urls);
     const targets = Array.from(urls).filter((url) => isMinIOUrl(url));
+
     if (!targets.length) {
       setPresignedUrlsReady(true);
       return () => {
@@ -107,68 +102,14 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
       };
     }
 
-    const scenes = Array.isArray(baseScript.scenes) ? baseScript.scenes.filter((scene) => scene?.id) : [];
-    const startLabel =
-      baseScript.startScene && scenes.some((scene) => scene.id === baseScript.startScene)
-        ? baseScript.startScene
-        : scenes[0]?.id;
-    const orderedScenes: CgScene[] = [];
-    if (startLabel) {
-      const startIndex = scenes.findIndex((scene) => scene.id === startLabel);
-      if (startIndex >= 0) {
-        for (let i = startIndex; i < scenes.length; i += 1) {
-          orderedScenes.push(scenes[i]);
-        }
-        for (let i = 0; i < startIndex; i += 1) {
-          orderedScenes.push(scenes[i]);
-        }
-      } else {
-        orderedScenes.push(...scenes);
-      }
-    } else {
-      orderedScenes.push(...scenes);
-    }
-
-    const initialSceneIds = orderedScenes.slice(0, INITIAL_SCENE_COUNT);
-    const coverBucket = new Set<string>();
-    if (baseScript.cover) {
-      collectCgAssetUrls(baseScript.cover, coverBucket);
-    }
-    const sceneBucket = new Set<string>();
-    initialSceneIds.forEach((scene) => collectCgAssetUrls(scene, sceneBucket));
-    const initialTargets = Array.from(new Set([...coverBucket, ...sceneBucket])).filter((url) => isMinIOUrl(url));
-    const restTargets = targets.filter((url) => !initialTargets.includes(url));
-
-    const updateMap = (map: Map<string, string>) => {
-      setPresignedMap((prev) => {
-        const next = new Map(prev);
-        map.forEach((value, key) => next.set(key, value));
-        return next;
-      });
-    };
-
     async function hydrate() {
       setPresignedUrlsReady(false);
       try {
-        if (initialTargets.length) {
-          const initialMap = await getPresignedUrls(initialTargets);
-          if (!active) return;
-          updateMap(initialMap);
-        }
+        // 一次性獲取所有簽名 URL，避免分批更新導致 Game 組件重繪（造成閃爍）
+        const allMap = await getPresignedUrls(targets);
+        if (!active) return;
+        setPresignedMap(allMap);
         setPresignedUrlsReady(true);
-        const batches = chunkArray(restTargets, BATCH_SIZE);
-        for (const batch of batches) {
-          if (!active) return;
-          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-          try {
-            const batchMap = await getPresignedUrls(batch);
-            if (!active) return;
-            updateMap(batchMap);
-          } catch (innerError) {
-            console.error('Failed to resolve CG asset batch', innerError);
-            break;
-          }
-        }
       } catch (error) {
         console.error('Failed to resolve CG assets', error);
         if (active) {
@@ -181,7 +122,6 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptSignature]);
 
   // 手動預載所有圖片
@@ -250,7 +190,7 @@ function CgPlayer({ script, className, playerClassName }: CgPlayerProps) {
     };
   }, [resolvedScript, presignedUrlsReady]);
 
-  const config = useMemo(() => buildGameConfig(resolvedScript), [resolvedScript]);
+  const config = useMemo(() => buildGameConfig(resolvedScript, onEnd, endCta), [resolvedScript, onEnd, endCta]);
 
   if (!config) {
     return <p className="text-gray-400">尚未設定 CG JSON 或內容解析失敗。</p>;
@@ -489,7 +429,7 @@ function HotspotLayer({
   );
 }
 
-function buildGameConfig(script: CgScript | null) {
+function buildGameConfig(script: CgScript | null, onEnd?: () => void, endCta?: string) {
   if (!script) return null;
   const scenes = Array.isArray(script.scenes) ? script.scenes.filter((scene) => scene?.id) : [];
   const sceneMap = new Map(scenes.map((scene) => [scene.id, scene]));
@@ -501,7 +441,7 @@ function buildGameConfig(script: CgScript | null) {
       {scenes.map((scene, index) =>
         renderScene(scene, sceneMap, scenes[index + 1]?.id, Boolean(script.ending)),
       ) as any}
-      {renderEnding(script.ending) as any}
+      {renderEnding(script.ending, onEnd, endCta) as any}
     </Branch>
   );
   const branches = prepareBranches({ BranchStory });
@@ -657,8 +597,37 @@ function renderScene(
   );
 }
 
-function renderEnding(ending: CgScript['ending']) {
-  if (!ending) return null;
+function renderEnding(ending: CgScript['ending'], onEnd?: () => void, endCta?: string) {
+  if (!ending) {
+    // 如果沒有 ending 設定但有 onEnd，我們需要一個默認的結束畫面或者直接調用 onEnd
+    // 這裡假設如果沒有 ending 設定，我們至少顯示一個簡單的結束並提供按鈕
+    if (onEnd) {
+      return (
+        <Label label={ENDING_LABEL} key={ENDING_LABEL}>
+          <Say
+            placement="bottom"
+            scheme="dark"
+            scrim
+            tag={{ text: 'DAY CLEAR', style: { letterSpacing: '0.3em' } }}
+          >
+            {'完成今日劇情。'}
+          </Say>
+          <Menu
+            placement="bottom"
+            size="md"
+            scheme="dark"
+            choices={[
+              {
+                label: endCta || '領取禮物',
+                onClick: () => onEnd(),
+              },
+            ]}
+          />
+        </Label>
+      );
+    }
+    return null;
+  }
   return (
     <Label label={ENDING_LABEL} key={ENDING_LABEL}>
       {ending.image && <Scene src={ending.image} durationMs={800} />}
@@ -676,8 +645,14 @@ function renderEnding(ending: CgScript['ending']) {
         scheme="dark"
         choices={[
           {
-            label: ending.cta || '回到封面',
-            onClick: (ctx: any) => ctx.goToStatement(COVER_LABEL),
+            label: endCta || ending.cta || '回到封面',
+            onClick: (ctx: any) => {
+              if (onEnd) {
+                onEnd();
+              } else {
+                ctx.goToStatement(COVER_LABEL);
+              }
+            },
           },
         ]}
       />

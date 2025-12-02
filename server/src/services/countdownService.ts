@@ -6,7 +6,7 @@ import type { DayCard, QrReward, VoucherDetail } from '../types/index.js';
 export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [], countdown: any = null): DayCard[] {
   const map = new Map((cards || []).filter(Boolean).map((card) => [card.day, card]));
   const rewardMap = new Map((countdown?.qrRewards || []).map((reward: QrReward) => [reward.day, reward]));
-  
+
   return Array.from({ length: totalDays }).map((_, index) => {
     const day = index + 1;
     const base = map.get(day) || {};
@@ -14,7 +14,7 @@ export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [],
     const type = baseType === 'qr' ? 'qr' : baseType === 'voucher' ? 'voucher' : 'story';
     let qrReward: QrReward | null = null;
     let voucherDetail: VoucherDetail | null = null;
-    
+
     if (type === 'qr') {
       const source = hasRewardData(base.qrReward) ? base.qrReward : rewardMap.get(day);
       if (source) {
@@ -37,7 +37,7 @@ export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [],
         validUntil: source?.validUntil || null,
       };
     }
-    
+
     return {
       id: base.id || null,
       day,
@@ -45,7 +45,7 @@ export function buildDayCards(totalDays = DEFAULT_TOTAL_DAYS, cards: any[] = [],
       description: base.description || '',
       coverImage: base.coverImage || '',
       type,
-      cgScript: type === 'story' ? base.cgScript || null : null,
+      cgScript: base.cgScript || null,
       qrReward,
       voucherDetail: type === 'voucher' ? voucherDetail : null,
     };
@@ -59,7 +59,7 @@ export async function persistDayCards(
   countdown: any = null
 ): Promise<DayCard[]> {
   if (!countdownId || !CountdownDays) return [];
-  
+
   const normalized = buildDayCards(totalDays, cards, countdown);
   if (!normalized.length) return normalized;
 
@@ -75,7 +75,7 @@ export async function persistDayCards(
           description: card.description,
           coverImage: card.coverImage,
           type: card.type,
-          cgScript: card.type === 'story' ? card.cgScript || null : null,
+          cgScript: card.cgScript || null,
           qrReward: card.type === 'qr' ? card.qrReward || null : null,
           voucherDetail: card.type === 'voucher' ? card.voucherDetail || null : null,
           updatedAt: timestamp,
@@ -102,11 +102,11 @@ export async function attachDayCards(countdown: any): Promise<any> {
 
 export async function attachDayCardsToMany(countdowns: any[] = []): Promise<any[]> {
   if (!countdowns.length || !CountdownDays) return [];
-  
+
   const ids = countdowns.map((item) => item.id);
   const allCards = await CountdownDays.find({ countdownId: { $in: ids } }).toArray();
   const grouped = new Map();
-  
+
   allCards.forEach((card) => {
     if (!grouped.has(card.countdownId)) grouped.set(card.countdownId, []);
     grouped.get(card.countdownId).push(card);
@@ -168,7 +168,7 @@ export function countdownSummary(countdown: any): any {
 
 export async function ensureRecipientAssignments(countdownId: string, recipientIds: string[] = []): Promise<void> {
   if (!recipientIds.length || !Assignments) return;
-  
+
   const operations = recipientIds.map((receiverId) => ({
     updateOne: {
       filter: { countdownId, receiverId },
@@ -194,7 +194,7 @@ export async function ensureRecipientAssignments(countdownId: string, recipientI
 
 export async function resolveReceiverIds(recipientIds: string[] = [], recipientEmails: string[] = []): Promise<string[]> {
   if (!Users) return recipientIds;
-  
+
   const uniqueIds = new Set(recipientIds || []);
   const normalizedEmails = (recipientEmails || [])
     .map((email) => email.toLowerCase())

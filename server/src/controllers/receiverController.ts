@@ -15,7 +15,7 @@ export async function getInbox(req: AuthenticatedRequest, res: Response) {
   const countdownIds = assignments.map((assignment) => assignment.countdownId);
   const countdownDocs = await Countdowns.find({ id: { $in: countdownIds } }).toArray();
   const hydrated = await countdownService.attachDayCardsToMany(countdownDocs);
-  
+
   // 獲取所有創建者資訊
   const ownerIds = [...new Set(countdownDocs.map((doc) => doc.ownerId))];
   const owners = await Users.find({ id: { $in: ownerIds } }).toArray();
@@ -25,7 +25,7 @@ export async function getInbox(req: AuthenticatedRequest, res: Response) {
     email: owner.email,
     avatar: owner.avatar,
   }]));
-  
+
   const map = new Map(hydrated.map((doc) => [doc.id, doc]));
   const items = assignments.map((assignment) => {
     const countdown = map.get(assignment.countdownId);
@@ -68,11 +68,11 @@ export async function getReceiverCountdown(req: AuthenticatedRequest, res: Respo
 
   const countdownWithCards = await countdownService.attachDayCards(countdown);
   const voucherCards = await voucherCardService.getVoucherCards(countdown.id, countdown.totalDays);
-  return res.json({ 
+  return res.json({
     assignment: {
       ...assignment,
       unlockedDays: assignment.unlockedDays || [],
-    }, 
+    },
     countdown: countdownService.withAvailableContent({ ...countdownWithCards, voucherCards }),
     creator: creatorInfo,
   });
@@ -129,7 +129,7 @@ export async function getReceiverDayContent(req: AuthenticatedRequest, res: Resp
     description: dayCard.description,
     type: dayCard.type,
     coverImage: dayCard.coverImage,
-    cgScript: dayCard.type === 'story' ? dayCard.cgScript : null,
+    cgScript: dayCard.cgScript || null,
     qrReward: dayCard.type === 'qr' ? dayCard.qrReward : null,
     voucherDetail: dayCard.type === 'voucher' ? dayCard.voucherDetail : null,
   });
@@ -182,10 +182,10 @@ export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) 
 
   // 檢查該天是否已解鎖
   const unlockedDays = assignment.unlockedDays || [];
-  
+
   if (unlockedDays.includes(day)) {
-    return res.json({ 
-      success: true, 
+    return res.json({
+      success: true,
       message: 'Day already unlocked',
       unlockedDays: unlockedDays,
     });
@@ -198,8 +198,8 @@ export async function unlockDayWithQr(req: AuthenticatedRequest, res: Response) 
     { $set: { unlockedDays: newUnlockedDays } }
   );
 
-  return res.json({ 
-    success: true, 
+  return res.json({
+    success: true,
     message: 'Day unlocked successfully',
     unlockedDays: newUnlockedDays,
   });

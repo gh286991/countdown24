@@ -46,7 +46,7 @@ function DayCardPreviewPanel({
   return (
     <div className="space-y-4">
       {/* CG 播放器 */}
-      {type === 'story' && (
+      {(type === 'story' || cgPreview) && (
         <div className="glass-panel p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-300">CG 播放預覽</h3>
