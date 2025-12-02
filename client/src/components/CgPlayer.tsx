@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Branch, Game, Label, Menu, Say, Scene, prepareBranches, useBranchContext } from 'react-visual-novel';
 import { QueryParamProvider } from 'use-query-params';
-import { ReactRouter6Adapter } from 'use-query-params/adapters/react-router-6';
 import 'react-visual-novel/dist/index.css';
 import { getPresignedUrls, isMinIOUrl, normalizeMinioUrl } from '../utils/imageUtils';
 
@@ -70,6 +69,20 @@ interface CgScript {
 }
 
 
+
+// 內存適配器，確保每次開啟都從頭開始，不讀取 URL 參數
+function MemoryAdapter({ children }: { children: (adapter: any) => React.ReactElement | null }) {
+  const [search, setSearch] = useState('');
+  const adapter = useMemo(
+    () => ({
+      location: { search },
+      push: (location: { search: string }) => setSearch(location.search),
+      replace: (location: { search: string }) => setSearch(location.search),
+    }),
+    [search]
+  );
+  return children(adapter);
+}
 
 function CgPlayer({ script, className, playerClassName, onEnd, endCta }: CgPlayerProps) {
   const [presignedUrlsReady, setPresignedUrlsReady] = useState(true);
@@ -215,7 +228,7 @@ function CgPlayer({ script, className, playerClassName, onEnd, endCta }: CgPlaye
 
   return (
     <div className={`${className || 'relative overflow-hidden rounded-3xl bg-slate-900/80'} cg-player-root`}>
-      <QueryParamProvider adapter={ReactRouter6Adapter}>
+      <QueryParamProvider adapter={MemoryAdapter}>
         {/* @ts-expect-error - react-visual-novel types are too strict */}
         <Game assets={{}} branches={config.branches} initialBranchId={INITIAL_BRANCH_ID}>
           {(render) => {
