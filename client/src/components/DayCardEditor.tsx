@@ -69,7 +69,7 @@ function DayCardEditor({
 
   const { showToast } = useToast();
   return (
-    <div className="glass-panel p-6 space-y-4">
+    <div className="glass-panel p-4 sm:p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">編輯 Day {activeDay}</h2>
@@ -89,16 +89,17 @@ function DayCardEditor({
       </div>
 
       {/* 類型切換 */}
-      <div className="flex gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {['story', 'qr', 'voucher'].map((mode) => (
           <button
             type="button"
             key={mode}
             onClick={() => onTypeChange(mode as 'story' | 'qr' | 'voucher')}
-            className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${dayCardDraft.type === mode
-              ? 'border-aurora bg-aurora text-slate-900'
-              : 'border-white/20 text-gray-300 hover:border-white/40'
-              }`}
+            className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
+              dayCardDraft.type === mode
+                ? 'border-aurora bg-aurora text-slate-900'
+                : 'border-white/20 text-gray-300 hover:border-white/40'
+            }`}
           >
             {mode === 'story' ? (
               <span className="flex items-center gap-2">

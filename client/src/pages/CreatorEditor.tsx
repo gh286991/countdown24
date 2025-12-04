@@ -47,6 +47,7 @@ function CreatorEditor() {
   const [cgScriptDraft, setCgScriptDraft] = useState(JSON.stringify(sampleCgScript, null, 2));
   const [activeDay, setActiveDay] = useState(Number(searchParams.get('day')) || 1);
   const [dayCardDraft, setDayCardDraft] = useState({ ...emptyCard, day: Number(searchParams.get('day')) || 1 });
+  const [mobileSection, setMobileSection] = useState<'days' | 'edit' | 'preview'>('edit');
   const [showReceiversModal, setShowReceiversModal] = useState(false);
   const [showPrintCardModal, setShowPrintCardModal] = useState(false);
   const [isSavingPrintCard, setIsSavingPrintCard] = useState(false);
@@ -170,6 +171,7 @@ function CreatorEditor() {
   const handleDaySelect = (value: number) => {
     setActiveDay(value);
     setSearchParams({ day: String(value) });
+    setMobileSection('edit');
   };
 
   const handleDayCardSave = async () => {
@@ -277,7 +279,7 @@ function CreatorEditor() {
 
   return (
     <>
-      <section className="max-w-[1800px] mx-auto py-6 px-6 relative z-10">
+      <section className="max-w-[1800px] mx-auto py-6 px-4 sm:px-6 relative z-10">
         {/* 頂部：專案資訊 + 分享設定 */}
         <ProjectHeader
           title={selected.title}
@@ -315,7 +317,101 @@ function CreatorEditor() {
           />
         )}
 
-        <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
+        {/* 行動版導覽 */}
+        <div className="lg:hidden space-y-3 mb-4">
+          <div className="glass-panel p-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-gray-400">目前編輯</p>
+              <p className="text-lg font-semibold">Day {activeDay}</p>
+              <p className="text-xs text-gray-400 mt-1">{selected.title}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-gray-100">{dayCardDraft.title || '未命名小卡'}</span>
+              <button
+                type="button"
+                onClick={() => setShowPrintCardModal(true)}
+                className="text-xs px-3 py-1.5 rounded-full border border-white/20 text-gray-100 hover:border-white/40"
+              >
+                列印卡片
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { key: 'days', label: '日期列表' },
+              { key: 'edit', label: '編輯內容' },
+              { key: 'preview', label: '預覽' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setMobileSection(tab.key as 'days' | 'edit' | 'preview')}
+                className={`rounded-xl px-3 py-2 text-sm font-semibold border transition-colors ${
+                  mobileSection === tab.key
+                    ? 'border-aurora bg-aurora text-slate-900'
+                    : 'border-white/15 text-gray-200 hover:border-white/40'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 行動版分頁內容 */}
+        <div className="lg:hidden space-y-4">
+          {mobileSection === 'days' && (
+            <DayListSidebar
+              totalDays={totalDays}
+              activeDay={activeDay}
+              dayCards={selected.dayCards || []}
+              onDaySelect={handleDaySelect}
+            />
+          )}
+
+          {mobileSection === 'edit' && (
+            <DayCardEditor
+              activeDay={activeDay}
+              startDate={selected.startDate}
+              dayCardDraft={dayCardDraft}
+              cgScriptDraft={cgScriptDraft}
+              countdownId={id || ''}
+              onTypeChange={handleTypeChange}
+              onFieldChange={handleFieldChange}
+              onCgScriptChange={setCgScriptDraft}
+              onSave={handleDayCardSave}
+              voucherCard={currentVoucherCard}
+              onVoucherSave={handleVoucherCardSave}
+              onVoucherDelete={handleVoucherCardDelete}
+            />
+          )}
+
+          {mobileSection === 'preview' && (
+            <div className="space-y-4">
+              <DayCardPreviewPanel
+                activeDay={activeDay}
+                type={dayCardDraft.type as 'story' | 'qr' | 'voucher'}
+                title={dayCardDraft.title}
+                description={dayCardDraft.description}
+                coverImage={dayCardDraft.coverImage}
+                qrReward={dayCardDraft.qrReward}
+                cgPreview={cgPreview}
+                voucherDetail={dayCardDraft.voucherDetail}
+                voucherCard={currentVoucherCard}
+              />
+              <PrintCardPanel
+                day={activeDay}
+                countdownId={id || ''}
+                card={currentPrintCard}
+                onEdit={() => setShowPrintCardModal(true)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 桌機版三欄佈局 */}
+        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
           {/* 左側：Day 列表 + 封面圖 + 禮品卡 */}
           <div className="space-y-4">
             <DayListSidebar
