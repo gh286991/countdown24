@@ -29,6 +29,7 @@ function PrintCardPanel({ day, countdownId, card, onEdit }: PrintCardPanelProps)
       {card?.previewImage ? (
         <PresignedImage
           src={card.previewImage}
+          preferObjectUrl
           alt={`Day ${day}`}
           className="w-full rounded-[28px] border border-white/10 shadow-lg"
         />

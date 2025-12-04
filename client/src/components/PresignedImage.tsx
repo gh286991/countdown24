@@ -4,18 +4,24 @@ import { getPresignedUrl, isMinIOUrl } from '../utils/imageUtils';
 
 type PresignedImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   src?: string | null;
+  /**
+   * 強制以 fetch 下載完整檔案並轉成 blob URL，避免瀏覽器對圖片發送 Range 請求
+   */
+  preferObjectUrl?: boolean;
 };
 
 /**
  * 自動處理預簽名 URL 的圖片組件
  * 當預簽名 URL 過期時會自動重新獲取
  */
-export function PresignedImage({ src, onError, ...props }: PresignedImageProps) {
+export function PresignedImage({ src, onError, preferObjectUrl = false, ...props }: PresignedImageProps) {
   const presignedUrl = usePresignedImage(src);
   const retryCountRef = useRef(0);
   const maxRetries = 2;
   const srcRef = useRef(src);
   const prevPresignedUrlRef = useRef<string | undefined>(presignedUrl);
+  const objectUrlRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // 當 src 改變時，重置重試計數
   useEffect(() => {
@@ -68,9 +74,45 @@ export function PresignedImage({ src, onError, ...props }: PresignedImageProps) 
     [onError], // 移除 src 和 retryCount 依賴，使用 ref 代替
   );
 
-  if (!presignedUrl) {
+  useEffect(() => {
+    if (!preferObjectUrl || !presignedUrl) {
+      return undefined;
+    }
+
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const controller = abortRef.current;
+
+    const hydrate = async () => {
+      try {
+        const response = await fetch(presignedUrl, { signal: controller.signal });
+        const blob = await response.blob();
+        if (controller.signal.aborted) return;
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+        }
+        objectUrlRef.current = URL.createObjectURL(blob);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error('Failed to fetch image as blob:', error);
+      }
+    };
+
+    hydrate();
+    return () => {
+      controller.abort();
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, [presignedUrl, preferObjectUrl]);
+
+  const finalSrc = preferObjectUrl ? objectUrlRef.current || presignedUrl : presignedUrl;
+
+  if (!finalSrc) {
     return null;
   }
 
-  return <img src={presignedUrl} onError={handleError} {...props} />;
+  return <img src={finalSrc} onError={handleError} {...props} />;
 }

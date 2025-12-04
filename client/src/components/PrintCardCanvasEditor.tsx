@@ -40,6 +40,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
   const onChangeRef = useRef(onChange);
   const isInitializingRef = useRef(false);
   const emitSnapshotRef = useRef<(() => void) | null>(null);
+  const objectUrlsRef = useRef<string[]>([]);
   const [addingQr, setAddingQr] = useState(false);
   const [activeColor, setActiveColor] = useState('#1f2937');
   const [background, setBackground] = useState('#e2e8f0');
@@ -49,6 +50,14 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    return () => {
+      // 清理暫存的 object URL，避免佔用記憶體
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlsRef.current = [];
+    };
+  }, []);
 
   const buildSnapshot = useCallback(() => {
     const canvas = fabricRef.current;
@@ -69,7 +78,8 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         json.background = bg;
       }
       // fabric 6 DataURL options do not accept backgroundColor; set via canvas state above
-      const preview = canvas.toDataURL({ format: 'png', multiplier: 2 });
+      // Use WebP to keep preview payload small (faster upload/viewing) while preserving quality
+      const preview = canvas.toDataURL({ format: 'webp', quality: 0.92, multiplier: 2 });
       return { canvasJson: json, previewImage: preview };
     } catch (error) {
       console.error('Error building snapshot:', error);
@@ -193,6 +203,97 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     }
   }, []);
 
+  const resolveImageSource = useCallback(
+    async (
+      url: string,
+      options: { preferObjectUrl?: boolean; assetKey?: string | null; skipPresign?: boolean } = {},
+    ) => {
+      const preferObjectUrl = options.preferObjectUrl !== false;
+      const createObjectUrl = async (input: string) => {
+        const response = await fetch(input);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        objectUrlsRef.current.push(objectUrl);
+        return objectUrl;
+      };
+
+      if (!url) {
+        return { src: url, assetKey: options.assetKey ?? null };
+      }
+      if (!isMinIOUrl(url)) {
+        return { src: url, assetKey: options.assetKey ?? null };
+      }
+
+      const normalized = normalizeMinioUrl(url);
+      let presigned = url;
+      if (!options.skipPresign) {
+        try {
+          presigned = await getPresignedUrl(normalized);
+        } catch (error) {
+          console.error('Failed to presign image URL, fallback to original:', error);
+          presigned = url;
+        }
+      }
+
+      if (preferObjectUrl) {
+        try {
+          const objUrl = await createObjectUrl(presigned);
+          return { src: objUrl, assetKey: options.assetKey ?? normalized };
+        } catch (error) {
+          console.warn('Failed to fetch object URL, fallback to presigned URL:', error);
+        }
+      }
+
+      return { src: presigned, assetKey: options.assetKey ?? normalized };
+    },
+    [],
+  );
+
+  const resolveNodeSources = useCallback(
+    async (node: any, presignedMap: Map<string, string>) => {
+      if (!node) return;
+      const resolveKey = (value?: string | null) => {
+        if (typeof value !== 'string') return null;
+        if (!isMinIOUrl(value)) return null;
+        return normalizeMinioUrl(value);
+      };
+
+      const key = resolveKey(node.assetKey || node.src);
+      if (key) {
+        const presigned = presignedMap.get(key) || key;
+        const { src, assetKey } = await resolveImageSource(presigned, {
+          preferObjectUrl: true,
+          assetKey: key,
+          skipPresign: true,
+        });
+        node.src = src;
+        node.assetKey = assetKey;
+      }
+
+      const bgImage = node.backgroundImage;
+      if (bgImage && typeof bgImage === 'object') {
+        const bgKey = resolveKey(bgImage.assetKey || bgImage.src);
+        if (bgKey) {
+          const presigned = presignedMap.get(bgKey) || bgKey;
+          const { src, assetKey } = await resolveImageSource(presigned, {
+            preferObjectUrl: true,
+            assetKey: bgKey,
+            skipPresign: true,
+          });
+          bgImage.src = src;
+          bgImage.assetKey = assetKey;
+        }
+      }
+
+      if (Array.isArray(node.objects)) {
+        for (const child of node.objects) {
+          await resolveNodeSources(child, presignedMap);
+        }
+      }
+    },
+    [resolveImageSource],
+  );
+
   const hydrateCanvasJson = useCallback(
     async (json: any) => {
       if (!json) return json;
@@ -204,62 +305,15 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
 
       try {
         const presignedMap = await getPresignedUrls(Array.from(targets));
-
-        const applyPresigned = (node: any) => {
-          if (!node) return;
-          const resolveKey = (value?: string | null) => {
-            if (typeof value !== 'string') return null;
-            if (!isMinIOUrl(value)) return null;
-            return normalizeMinioUrl(value);
-          };
-
-          const key = resolveKey(node.assetKey || node.src);
-          if (key && presignedMap.has(key)) {
-            node.src = presignedMap.get(key) || node.src;
-            node.assetKey = key;
-          }
-
-          const bgImage = node.backgroundImage;
-          if (bgImage && typeof bgImage === 'object') {
-            const bgKey = resolveKey(bgImage.assetKey || bgImage.src);
-            if (bgKey && presignedMap.has(bgKey)) {
-              bgImage.src = presignedMap.get(bgKey) || bgImage.src;
-              bgImage.assetKey = bgKey;
-            }
-          }
-
-          if (Array.isArray(node.objects)) {
-            node.objects.forEach((child: any) => applyPresigned(child));
-          }
-        };
-
-        applyPresigned(clone);
+        await resolveNodeSources(clone, presignedMap);
       } catch (error) {
         console.error('Failed to refresh canvas assets:', error);
       }
 
       return clone;
     },
-    [collectImageTargets],
+    [collectImageTargets, resolveNodeSources],
   );
-
-  const resolveImageSource = useCallback(async (url: string) => {
-    if (!url) {
-      return { src: url, assetKey: null as string | null };
-    }
-    if (!isMinIOUrl(url)) {
-      return { src: url, assetKey: null as string | null };
-    }
-
-    const normalized = normalizeMinioUrl(url);
-    try {
-      const presigned = await getPresignedUrl(normalized);
-      return { src: presigned, assetKey: normalized };
-    } catch (error) {
-      console.error('Failed to presign image URL, fallback to original:', error);
-      return { src: url, assetKey: normalized };
-    }
-  }, []);
 
   const loadJsonIntoCanvas = useCallback(
     async (canvas: FabricCanvas, json: any, isDisposed: () => boolean) => {

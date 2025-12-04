@@ -121,7 +121,12 @@ function PrintCardsPage() {
                     {pageCards.map((card) => (
                       <div key={card.day} className="print-card-slot">
                         {card.previewImage ? (
-                          <PresignedImage src={card.previewImage} alt={`Day ${card.day}`} className="print-card-image" />
+                          <PresignedImage
+                            src={card.previewImage}
+                            preferObjectUrl
+                            alt={`Day ${card.day}`}
+                            className="print-card-image"
+                          />
                         ) : (
                           <div className="print-card loading flex-col text-center">
                             <p className="mb-2 text-xs text-yellow-200">尚未產生預覽，請重新編輯小卡</p>
