@@ -22,6 +22,8 @@ router.post('/:id/invite', requireAuth, requireRole('creator'), asyncHandler(cou
 router.post('/invite/accept/:token', requireAuth, asyncHandler(countdownController.acceptInvitation));
 router.post('/:id/generate-qr', requireAuth, requireRole('creator'), asyncHandler(countdownController.generateDayQrCode));
 router.get('/:id/print-cards', requireAuth, requireRole('creator'), asyncHandler(countdownController.getPrintCardsForCountdown));
+router.get('/:id/print-cards/export', requireAuth, requireRole('creator'), asyncHandler(countdownController.exportPrintCardImages));
+router.get('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.getPrintCardByDay));
 router.put('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.savePrintCard));
 router.delete('/:id/print-cards/:day', requireAuth, requireRole('creator'), asyncHandler(countdownController.deletePrintCard));
 router.get('/:id/voucher-cards', requireAuth, requireRole('creator'), asyncHandler(countdownController.getVoucherCardsForCountdown));

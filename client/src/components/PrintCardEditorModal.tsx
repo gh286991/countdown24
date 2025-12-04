@@ -3,6 +3,7 @@ import { HiOutlineXMark, HiOutlineTrash, HiOutlineEye } from 'react-icons/hi2';
 import PrintCardCanvasEditor, { type PrintCardCanvasEditorRef } from './PrintCardCanvasEditor';
 import type { PrintCard } from '../store/countdownSlice';
 import { printCardTemplates, blankTemplate, type PrintCardTemplate } from '../data/printCardTemplates';
+import api from '../api/client';
 
 interface PrintCardEditorModalProps {
   countdownId: string;
@@ -33,6 +34,7 @@ function PrintCardEditorModal({
   const [showPreview, setShowPreview] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(!card?.isConfigured);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(card?.canvasTemplateId || null);
+  const [uploadingPreview, setUploadingPreview] = useState(false);
 
   const allTemplates = [blankTemplate, ...printCardTemplates];
   const activeTemplate = selectedTemplateId ? allTemplates.find((tpl) => tpl.id === selectedTemplateId) : null;
@@ -54,17 +56,56 @@ function PrintCardEditorModal({
     setIsTemplateModalOpen(false);
   };
 
-  const handleSave = () => {
-    if (isSaving) return;
-    if (!canvasState.previewImage) {
+  const uploadPreviewImage = async (): Promise<string> => {
+    const src = canvasState.previewImage;
+    if (!src) {
+      throw new Error('Missing preview image');
+    }
+    if (!src.startsWith('data:')) {
+      return src;
+    }
+
+    setUploadingPreview(true);
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const file = new File([blob], `print-card-${countdownId}-${day}-${Date.now()}.webp`, {
+        type: blob.type || 'image/webp',
+      });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'print-cards/previews');
+      formData.append('usePresigned', 'true');
+      const { data } = await api.post('/uploads', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data.originalUrl || data.url;
+    } finally {
+      setUploadingPreview(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (isSaving || uploadingPreview) return;
+    const snapshot = canvasRef.current?.getSnapshot() || canvasState;
+    if (!snapshot?.previewImage) {
       alert('請先在畫布中設定內容');
+      return;
+    }
+    let previewUrl = snapshot.previewImage;
+    try {
+      previewUrl = await uploadPreviewImage();
+      setCanvasState((prev) => ({ ...prev, previewImage: previewUrl }));
+    } catch (error) {
+      console.error('Failed to upload preview image:', error);
+      alert('預覽圖上傳失敗，請稍後再試');
       return;
     }
     onSave({
       template: card?.template || 'imageLeft',
       canvasTemplateId: selectedTemplateId || null,
-      canvasJson: canvasState.canvasJson,
-      previewImage: canvasState.previewImage,
+      canvasJson: snapshot.canvasJson,
+      previewImage: previewUrl,
       isConfigured: true,
     });
   };
@@ -163,10 +204,10 @@ function PrintCardEditorModal({
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || uploadingPreview}
               className="px-5 py-2 rounded-xl bg-gradient-to-r from-aurora to-purple-500 text-slate-900 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? '儲存中…' : '💾 儲存列印小卡'}
+              {isSaving || uploadingPreview ? '儲存中…' : '💾 儲存列印小卡'}
             </button>
           </div>
         </div>

@@ -65,11 +65,10 @@ export async function getCountdownById(req: AuthenticatedRequest, res: Response)
   }
 
   const isOwner = req.user.role === 'creator' && countdown.ownerId === req.user.id;
-  const printCards = isOwner ? await printCardService.getPrintCards(countdown.id, countdown.totalDays) : [];
   const voucherCards = await voucherCardService.getVoucherCards(countdown.id, countdown.totalDays);
   const countdownPayload = {
     ...countdownWithCards,
-    printCards: isOwner ? printCards : undefined,
+    // printCards intentionally excluded here to avoid large canvasJson payloads; fetch separately when needed
     voucherCards,
   };
 
@@ -79,6 +78,30 @@ export async function getCountdownById(req: AuthenticatedRequest, res: Response)
     payload.assignments = await Assignments.find({ countdownId: countdown.id }).toArray();
   }
   return res.json(payload);
+}
+
+export async function getPrintCardByDay(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id, day } = req.params;
+  const countdown = await Countdowns.findOne({ id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  if (req.user.role !== 'creator' || countdown.ownerId !== req.user.id) {
+    return res.status(403).json({ message: 'Not allowed to view this countdown' });
+  }
+
+  const dayNumber = Number(day);
+  if (!dayNumber || dayNumber < 1) {
+    return res.status(400).json({ message: 'Invalid day' });
+  }
+
+  const card = await printCardService.getPrintCard(countdown.id, dayNumber);
+  return res.json({ card });
 }
 
 export async function createCountdown(req: AuthenticatedRequest, res: Response) {
@@ -504,6 +527,31 @@ export async function getPrintCardsForCountdown(req: AuthenticatedRequest, res: 
 
   const cards = await printCardService.getPrintCards(id, countdown.totalDays);
   return res.json({ cards });
+}
+
+export async function exportPrintCardImages(req: AuthenticatedRequest, res: Response) {
+  if (!req.user || !Countdowns) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { id } = req.params;
+  const countdown = await Countdowns.findOne({ id, ownerId: req.user.id });
+  if (!countdown) {
+    return res.status(404).json({ message: 'Countdown not found' });
+  }
+
+  const cards = await printCardService.getPrintCards(id, countdown.totalDays);
+  // 僅回傳列印需要的欄位，避免載入過多 canvasJson
+  const payload = cards.map((card) => ({
+    day: card.day,
+    title: card.title,
+    subtitle: card.subtitle,
+    template: card.template,
+    isConfigured: card.isConfigured,
+    previewImage: card.previewImage || '',
+  }));
+
+  return res.json({ cards: payload });
 }
 
 export async function savePrintCard(req: AuthenticatedRequest, res: Response) {

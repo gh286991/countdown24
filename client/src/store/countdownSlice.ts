@@ -256,6 +256,30 @@ export const fetchPrintCards = createAsyncThunk(
   },
 );
 
+export const fetchPrintCard = createAsyncThunk(
+  'countdowns/fetchPrintCard',
+  async ({ countdownId, day }: { countdownId: string; day: number }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${countdownId}/print-cards/${day}`);
+      return { countdownId, card: data.card };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法取得列印小卡');
+    }
+  },
+);
+
+export const fetchPrintCardImages = createAsyncThunk(
+  'countdowns/fetchPrintCardImages',
+  async (countdownId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/countdowns/${countdownId}/print-cards/export`);
+      return { countdownId, cards: data.cards || [] };
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || '無法載入列印小卡圖片');
+    }
+  },
+);
+
 export const savePrintCard = createAsyncThunk(
   'countdowns/savePrintCard',
   async (
@@ -479,6 +503,38 @@ const countdownSlice = createSlice({
         }
       })
       .addCase(fetchPrintCards.rejected, (state) => {
+        state.printCardsStatus = 'failed';
+      })
+      .addCase(fetchPrintCard.fulfilled, (state, action) => {
+        if (state.selected && state.selected.id === action.payload.countdownId && action.payload.card) {
+          const existing = state.selected.printCards || [];
+          const next = [...existing];
+          const index = next.findIndex((item) => item.day === action.payload.card.day);
+          if (index >= 0) {
+            next[index] = action.payload.card;
+          } else {
+            next.push(action.payload.card);
+          }
+          state.selected.printCards = next;
+        }
+      })
+      .addCase(fetchPrintCardImages.pending, (state) => {
+        state.printCardsStatus = 'loading';
+      })
+      .addCase(fetchPrintCardImages.fulfilled, (state, action) => {
+        state.printCardsStatus = 'succeeded';
+        if (state.selected && state.selected.id === action.payload.countdownId) {
+          const existing = state.selected.printCards || [];
+          const map = new Map<number, any>();
+          existing.forEach((card) => map.set(card.day, card));
+          (action.payload.cards || []).forEach((card: any) => {
+            const current = map.get(card.day) || {};
+            map.set(card.day, { ...current, ...card });
+          });
+          state.selected.printCards = Array.from(map.values());
+        }
+      })
+      .addCase(fetchPrintCardImages.rejected, (state) => {
         state.printCardsStatus = 'failed';
       })
       .addCase(savePrintCard.fulfilled, (state, action) => {

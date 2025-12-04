@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import PrintCardPreview from '../components/PrintCardPreview';
-import { fetchCountdownDetail, fetchPrintCards } from '../store/countdownSlice';
+import { PresignedImage } from '../components/PresignedImage';
+import { fetchCountdownDetail, fetchPrintCards, fetchPrintCardImages } from '../store/countdownSlice';
 import type { RootState, AppDispatch } from '../store';
 import { generatePrintCardsPDF, printCardsWithBrowser } from '../utils/pdfGenerator';
 
@@ -27,6 +28,13 @@ function PrintCardsPage() {
       dispatch(fetchPrintCards(id));
     }
   }, [dispatch, id, selected?.id, selected?.printCards]);
+
+  // 專供列印：確保預覽圖都載入（避免僅有 meta 資料）
+  useEffect(() => {
+    if (id && selected && selected.id === id) {
+      dispatch(fetchPrintCardImages(id));
+    }
+  }, [dispatch, id, selected?.id]);
 
   const cards = useMemo(
     () => (selected?.printCards || []).filter((card) => card.isConfigured).sort((a, b) => a.day - b.day),
@@ -113,7 +121,7 @@ function PrintCardsPage() {
                     {pageCards.map((card) => (
                       <div key={card.day} className="print-card-slot">
                         {card.previewImage ? (
-                          <img src={card.previewImage} alt={`Day ${card.day}`} className="print-card-image" />
+                          <PresignedImage src={card.previewImage} alt={`Day ${card.day}`} className="print-card-image" />
                         ) : (
                           <div className="print-card loading flex-col text-center">
                             <p className="mb-2 text-xs text-yellow-200">尚未產生預覽，請重新編輯小卡</p>

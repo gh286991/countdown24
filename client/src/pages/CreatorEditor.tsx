@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useSearchParams } from 'react-router-dom';
 import ProjectHeader from '../components/ProjectHeader';
@@ -19,6 +19,7 @@ import {
   deletePrintCard,
   fetchCountdownDetail,
   fetchCountdownDay,
+  fetchPrintCard,
   savePrintCard,
   saveVoucherCard,
   updateCountdown,
@@ -49,6 +50,7 @@ function CreatorEditor() {
   const [showReceiversModal, setShowReceiversModal] = useState(false);
   const [showPrintCardModal, setShowPrintCardModal] = useState(false);
   const [isSavingPrintCard, setIsSavingPrintCard] = useState(false);
+  const fetchedPrintCardDays = useRef<Set<string>>(new Set());
   const dayFromUrl = Number(searchParams.get('day')) || 1;
   const { showToast } = useToast();
 
@@ -64,6 +66,11 @@ function CreatorEditor() {
     setActiveDay(dayFromUrl);
   }, [dayFromUrl]);
 
+  useEffect(() => {
+    // 切換倒數時重置已載入的列印卡片記錄
+    fetchedPrintCardDays.current.clear();
+  }, [id]);
+
   // Lazy load day content
   useEffect(() => {
     if (id && selected) {
@@ -73,6 +80,27 @@ function CreatorEditor() {
         dispatch(fetchCountdownDay({ id, day: activeDay }));
       }
     }
+  }, [id, activeDay, selected, dispatch]);
+
+  // Lazy load print card when opening editor
+  useEffect(() => {
+    if (!showPrintCardModal || !id) return;
+    const key = `${id}-${activeDay}`;
+    if (fetchedPrintCardDays.current.has(key)) return;
+    fetchedPrintCardDays.current.add(key);
+    dispatch(fetchPrintCard({ countdownId: id, day: activeDay }));
+  }, [dispatch, showPrintCardModal, id, activeDay]);
+
+  // Prefetch print card for preview if configured but missing preview image
+  useEffect(() => {
+    if (!id || !selected) return;
+    const key = `${id}-${activeDay}`;
+    const card = (selected.printCards || []).find((item) => item.day === activeDay);
+    const needsFetch = !card || (card.isConfigured && !card.previewImage);
+    if (!needsFetch) return;
+    if (fetchedPrintCardDays.current.has(key)) return;
+    fetchedPrintCardDays.current.add(key);
+    dispatch(fetchPrintCard({ countdownId: id, day: activeDay }));
   }, [id, activeDay, selected, dispatch]);
 
   const handleAssign = () => {

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { HiOutlineCog6Tooth, HiOutlinePrinter } from 'react-icons/hi2';
 import PrintCardPreview from './PrintCardPreview';
+import { PresignedImage } from './PresignedImage';
 import type { PrintCard } from '../store/countdownSlice';
 
 interface PrintCardPanelProps {
@@ -26,7 +27,7 @@ function PrintCardPanel({ day, countdownId, card, onEdit }: PrintCardPanelProps)
       </div>
 
       {card?.previewImage ? (
-        <img
+        <PresignedImage
           src={card.previewImage}
           alt={`Day ${day}`}
           className="w-full rounded-[28px] border border-white/10 shadow-lg"

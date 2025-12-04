@@ -5,6 +5,7 @@ import api from '../api/client';
 import type { VoucherDetail } from '../types/voucher';
 import AssetLibraryModal from './AssetLibraryModal';
 import type { UserAsset } from '../types/assets';
+import { getPresignedUrl, getPresignedUrls, isMinIOUrl, normalizeMinioUrl } from '../utils/imageUtils';
 
 interface PrintCardCanvasEditorProps {
   countdownId: string;
@@ -22,10 +23,12 @@ interface LoadTemplateOptions {
 
 export interface PrintCardCanvasEditorRef {
   loadTemplate: (templateJson: any, options?: LoadTemplateOptions) => Promise<void>;
+  getSnapshot: () => { canvasJson: any; previewImage: string } | null;
 }
 
 const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 500;
+const TO_JSON_PROPS = ['selectable', 'name', 'assetKey'];
 
 const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanvasEditorProps>(function PrintCardCanvasEditor(
   { countdownId, day, initialJson, onChange, width = CANVAS_WIDTH, height = CANVAS_HEIGHT, allowQr = true },
@@ -47,17 +50,42 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  const emitSnapshot = useCallback(() => {
+  const buildSnapshot = useCallback(() => {
     const canvas = fabricRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
     try {
-      const json = (canvas.toJSON as (propertiesToInclude?: string[]) => any)(['selectable', 'name']);
+      // 確保背景色存在且與 state 同步，避免預覽底色偏差
+      const bgColor =
+        (typeof canvas.backgroundColor === 'string' && canvas.backgroundColor) ||
+        background ||
+        '#ffffff';
+      canvas.backgroundColor = bgColor;
+      canvas.requestRenderAll();
+
+      const json = (canvas.toJSON as (propertiesToInclude?: string[]) => any)(TO_JSON_PROPS);
+      // 保留背景色，避免重新載入時變成預設值
+      const bg = bgColor || '#ffffff';
+      if (bg) {
+        json.background = bg;
+      }
+      // fabric 6 DataURL options do not accept backgroundColor; set via canvas state above
       const preview = canvas.toDataURL({ format: 'png', multiplier: 2 });
-      onChangeRef.current({ canvasJson: json, previewImage: preview });
+      return { canvasJson: json, previewImage: preview };
+    } catch (error) {
+      console.error('Error building snapshot:', error);
+      return null;
+    }
+  }, [background]);
+
+  const emitSnapshot = useCallback(() => {
+    const snapshot = buildSnapshot();
+    if (!snapshot) return;
+    try {
+      onChangeRef.current(snapshot);
     } catch (error) {
       console.error('Error emitting snapshot:', error);
     }
-  }, []);
+  }, [buildSnapshot]);
 
   // 保持 emitSnapshot 引用最新
   useEffect(() => {
@@ -110,7 +138,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
       const rewrite = (node: any) => {
         if (!node) return;
         if (typeof node.text === 'string') {
-        node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_match: string, label: string, digits: string) => {
+          node.text = node.text.replace(/(Day|DAY)\s*(\d{1,2})/g, (_match: string, label: string, digits: string) => {
             const usePad = digits.length === 2;
             return `${label} ${usePad ? pad : plain}`;
           });
@@ -137,6 +165,127 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     [],
   );
 
+  const collectImageTargets = useCallback((node: any, bucket: Set<string>) => {
+    if (!node) return;
+
+    const register = (candidate?: string | null) => {
+      if (typeof candidate !== 'string') return;
+      if (!isMinIOUrl(candidate)) return;
+      const normalized = normalizeMinioUrl(candidate);
+      bucket.add(normalized);
+      node.assetKey = normalized;
+    };
+
+    register(node.assetKey);
+    register(node.src);
+
+    const bgImage = node.backgroundImage;
+    if (bgImage && typeof bgImage === 'object') {
+      const bgSrc = typeof bgImage.assetKey === 'string' ? bgImage.assetKey : bgImage.src;
+      register(bgSrc);
+      if (typeof bgImage.assetKey !== 'string' && typeof bgSrc === 'string' && isMinIOUrl(bgSrc)) {
+        bgImage.assetKey = normalizeMinioUrl(bgSrc);
+      }
+    }
+
+    if (Array.isArray(node.objects)) {
+      node.objects.forEach((child: any) => collectImageTargets(child, bucket));
+    }
+  }, []);
+
+  const hydrateCanvasJson = useCallback(
+    async (json: any) => {
+      if (!json) return json;
+      const clone = JSON.parse(JSON.stringify(json));
+      const targets = new Set<string>();
+      collectImageTargets(clone, targets);
+
+      if (!targets.size) return clone;
+
+      try {
+        const presignedMap = await getPresignedUrls(Array.from(targets));
+
+        const applyPresigned = (node: any) => {
+          if (!node) return;
+          const resolveKey = (value?: string | null) => {
+            if (typeof value !== 'string') return null;
+            if (!isMinIOUrl(value)) return null;
+            return normalizeMinioUrl(value);
+          };
+
+          const key = resolveKey(node.assetKey || node.src);
+          if (key && presignedMap.has(key)) {
+            node.src = presignedMap.get(key) || node.src;
+            node.assetKey = key;
+          }
+
+          const bgImage = node.backgroundImage;
+          if (bgImage && typeof bgImage === 'object') {
+            const bgKey = resolveKey(bgImage.assetKey || bgImage.src);
+            if (bgKey && presignedMap.has(bgKey)) {
+              bgImage.src = presignedMap.get(bgKey) || bgImage.src;
+              bgImage.assetKey = bgKey;
+            }
+          }
+
+          if (Array.isArray(node.objects)) {
+            node.objects.forEach((child: any) => applyPresigned(child));
+          }
+        };
+
+        applyPresigned(clone);
+      } catch (error) {
+        console.error('Failed to refresh canvas assets:', error);
+      }
+
+      return clone;
+    },
+    [collectImageTargets],
+  );
+
+  const resolveImageSource = useCallback(async (url: string) => {
+    if (!url) {
+      return { src: url, assetKey: null as string | null };
+    }
+    if (!isMinIOUrl(url)) {
+      return { src: url, assetKey: null as string | null };
+    }
+
+    const normalized = normalizeMinioUrl(url);
+    try {
+      const presigned = await getPresignedUrl(normalized);
+      return { src: presigned, assetKey: normalized };
+    } catch (error) {
+      console.error('Failed to presign image URL, fallback to original:', error);
+      return { src: url, assetKey: normalized };
+    }
+  }, []);
+
+  const loadJsonIntoCanvas = useCallback(
+    async (canvas: FabricCanvas, json: any, isDisposed: () => boolean) => {
+      if (!json || isDisposed()) return;
+
+      return new Promise<void>((resolve, reject) => {
+        try {
+          canvas.loadFromJSON(json, () => {
+            if (isDisposed()) {
+              resolve();
+              return;
+            }
+            if (json.background) {
+              canvas.backgroundColor = json.background;
+            }
+            canvas.requestRenderAll();
+            resolve();
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    },
+    [],
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -148,26 +297,23 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
         }
         try {
           const templateWithBindings = applyTemplateBindings(templateJson, day, options?.voucherDetail);
+          const hydratedTemplate = await hydrateCanvasJson(templateWithBindings);
           // 清除現有內容
           canvas.getObjects().forEach((obj) => canvas.remove(obj));
 
           // 載入模板
-          await canvas.loadFromJSON(templateWithBindings);
-
-          // 設置背景色
-          if (templateWithBindings.background) {
-            canvas.backgroundColor = templateWithBindings.background;
-            setBackground(templateWithBindings.background);
+          await loadJsonIntoCanvas(canvas, hydratedTemplate, () => false);
+          if (hydratedTemplate.background) {
+            setBackground(hydratedTemplate.background);
           }
-
-          canvas.requestRenderAll();
           emitSnapshotRef.current?.();
         } catch (error) {
           console.error('Error loading template:', error);
         }
       },
+      getSnapshot: () => buildSnapshot(),
     }),
-    [applyTemplateBindings, day],
+    [applyTemplateBindings, day, hydrateCanvasJson, loadJsonIntoCanvas, buildSnapshot],
   );
 
   useEffect(() => {
@@ -190,14 +336,13 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     const loadInitial = async () => {
       if (initialJson && !isDisposed) {
         try {
-          await canvas.loadFromJSON(initialJson);
+          const hydrated = await hydrateCanvasJson(initialJson);
+          await loadJsonIntoCanvas(canvas, hydrated, () => isDisposed);
           // 檢查 canvas 是否已經被 dispose
           if (isDisposed) return;
-          if (initialJson.background && initialJson.background !== background) {
-            canvas.backgroundColor = initialJson.background;
-            setBackground(initialJson.background);
+          if (hydrated.background && hydrated.background !== background) {
+            setBackground(hydrated.background);
           }
-          canvas.requestRenderAll();
         } catch (error) {
           console.error('Error loading canvas JSON:', error);
         }
@@ -232,7 +377,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
       canvas.dispose();
       fabricRef.current = null;
     };
-  }, [height, width]);
+  }, [height, loadJsonIntoCanvas, width]);
 
   // 處理 initialJson 變化（當已有 canvas 時載入新資料）
   useEffect(() => {
@@ -243,14 +388,14 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     let isCancelled = false;
     const loadJson = async () => {
       try {
-        await canvas.loadFromJSON(initialJson);
-        if (isCancelled) return;
-        if (initialJson.background) {
-          canvas.backgroundColor = initialJson.background;
-          setBackground(initialJson.background);
+        const hydrated = await hydrateCanvasJson(initialJson);
+        await loadJsonIntoCanvas(canvas, hydrated, () => isCancelled);
+        if (!isCancelled) {
+          if (hydrated.background) {
+            setBackground(hydrated.background);
+          }
+          emitSnapshotRef.current?.();
         }
-        canvas.requestRenderAll();
-        emitSnapshotRef.current?.();
       } catch (error) {
         console.error('Error loading canvas JSON:', error);
       }
@@ -260,7 +405,7 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     return () => {
       isCancelled = true;
     };
-  }, [initialJson]);
+  }, [hydrateCanvasJson, initialJson, loadJsonIntoCanvas]);
 
   useEffect(() => {
     const canvas = fabricRef.current;
@@ -295,32 +440,39 @@ const PrintCardCanvasEditor = forwardRef<PrintCardCanvasEditorRef, PrintCardCanv
     emitSnapshot();
   };
 
-  const addImageFromUrl = async (url: string) => {
-    const canvas = fabricRef.current;
-    if (!canvas) {
-      console.warn('Canvas not initialized');
-      return;
-    }
-    if (isInitializingRef.current) {
-      console.warn('Canvas is still initializing');
-      return;
-    }
-    try {
-      const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-      img.set({
-        left: 40,
-        top: 40,
-        scaleX: 0.5,
-        scaleY: 0.5,
-      });
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.requestRenderAll();
-      emitSnapshot();
-    } catch (error) {
-      console.error('Failed to load image:', error);
-    }
-  };
+  const addImageFromUrl = useCallback(
+    async (url: string) => {
+      const canvas = fabricRef.current;
+      if (!canvas) {
+        console.warn('Canvas not initialized');
+        return;
+      }
+      if (isInitializingRef.current) {
+        console.warn('Canvas is still initializing');
+        return;
+      }
+      try {
+        const { src, assetKey } = await resolveImageSource(url);
+        const img = await FabricImage.fromURL(src, { crossOrigin: 'anonymous' });
+        if (assetKey) {
+          img.set({ assetKey });
+        }
+        img.set({
+          left: 40,
+          top: 40,
+          scaleX: 0.5,
+          scaleY: 0.5,
+        });
+        canvas.add(img);
+        canvas.setActiveObject(img);
+        canvas.requestRenderAll();
+        emitSnapshot();
+      } catch (error) {
+        console.error('Failed to load image:', error);
+      }
+    },
+    [emitSnapshot, resolveImageSource],
+  );
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { PrintCard } from '../store/countdownSlice';
+import { getPresignedUrl, isMinIOUrl, normalizeMinioUrl } from './imageUtils';
 
 const A4_WIDTH = 210;
 const A4_MARGIN = 8;
@@ -21,6 +22,19 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+async function resolvePreview(src: string | undefined | null): Promise<string | null> {
+  if (!src) return null;
+  if (!isMinIOUrl(src)) return src;
+  try {
+    const normalized = normalizeMinioUrl(src);
+    const presigned = await getPresignedUrl(normalized);
+    return presigned || src;
+  } catch (error) {
+    console.warn('Failed to presign preview image, fallback to original', error);
+    return src;
+  }
+}
+
 /**
  * 將多張卡片排版並生成 PDF（2 列 x 4 行 = 8 張/頁）
  */
@@ -36,12 +50,15 @@ export async function generatePrintCardsPDF(cards: PrintCard[], title: string = 
     format: 'a4',
   });
 
+  // 先確保所有 preview 圖片都是可用的簽名 URL
+  const resolvedPreviews = await Promise.all(cards.map((card) => resolvePreview(card.previewImage || '')));
+
   // 計算卡片高度（根據第一張卡片的比例）
   let cardHeight = 65; // 預設高度
-  const firstCard = cards.find(c => c.previewImage);
-  if (firstCard?.previewImage) {
+  const firstIndex = resolvedPreviews.findIndex((src) => Boolean(src));
+  if (firstIndex >= 0) {
     try {
-      const img = await loadImage(firstCard.previewImage);
+      const img = await loadImage(resolvedPreviews[firstIndex] as string);
       const aspectRatio = img.width / img.height;
       cardHeight = CARD_WIDTH / aspectRatio;
     } catch {
@@ -51,7 +68,7 @@ export async function generatePrintCardsPDF(cards: PrintCard[], title: string = 
 
   for (let i = 0; i < cards.length; i++) {
     try {
-      const preview = cards[i].previewImage;
+      const preview = resolvedPreviews[i];
       if (!preview) continue;
 
       // 計算在當前頁的位置
