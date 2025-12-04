@@ -7,8 +7,13 @@
     "dev:client": "pnpm --filter countdown24-client dev",
     "dev:server": "pnpm --filter countdown24-server dev",
     "build": "pnpm --filter countdown24-client build && pnpm --filter countdown24-server build",
-    "start": "pnpm --filter countdown24-server start"
+    "start": "pnpm --filter countdown24-server start",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "cypress": "^13.15.0"
+  }
 }

@@ -77,6 +77,28 @@ docker run --rm \
 - 後端 API：`http://localhost:4000/api`
 - 前端頁面：`http://localhost:4000/`
 
+### E2E 測試（Cypress）
+
+專案內建一組 Cypress 端對端測試，會使用預設種子資料的接收者帳號登入並檢查收件匣。
+
+1. 建立 Docker 測試環境（會同時啟動 MongoDB 與以生產模式建置的 API/前端）：
+
+   ```bash
+   cp docker/e2e/.env.example docker/e2e/.env
+   docker compose -f docker/e2e/docker-compose.yml up --build -d
+   ```
+
+   服務啟動時會自動連線到 `mongo` 容器並套用示範資料。
+
+2. 執行 Cypress（預設 baseUrl 為 `http://localhost:4000`，可用 `CYPRESS_BASE_URL` 覆寫）：
+
+   ```bash
+   pnpm cy:run
+   # 或使用圖形化介面：pnpm cy:open
+   ```
+
+   若 API 與前端分開啟動，可以額外提供 `CYPRESS_API_URL` 來指定登入使用的 API 入口，例如 `http://localhost:4000/api`。
+
 ### 環境變數
 | 變數 | 預設 | 說明 |
 | --- | --- | --- |
