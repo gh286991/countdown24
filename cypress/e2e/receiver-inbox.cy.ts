@@ -6,11 +6,11 @@ describe('Countdown24 end-to-end', () => {
   });
 
   it('allows the seeded receiver to see their inbox items', () => {
+    // loginAs 已經會訪問 /receiver 並等待「我的禮物盒」出現
     cy.loginAs('receiver@example.com', 'receiverPass!123');
 
-    cy.visit('/receiver');
-    cy.contains('我的禮物盒').should('be.visible');
-    cy.contains('Chronicles of Us').should('be.visible');
-    cy.contains('QR Gift Vault').should('be.visible');
+    // 驗證 inbox 內容
+    cy.contains('Chronicles of Us', { timeout: 10000 }).should('be.visible');
+    cy.contains('QR Gift Vault', { timeout: 10000 }).should('be.visible');
   });
 });

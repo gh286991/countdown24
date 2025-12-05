@@ -9,7 +9,7 @@
     "build": "pnpm --filter countdown24-client build && pnpm --filter countdown24-server build",
     "start": "pnpm --filter countdown24-server start",
     "cy:open": "cypress open",
-    "cy:run": "cypress run"
+    "cy:run": "cypress run --browser chrome"
   },
   "author": "",
   "license": "MIT",
