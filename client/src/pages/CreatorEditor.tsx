@@ -209,21 +209,14 @@ function CreatorEditor() {
           : null,
     };
 
-    const existing = selected.dayCards || [];
-    const map = new Map(existing.map((card) => [card.day, card]));
-    map.set(normalizedCard.day, normalizedCard);
-    const nextCards = Array.from({ length: totalDays }).map((_, index) => {
-      const day = index + 1;
-      return map.get(day) || { ...emptyCard, day };
-    });
     try {
-      await dispatch(updateCountdown({ id, data: { dayCards: nextCards } })).unwrap();
-      // 如果有 parsedScript，也更新它（雖然上面已經包含在 dayCards 裡了，但為了保險起見或者特定邏輯）
-      // 注意：這裡原本的邏輯似乎是分開更新的？其實 updateCountdown 應該一次處理完
-      // 我們保留原本的行為，但擴展到所有類型
+      // 只送出本次編輯的單一天卡，避免覆寫其他天的資料
+      await dispatch(updateCountdown({ id, data: { dayCards: [normalizedCard] } })).unwrap();
+      // 如果有 parsedScript，也更新它（與 dayCards 分開傳輸）
       if (parsedScript) {
         await dispatch(updateCountdown({ id, data: { cgScript: parsedScript } })).unwrap();
       }
+
       showToast(`已儲存 Day ${activeDay} 設定`, 'success');
     } catch (error: any) {
       console.error('Failed to save day card', error);

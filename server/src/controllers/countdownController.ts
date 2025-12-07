@@ -73,7 +73,10 @@ export async function getCountdownById(req: AuthenticatedRequest, res: Response)
   };
 
   const dayParam = req.query.day ? Number(req.query.day) : undefined;
-  const payload: any = { countdown: countdownService.withAvailableContent(countdownPayload, false, dayParam) };
+  const includeContent = isOwner;
+  const payload: any = {
+    countdown: countdownService.withAvailableContent(countdownPayload, includeContent, dayParam),
+  };
   if (isOwner) {
     payload.assignments = await Assignments.find({ countdownId: countdown.id }).toArray();
   }
@@ -216,10 +219,25 @@ export async function updateCountdown(req: AuthenticatedRequest, res: Response) 
   delete record.dayCards;
 
   await Countdowns.updateOne({ id }, { $set: record });
+
+  // 合併更新：如果只帶了部分 dayCards，就把其餘既有資料保留，避免被空值覆蓋
+  const baseDayCards = countdownWithCards.dayCards || [];
+  const incomingCards = updates.dayCards || [];
+  const mergedDayCards = (() => {
+    if (!incomingCards.length) return baseDayCards;
+    const map = new Map(baseDayCards.map((card: any) => [card.day, card]));
+    incomingCards.forEach((card: any) => {
+      if (!card || typeof card.day !== 'number') return;
+      const existing = map.get(card.day) || {};
+      map.set(card.day, { ...existing, ...card });
+    });
+    return Array.from(map.values());
+  })();
+
   const nextDayCards = await countdownService.persistDayCards(
     id,
     nextTotalDays,
-    updates.dayCards || countdownWithCards.dayCards || [],
+    mergedDayCards,
     nextCountdown,
   );
   await countdownService.ensureRecipientAssignments(id, updatedRecipients);
