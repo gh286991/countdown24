@@ -290,36 +290,37 @@ async function flushBatchQueue() {
  * 獲取預簽名 URL，帶有內部緩存與併發控制
  */
 export async function getPresignedUrl(urlOrKey: string, options: PresignOptions = {}): Promise<string> {
-  if (!isMinIOUrl(urlOrKey) || isPresignedUrl(urlOrKey)) {
+  const { forceRefresh = false, expiresIn, refreshMarginMs } = options;
+
+  if (!isMinIOUrl(urlOrKey)) {
     return urlOrKey;
   }
 
-  if (!options.forceRefresh) {
-    const cached = getCachedPresignedUrlInternal(
-      urlOrKey,
-      undefined,
-      options.refreshMarginMs ?? DEFAULT_REFRESH_MARGIN_MS,
-    );
-    if (cached) {
-      return cached;
+  const key = extractKeyFromUrl(urlOrKey) || urlOrKey;
+
+  if (forceRefresh) {
+    try {
+      const { data } = await api.post('/uploads/presigned', { key, expiresIn });
+      const signed = data?.url || urlOrKey;
+      const expiresAt = data?.expiresAt ? new Date(data.expiresAt).getTime() : undefined;
+      const version = data?.etag ?? null;
+      setCachedPresignedUrl(key, signed, expiresAt, version);
+      return signed;
+    } catch (error) {
+      console.error('Failed to refresh presigned URL:', error);
+      return urlOrKey;
     }
-    return enqueueBatchRequest(urlOrKey, options);
   }
 
-  const key = extractKeyFromUrl(urlOrKey);
-  if (!key) return urlOrKey;
-
-  try {
-    const { data } = await api.post('/uploads/presigned', { key, expiresIn: options.expiresIn });
-    const signed = data?.url || urlOrKey;
-    const expiresAt = data?.expiresAt ? new Date(data.expiresAt).getTime() : undefined;
-    const version = data?.etag ?? null;
-    setCachedPresignedUrl(urlOrKey, signed, expiresAt, version);
-    return signed;
-  } catch (error) {
-    console.error('Failed to refresh presigned URL:', error);
+  if (isPresignedUrl(urlOrKey)) {
     return urlOrKey;
   }
+
+  const cached = getCachedPresignedUrlInternal(key, undefined, refreshMarginMs ?? DEFAULT_REFRESH_MARGIN_MS);
+  if (cached) {
+    return cached;
+  }
+  return enqueueBatchRequest(key, options);
 }
 
 /**
