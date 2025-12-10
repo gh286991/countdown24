@@ -32,10 +32,13 @@ interface DayCardEditorProps {
   dayCardDraft: DayCardData;
   cgScriptDraft: string;
   countdownId: string;
+  totalDays: number;
   onTypeChange: (type: 'story' | 'qr' | 'voucher') => void;
   onFieldChange: (field: keyof DayCardData, value: any) => void;
   onCgScriptChange: (value: string) => void;
   onSave: () => void;
+  onDayChange: (day: number) => void;
+  onBackToDays?: () => void;
   voucherCard?: VoucherCard;
   onVoucherSave: (card: Partial<VoucherCard>) => void;
   onVoucherDelete: () => void;
@@ -47,10 +50,13 @@ function DayCardEditor({
   dayCardDraft,
   cgScriptDraft,
   countdownId,
+  totalDays,
   onTypeChange,
   onFieldChange,
   onCgScriptChange,
   onSave,
+  onDayChange,
+  onBackToDays,
   voucherCard,
   onVoucherSave,
   onVoucherDelete,
@@ -70,6 +76,45 @@ function DayCardEditor({
   const { showToast } = useToast();
   return (
     <div className="glass-panel p-6 space-y-4">
+      <div className="lg:hidden -mx-2 -mt-2 space-y-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-slate-900/80 px-4 py-3 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => onBackToDays?.()}
+            className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-gray-100 hover:border-white/40"
+          >
+            ← 返回日期列表
+          </button>
+          <div className="flex flex-1 justify-end gap-2 text-xs font-semibold">
+            <button
+              type="button"
+              disabled={activeDay <= 1}
+              onClick={() => onDayChange(Math.max(1, activeDay - 1))}
+              className={`rounded-full px-3 py-2 transition-colors ${
+                activeDay <= 1
+                  ? 'border border-white/10 text-gray-500'
+                  : 'border border-white/30 text-gray-100 hover:border-white/60'
+              }`}
+            >
+              上一日
+            </button>
+            <button
+              type="button"
+              disabled={activeDay >= totalDays}
+              onClick={() => onDayChange(Math.min(totalDays, activeDay + 1))}
+              className={`rounded-full px-3 py-2 transition-colors ${
+                activeDay >= totalDays
+                  ? 'border border-white/10 text-gray-500'
+                  : 'border border-white/30 text-gray-100 hover:border-white/60'
+              }`}
+            >
+              下一日
+            </button>
+          </div>
+        </div>
+        <p className="text-center text-xs text-gray-400">Day {activeDay} / {totalDays} · 左滑或點按切換欄位</p>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">編輯 Day {activeDay}</h2>

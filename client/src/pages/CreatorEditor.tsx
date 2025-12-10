@@ -309,7 +309,7 @@ function CreatorEditor() {
           />
         )}
 
-        <div className="lg:hidden mb-4">
+        <div className="lg:hidden mb-4 sticky top-0 z-20 -mx-6 px-6 pt-4 pb-2 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950/80 backdrop-blur">
           <div className="flex flex-wrap gap-2">
             {[
               { key: 'days', label: '日期列表' },
@@ -357,10 +357,13 @@ function CreatorEditor() {
               dayCardDraft={dayCardDraft}
               cgScriptDraft={cgScriptDraft}
               countdownId={id || ''}
+              totalDays={totalDays}
               onTypeChange={handleTypeChange}
               onFieldChange={handleFieldChange}
               onCgScriptChange={setCgScriptDraft}
               onSave={handleDayCardSave}
+              onDayChange={handleDaySelect}
+              onBackToDays={() => setMobileSection('days')}
               voucherCard={currentVoucherCard}
               onVoucherSave={handleVoucherCardSave}
               onVoucherDelete={handleVoucherCardDelete}
