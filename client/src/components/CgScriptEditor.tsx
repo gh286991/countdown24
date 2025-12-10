@@ -153,13 +153,13 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
   return (
     <div className="space-y-3">
       {/* 模式切換 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-gray-300">CG 劇本編輯器</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
           <button
             type="button"
             onClick={() => setMode('visual')}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${mode === 'visual'
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors text-center w-full sm:w-auto ${mode === 'visual'
                 ? 'bg-aurora text-slate-900 font-semibold'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
               }`}
@@ -172,7 +172,7 @@ function CgScriptEditor({ value, onChange, countdownId }: CgScriptEditorProps) {
           <button
             type="button"
             onClick={() => setMode('json')}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${mode === 'json'
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors text-center w-full sm:w-auto ${mode === 'json'
                 ? 'bg-aurora text-slate-900 font-semibold'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
               }`}
