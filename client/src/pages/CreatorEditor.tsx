@@ -47,6 +47,7 @@ function CreatorEditor() {
   const [cgScriptDraft, setCgScriptDraft] = useState(JSON.stringify(sampleCgScript, null, 2));
   const [activeDay, setActiveDay] = useState(Number(searchParams.get('day')) || 1);
   const [dayCardDraft, setDayCardDraft] = useState({ ...emptyCard, day: Number(searchParams.get('day')) || 1 });
+  const [mobileSection, setMobileSection] = useState<'days' | 'edit' | 'preview'>('edit');
   const [showReceiversModal, setShowReceiversModal] = useState(false);
   const [showPrintCardModal, setShowPrintCardModal] = useState(false);
   const [isSavingPrintCard, setIsSavingPrintCard] = useState(false);
@@ -308,19 +309,48 @@ function CreatorEditor() {
           />
         )}
 
+        <div className="lg:hidden mb-4">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'days', label: '日期列表' },
+              { key: 'edit', label: '內容編輯' },
+              { key: 'preview', label: '預覽 / 列印' },
+            ].map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setMobileSection(item.key as 'days' | 'edit' | 'preview')}
+                className={`flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                  mobileSection === item.key
+                    ? 'border-aurora bg-white text-slate-900'
+                    : 'border-white/20 text-white/80 hover:border-white/40'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-[280px_1fr_420px] gap-6 relative z-10">
           {/* 左側：Day 列表 + 封面圖 + 禮品卡 */}
-          <div className="space-y-4">
-            <DayListSidebar
-              totalDays={totalDays}
-              activeDay={activeDay}
-              dayCards={selected.dayCards || []}
-              onDaySelect={handleDaySelect}
-            />
+          <div
+            className={`${mobileSection === 'days' ? 'block' : 'hidden'} space-y-4 lg:block`}
+          >
+            <div className="max-h-[60vh] overflow-y-auto pr-1 lg:max-h-none lg:overflow-visible">
+              <DayListSidebar
+                totalDays={totalDays}
+                activeDay={activeDay}
+                dayCards={selected.dayCards || []}
+                onDaySelect={handleDaySelect}
+              />
+            </div>
           </div>
 
           {/* 中間：編輯區 */}
-          <div className="space-y-4 relative z-10">
+          <div
+            className={`${mobileSection === 'edit' ? 'space-y-4' : 'hidden'} relative z-10 lg:space-y-4 lg:block`}
+          >
             <DayCardEditor
               activeDay={activeDay}
               startDate={selected.startDate}
@@ -338,7 +368,9 @@ function CreatorEditor() {
           </div>
 
           {/* 右側：預覽 + 列印小卡 */}
-          <div className="space-y-4">
+          <div
+            className={`${mobileSection === 'preview' ? 'space-y-4' : 'hidden'} lg:space-y-4 lg:block`}
+          >
             <DayCardPreviewPanel
               activeDay={activeDay}
               type={dayCardDraft.type as 'story' | 'qr' | 'voucher'}

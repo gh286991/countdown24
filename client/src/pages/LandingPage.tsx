@@ -116,19 +116,19 @@ function LandingPage() {
       title: '聖誕節品牌倒數',
       description: '24 天逐步釋出節慶合作與限量贈品。',
       tag: 'Seasonal Campaign',
-      image: 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1600&q=80',
+      image: '/landing/case-holiday.svg',
     },
     {
       title: 'VIP 生日旅程',
       description: '以個人化影音與禮品驚喜延長生日感動。',
       tag: 'VIP Care',
-      image: 'https://images.unsplash.com/photo-1541560052-77ec1bbc09f7?auto=format&fit=crop&w=1600&q=80',
+      image: '/landing/case-birthday.svg',
     },
     {
       title: '新品上市預熱',
       description: '倒數期間逐步揭露功能亮點，串聯開箱活動。',
       tag: 'Product Launch',
-      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1600&q=80',
+      image: '/landing/case-launch.svg',
     },
   ];
 
@@ -136,17 +136,17 @@ function LandingPage() {
     {
       title: 'Creator Console',
       description: '整合內容、媒體與提醒設定的可視化介面。',
-      image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1400&q=80',
+      image: '/landing/gallery-console.svg',
     },
     {
       title: 'VIP Experience',
       description: '倒數旅程延伸到線下派對與工作坊。',
-      image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1400&q=80',
+      image: '/landing/gallery-journey.svg',
     },
     {
       title: 'Gift Journey',
       description: '禮品卡搭配禮物盒，掃描即可同步解鎖內容。',
-      image: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80',
+      image: '/landing/gallery-gift.svg',
     },
   ];
 
@@ -154,11 +154,14 @@ function LandingPage() {
     <div className="min-h-screen bg-[#020617] text-white">
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80"
-            alt="炫彩燈光背景"
-            className="w-full h-full object-cover opacity-40"
-          />
+          <picture>
+            <source media="(max-width: 640px)" srcSet="/landing/hero-dashboard-mobile.svg" />
+            <img
+              src="/landing/hero-dashboard-desktop.svg"
+              alt="Countdown24 Creator Console 示意圖"
+              className="w-full h-full object-cover opacity-50"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-br from-[#01030a] via-[#020617]/95 to-[#0a1730]" />
         </div>
         <div className="absolute -top-10 right-12 w-64 h-64 bg-[#1d4ed8]/40 blur-3xl rounded-full animate-[pulse_10s_ease-in-out_infinite]" />
@@ -207,11 +210,14 @@ function LandingPage() {
           <Reveal delay={200} className="relative">
             <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/20 to-white/0 blur-3xl opacity-40" />
             <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl shadow-[#03050b]/80">
-              <img
-                src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=80"
-                alt="倒數體驗示意螢幕"
-                className="w-full h-full object-cover opacity-90"
-              />
+              <picture>
+                <source media="(max-width: 640px)" srcSet="/landing/hero-dashboard-mobile.svg" />
+                <img
+                  src="/landing/hero-live-scene.svg"
+                  alt="倒數體驗示意螢幕"
+                  className="w-full h-full object-cover"
+                />
+              </picture>
               <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6">
                 <div className="flex items-center gap-3 mb-3">
@@ -312,9 +318,9 @@ function LandingPage() {
       <section className="bg-[#050b17] py-20">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <Reveal className="text-center mb-12">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Stock Gallery</p>
-            <h2 className="mt-4 text-3xl font-semibold">快速引用的圖庫素材</h2>
-            <p className="mt-3 text-slate-300">以下三張 Unsplash 精選可直接放入專案，先呈現質感再決定是否替換。</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Experience Gallery</p>
+            <h2 className="mt-4 text-3xl font-semibold">產品情境示意圖庫</h2>
+            <p className="mt-3 text-slate-300">直接提供 Creator Console、接收端旅程與禮品流程的示意插圖，行動與桌面皆具備固定比例裁切。</p>
           </Reveal>
           <div className="grid gap-6 md:grid-cols-3">
             {galleryShots.map(({ title, description, image }, index) => (
@@ -323,7 +329,7 @@ function LandingPage() {
                 delay={index * 80}
                 className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5"
               >
-                <img src={image} alt={title} className="h-48 w-full object-cover opacity-80" />
+                <img src={image} alt={title} className="w-full object-cover opacity-90 aspect-[4/3]" />
                 <div className="p-5 space-y-1">
                   <p className="text-lg font-semibold">{title}</p>
                   <p className="text-sm text-slate-300">{description}</p>
@@ -347,7 +353,7 @@ function LandingPage() {
                 delay={index * 120}
                 className="rounded-3xl overflow-hidden border border-white/10 bg-[#0b1224]"
               >
-                <div className="relative h-48">
+                <div className="relative aspect-[4/3]">
                   <img src={image} alt={title} className="w-full h-full object-cover" />
                   <span className="absolute top-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#050b17]">
                     {tag}

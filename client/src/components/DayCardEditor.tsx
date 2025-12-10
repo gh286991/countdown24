@@ -89,13 +89,13 @@ function DayCardEditor({
       </div>
 
       {/* 類型切換 */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3 sm:flex-nowrap">
         {['story', 'qr', 'voucher'].map((mode) => (
           <button
             type="button"
             key={mode}
             onClick={() => onTypeChange(mode as 'story' | 'qr' | 'voucher')}
-            className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${dayCardDraft.type === mode
+            className={`flex-1 min-w-[140px] rounded-xl border px-4 py-3 text-sm font-semibold transition-all sm:min-w-0 ${dayCardDraft.type === mode
               ? 'border-aurora bg-aurora text-slate-900'
               : 'border-white/20 text-gray-300 hover:border-white/40'
               }`}
